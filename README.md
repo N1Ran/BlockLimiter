@@ -1,4 +1,5 @@
-# TorchBackupSystem
-Easy to use Backup system for torch
+# BlockLimiter
+This Torch plugin allows you to add a block limits with options per faction, grid, and/or player.
 
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JX3FPVCALFX5U)
+[![Patreon](https://www.patreon.com/N1Ran)
+[![Donate](https://www.paypal.me/n1ran)
