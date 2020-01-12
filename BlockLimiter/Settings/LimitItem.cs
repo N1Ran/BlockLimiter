@@ -1,0 +1,241 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Torch;
+using Torch.Views;
+using System.Xml.Serialization;
+using VRage;
+using VRage.Collections;
+using VRage.Dedicated.Configurator;
+
+namespace BlockLimiter.Settings
+{
+    [Serializable]
+
+    public class LimitItem:ViewModel
+    {
+
+        private bool _limitFaction;
+        private bool _limitGrids;
+        private bool _limitPlayer;
+        private PunishmentType _punishType = PunishmentType.None;
+        private GridType _gridType = GridType.AllGrids;
+        private string _name;
+        private List<string> _blockPairName = new List<string>();
+        private List<string> _exceptions = new List<string>();
+        private int _limit;
+        private bool _restrictProjection;
+        private MyConcurrentHashSet<long> _disabledEntities = new MyConcurrentHashSet<long>();
+        private MyConcurrentDictionary<long,double> _violatingEntities = new MyConcurrentDictionary<long, double>();
+        private bool _ignoreNpc;
+        private OwnerState _ownerState = OwnerState.BuiltbyId;
+
+
+        [XmlIgnore]
+        [Display(Visible = false)]
+        public MyConcurrentHashSet<long> DisabledEntities => _disabledEntities;
+
+        [XmlIgnore]
+        [Display(Visible = false)]
+        public MyConcurrentDictionary<long,double> ViolatingEntities => _violatingEntities;
+
+
+
+        [Display(Name = "Name", Description = "Name of the limit. This helps with some of the commands")]
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                _name = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
+        [Display(Name = "BlockPairName", Description = "BlockPairName from cubeblocks.sbc goes here")]
+        public List<string> BlockPairName
+        {
+            get => _blockPairName;
+            set
+            {
+                _blockPairName = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
+        [Display(Name = "Exceptions", Description = "List of player or grid exception. You can also use entityId.")]
+        public List<string> Exceptions
+        {
+            get => _exceptions;
+            set
+            {
+                _exceptions = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
+        [Display(Name = "Limit", Description = "Limit value")]
+        public int Limit
+        {
+            get => _limit;
+            set
+            {
+                _limit = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
+        [Display(Name = "Limit Faction", GroupName = "Limits", Description = "Applies Limit to Factions")]
+        public bool LimitFaction
+        {
+            get => _limitFaction;
+            set
+            {
+                _limitFaction = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
+        [Display(Name = "GridType Limit", GroupName = "Limits",
+            Description = "This is choose which grid type to block placement")]
+        public GridType GridTypeBlock
+        {
+            get => _gridType;
+            set
+            {
+                _gridType = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+        
+        [Display(Name = "Limit Grids", GroupName = "Limits", Description = "Applies Limit to Grids")]
+        public bool LimitGrids
+        {
+            get => _limitGrids;
+            set
+            {
+                _limitGrids = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+        [Display(Name = "Limit Players", GroupName = "Limits", Description = "Applies Limit to Players")]
+        public bool LimitPlayers
+        {
+            get => _limitPlayer;
+            set
+            {
+                _limitPlayer = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
+        [Display(Name = "Use Builtby", Description = "Sets the limiter to use block builder (whoever placed the block)")]
+        public OwnerState BlockOwnerState
+        {
+            get => _ownerState;
+            set
+            {
+                _ownerState = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+        
+       
+      
+        
+        [Display(Name = "PunishmentType", GroupName = "Restrictions", Description = "Set's what to do to extra blocks in violation of the limit")]
+        public PunishmentType Punishment
+        {
+            get => _punishType;
+            set
+            {
+                _punishType = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
+        [Display(Name = "IgnoreNPCs", GroupName = "Restrictions", Description = "Will ignore NPC owned grids")]
+        public bool IgnoreNpcs
+        {
+            get => _ignoreNpc;
+            set
+            {
+                _ignoreNpc = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+        
+        
+        
+        [Display(Name = "Restrict Projection", GroupName = "Restrictions",
+            Description = "Removes block from projection once limit reached.")]
+        public bool RestrictProjection
+        {
+            get => _restrictProjection;
+            set
+            {
+                _restrictProjection = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
+        public void BlockReset()
+        {
+            _violatingEntities.Clear();
+            _disabledEntities.Clear();
+        }
+        
+        public override string ToString()
+        {
+            var useName = string.IsNullOrEmpty(Name) ? BlockPairName.FirstOrDefault() : Name;
+            return $"{useName} - [{BlockPairName.Count} : {Limit}]";
+        }
+
+        private static void Save()
+        {
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            {
+                limit.BlockReset();
+            }
+            
+            BlockLimiterConfig.Instance.Save();
+        }
+        
+        public enum PunishmentType
+        {
+            None,
+            DeleteBlock,
+            ShutOffBlock,
+            Explode
+        }
+        
+        public enum OwnerState
+        {
+            BuiltbyId,
+            OwnerId,
+            OwnerOrBuiltbyId,
+            OwnerAndBuiltbyId
+        }
+        
+        public enum GridType
+        {
+            AllGrids,
+            SmallGridsOnly,
+            LargeGridsOnly,
+            StationsOnly,
+            ShipsOnly
+        }
+    }
+}
