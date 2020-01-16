@@ -88,7 +88,7 @@ namespace BlockLimiter.Handlers
                         },
                         "BlockLimiter");
                 });
-               ModCommunication.SendMessageTo(new NotificationMessage($"{count}  blocks were removed from blueprint!", 10000, MyFontEnum.Red), remoteUserId);
+               ModCommunication.SendMessageTo(new NotificationMessage($"Blocklimiter removed {count} blocks blueprint!", 15000, MyFontEnum.Red), remoteUserId);
                 //((IMyProjector)__instance).SetProjectedGrid(projectedGrid);
             }
 

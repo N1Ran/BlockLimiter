@@ -61,21 +61,58 @@ namespace BlockLimiter.ProcessHandlers
                 Log.Debug("No grid limit found");
                 return;
             }
-
-            foreach (var item in limitItems)
+            
+            foreach (var grid in grids)
             {
-                if (!item.BlockPairName.Any() || !item.LimitGrids)
+                if (grid == null || grid.EntityId == 0)
                 {
                     continue;
                 }
-               
-                foreach (var grid in grids)
+
+                BlockLimiterConfig.Instance.DisabledEntities.Remove(grid.EntityId);
+
+                var gridSize = grid.BlocksCount;
+                var gridType = grid.GridSizeEnum;
+                var isStatic = grid.IsStatic;
+
+                if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
                 {
-                   
-                    if (grid == null || grid.EntityId == 0 || grid.EntityId == null)
+                    BlockLimiterConfig.Instance.DisabledEntities.Add(grid.EntityId);
+                }
+
+                if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
+                {
+                    if (!BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId))
+                    {
+                        BlockLimiterConfig.Instance.DisabledEntities.Add(grid.EntityId);
+                    }
+                }
+
+                if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridType == MyCubeSize.Large && gridSize >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
+                {
+                    if (!BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId))
+                    {
+                        BlockLimiterConfig.Instance.DisabledEntities.Add(grid.EntityId);
+                    }
+                }
+
+                if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && gridType == MyCubeSize.Small && gridSize >= BlockLimiterConfig.Instance.MaxBlocksSmallGrid)
+                {
+                    if (!BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId))
+                    {
+                        BlockLimiterConfig.Instance.DisabledEntities.Add(grid.EntityId);
+                    }
+                }
+                    
+                    
+
+                foreach (var item in limitItems)
+                {
+                    if (!item.BlockPairName.Any() || !item.LimitGrids)
                     {
                         continue;
                     }
+
                     if (grid.Flags == (EntityFlags)4)
                     {
                         item.DisabledEntities.Remove(grid.EntityId);
@@ -85,13 +122,14 @@ namespace BlockLimiter.ProcessHandlers
                     
                     
                     var isGridType = false;
+                    
                     switch (item.GridTypeBlock)
                     {
                         case LimitItem.GridType.SmallGridsOnly:
-                            isGridType = grid.GridSizeEnum == MyCubeSize.Small;
+                            isGridType = gridType == MyCubeSize.Small;
                             break;
                         case LimitItem.GridType.LargeGridsOnly:
-                            isGridType = grid.GridSizeEnum == MyCubeSize.Large;
+                            isGridType = gridType == MyCubeSize.Large;
                             break;
                         case LimitItem.GridType.StationsOnly:
                             isGridType = grid.IsStatic;
@@ -100,7 +138,7 @@ namespace BlockLimiter.ProcessHandlers
                             isGridType = true;
                             break;
                         case LimitItem.GridType.ShipsOnly:
-                            isGridType = !grid.IsStatic;
+                            isGridType = !isStatic;
                             break;
                     }
 
@@ -174,10 +212,11 @@ namespace BlockLimiter.ProcessHandlers
                     }
 
                     item.ViolatingEntities[gridId] = overCount;
-
                 }
+                
 
             }
+
             _entityCache.Clear();
 
         }

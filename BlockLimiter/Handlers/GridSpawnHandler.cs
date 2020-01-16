@@ -140,7 +140,7 @@ namespace BlockLimiter.Handlers
                 Log.Info($"Blocked {p} from placing a {b}");
             
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-            MyVisualScriptLogicProvider.SendChatMessage($"You've reach your limit for {b}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
+            MyVisualScriptLogicProvider.SendChatMessage($"Limit reached", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
 
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();

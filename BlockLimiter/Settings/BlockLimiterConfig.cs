@@ -4,13 +4,17 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 using BlockLimiter.Utility;
 using Torch;
 using Torch.Views;
 using NLog;
+using VRage.Collections;
+
 namespace BlockLimiter.Settings
 {
     [Serializable]
@@ -40,9 +44,14 @@ namespace BlockLimiter.Settings
         private int _annoyInterval = 600;
         private int _annoyDuration = 15000;
         private string _serverName = "BlockLimiter";
-        private string _annoyMsg = "You're in violation of set limits.  Use '!blocklimit mylimit' to view which limits you've exceeded";
+        private string _annoyMsg = "You're in violation of set limits.  Use [!blocklimit mylimit] to view which limits you've exceeded";
         private int _punishInterval = 700;
+        private int _maxBlockSizeShips = 0;
+        private int _maxBlockSizeStations = 0;
+        private int _maxBlocksSmallGrid = 0;
+        private int _maxBlocksLargeGrid = 0;
         private bool _enableLog;
+        private MyConcurrentHashSet<long> _disabledEntities = new MyConcurrentHashSet<long>();
 
 
         public string ServerName
@@ -67,6 +76,40 @@ namespace BlockLimiter.Settings
             }
         }
 
+        [Display(Name = "Ships", GroupName = "General BlockCount Limit", Description = "Max size for moving grids")]
+        public int MaxBlockSizeShips
+        {
+            get => _maxBlockSizeShips;
+            set => _maxBlockSizeShips = value;
+        }
+
+        [Display(Name = "Stations", GroupName = "General BlockCount Limit", Description = "Max size for static grids")]
+        public int MaxBlockSizeStations
+        {
+            get => _maxBlockSizeStations;
+            set => _maxBlockSizeStations = value;
+        }
+
+        [Display(Name = "LargeGrids", GroupName = "General BlockCount Limit", Description = "Max size for large grids")]
+        public int MaxBlocksLargeGrid
+        {
+            get => _maxBlocksLargeGrid;
+            set => _maxBlocksLargeGrid = value;
+        }
+        
+        [Display(Name = "SmallGrids", GroupName = "General BlockCount Limit", Description = "Max size for small grids")]
+        public int MaxBlocksSmallGrid
+        {
+            get => _maxBlocksSmallGrid;
+            set => _maxBlocksSmallGrid = value;
+        }
+
+        [XmlIgnore]
+        [Display(Visible = false)]
+        public MyConcurrentHashSet<long> DisabledEntities => _disabledEntities;
+        
+        
+        [Display(Name = "Use Vanilla Limits", Description = "This will add vanilla block limits to limiter's checks")]
         public bool UseVanillaLimits
         {
             get => _vanillaLimits;
@@ -79,7 +122,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Enable Logs")]
+        [Display(Name = "Enable Logs", Description = "Logs are only advice to check for issues with the limiter")]
         public bool EnableLog
         {
             get => _enableLog;
@@ -210,7 +253,7 @@ namespace BlockLimiter.Settings
                 AllLimits.AddRange(BlockLimiter.Instance.VanillaLimits);
             }
 
-            AllLimits.AddRange(BlockLimiterConfig.Instance.LimitItems);
+            AllLimits.AddRange(Instance.LimitItems);
         }
 
 

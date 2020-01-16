@@ -65,6 +65,7 @@ namespace BlockLimiter.Punishment
                 var count = 0;
                 foreach (var (id,overCount) in item.ViolatingEntities)
                 {
+                    if (item.Exceptions.Contains(id.ToString())) continue;
                     if (overCount - count <= 0)
                     {
                         continue;
@@ -74,6 +75,7 @@ namespace BlockLimiter.Punishment
                     
                     if (player != null)
                     {
+                        if (item.Exceptions.Contains(player.IdentityId.ToString())) continue;
                         foreach (var block in grids.SelectMany(x=>x.GetBlocks()))
                         {
                             if (overCount - count <= 0) break;

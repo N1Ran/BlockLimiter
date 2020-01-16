@@ -78,9 +78,11 @@ namespace BlockLimiter.Handlers
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             var subGrids = MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Physical);
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
-            var found = false;
+            bool found = BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId);
+
             foreach (var item in limitItems)
             {
+                if (found) break;
                 if (!Utilities.IsMatch(block,item))continue;
 
                 if (item.Exceptions.Any())
@@ -101,7 +103,7 @@ namespace BlockLimiter.Handlers
                         }
 
                         if (Utilities.TryGetEntityByNameOrId(id, out var entity) && entity != null &&( entity == grid ||
-                            ((MyCharacter) entity).ControlSteamId == remoteUserId))
+                                                                                                       ((MyCharacter) entity).ControlSteamId == remoteUserId))
                         {
                             skip = true;
                             break;
@@ -174,7 +176,7 @@ namespace BlockLimiter.Handlers
             if (BlockLimiterConfig.Instance.EnableLog)
                 Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing a {b}");
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-            MyVisualScriptLogicProvider.SendChatMessage($"You've reach your limit for {b}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+            MyVisualScriptLogicProvider.SendChatMessage($"Limit reached",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
 
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
