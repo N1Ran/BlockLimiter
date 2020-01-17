@@ -145,27 +145,48 @@ namespace BlockLimiter.Handlers
                     found = true;
                     break;
                 }
-                if (item.DisabledEntities.Contains(playerId))
+                if (item.FoundEntities.TryGetValue(playerId, out var pCount))
                 {
-                    found = true;
-                    break;
+                    if (pCount >= 0)
+                    {
+                        found = true;
+                        break;
+                    }
                 }
 
-                if (item.DisabledEntities.Contains(grid.EntityId))
+                double subBlockCount = 0;
+                
+                if (subGrids.Any())
                 {
-                    found = true;
-                    break;
+                    foreach (var subGrid in subGrids)
+                    {
+                        if (item.FoundEntities.TryGetValue(subGrid.EntityId, out var sCount))
+                        {
+                            if (sCount >= 0)
+                            {
+                                subBlockCount += sCount;
+                                break;
+                            }
+                        }
+                    }
                 }
 
-                if (subGrids.Any(sb => item.DisabledEntities.Contains(sb.EntityId)))
+                if (item.FoundEntities.TryGetValue(grid.EntityId, out var gCount))
                 {
-                    found = true;
-                    break;
+
+                    if (subBlockCount + gCount >= 0)
+                    {
+                        found = true;
+                        break;
+                    }
                 }
+                
 
 
                 if (playerFaction==null || !item.LimitFaction)continue;
-                if (!item.DisabledEntities.Contains(playerFaction.FactionId)) continue;
+
+                if (!item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount) || fCount < 0) continue;
+                
                 found = true;
                 break;
 

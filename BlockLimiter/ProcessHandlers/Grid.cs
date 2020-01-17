@@ -115,8 +115,7 @@ namespace BlockLimiter.ProcessHandlers
 
                     if (grid.Flags == (EntityFlags)4)
                     {
-                        item.DisabledEntities.Remove(grid.EntityId);
-                        item.ViolatingEntities.Remove(grid.EntityId);
+                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
                     
@@ -144,24 +143,21 @@ namespace BlockLimiter.ProcessHandlers
 
                     if (!isGridType)
                     {
-                        item.DisabledEntities.Remove(grid.EntityId);
-                        item.ViolatingEntities.Remove(grid.EntityId);
+                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
                     
                     var builders = EntityCache.GetBuilders(grid);
                     if (builders == null || builders?.Any() == false)
                     {
-                        item.DisabledEntities.Remove(grid.EntityId);
-                        item.ViolatingEntities.Remove(grid.EntityId);
+                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
 
                     if (item.IgnoreNpcs && builders.All(x => MySession.Static.Players.IdentityIsNpc(x)))
 
                     {
-                        item.DisabledEntities.Remove(grid.EntityId);
-                        item.ViolatingEntities.Remove(grid.EntityId);
+                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
 
@@ -171,8 +167,7 @@ namespace BlockLimiter.ProcessHandlers
                     
                     if (gridBlocks?.Any()== false) 
                     {
-                        item.DisabledEntities.Remove(grid.EntityId);
-                        item.ViolatingEntities.Remove(grid.EntityId);
+                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
 
@@ -186,32 +181,32 @@ namespace BlockLimiter.ProcessHandlers
                     
                     var filteredBlocksCount = filteredBlocks.Count;
 
-                    if (filteredBlocksCount < item.Limit)
+                    /*if (filteredBlocksCount < item.Limit)
                     {
                         item.DisabledEntities.Remove(grid.EntityId);
                         item.ViolatingEntities.Remove(grid.EntityId);
                         continue;
-                    }
+                    }*/
                     
                     var gridId = grid.EntityId;
                     
-                    if (!item.DisabledEntities.Contains(gridId))item.DisabledEntities.Add(gridId);
+                    /*if (!item.DisabledEntities.Contains(gridId))item.DisabledEntities.Add(gridId);
 
                     if (filteredBlocksCount <= item.Limit)
                     {
                         item.ViolatingEntities.Remove(grid.EntityId);
                         continue;
-                    }
+                    }*/
 
                     var overCount = filteredBlocksCount - item.Limit;
                     
-                    if (!item.ViolatingEntities.ContainsKey(gridId))
+                    if (!item.FoundEntities.ContainsKey(gridId))
                     {
-                        item.ViolatingEntities.Add(gridId, overCount);
+                        item.FoundEntities.Add(gridId, overCount);
                         continue;
                     }
 
-                    item.ViolatingEntities[gridId] = overCount;
+                    item.FoundEntities[gridId] = overCount;
                 }
                 
 

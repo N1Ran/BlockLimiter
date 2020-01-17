@@ -81,15 +81,13 @@ namespace BlockLimiter.ProcessHandlers
                 {
                     if (item.IgnoreNpcs && faction.IsEveryoneNpc())
                     {
-                        item.DisabledEntities.Remove(factionId);
-                        item.ViolatingEntities.Remove(factionId);
+                        item.FoundEntities.Remove(factionId);
                         continue;
                     }
 
                     if (!faction.Members.Values.Any(x => MySession.Static.Players.IsPlayerOnline(x.PlayerId)))
                     {
-                        item.DisabledEntities.Remove(factionId);
-                        item.ViolatingEntities.Remove(factionId);
+                        item.FoundEntities.Remove(factionId);
                         continue;
                     }
 
@@ -103,29 +101,15 @@ namespace BlockLimiter.ProcessHandlers
                    
                     var filteredBlocksCount = filteredBlocks.Count;
                     
-                    if (filteredBlocksCount < item.Limit)
-                    {
-                        item.DisabledEntities.Remove(factionId);
-                        item.ViolatingEntities.Remove(factionId);
-                        continue;
-                    }
-                    if (!item.DisabledEntities.Contains(faction.FactionId))item.DisabledEntities.Add(faction.FactionId);
-
-                    if (filteredBlocksCount <= item.Limit)
-                    {
-                        item.ViolatingEntities.Remove(factionId);
-                        continue;
-                    }
-
                     var overCount = filteredBlocksCount - item.Limit;
 
-                    if (!item.ViolatingEntities.ContainsKey(factionId))
+                    if (!item.FoundEntities.ContainsKey(factionId))
                     {
-                        item.ViolatingEntities.Add(factionId,overCount);
+                        item.FoundEntities.Add(factionId,overCount);
                     }
 
-                    item.ViolatingEntities[factionId] = overCount;
-
+                    item.FoundEntities[factionId] = overCount;
+                    
                 }
                 
             }

@@ -35,10 +35,12 @@ namespace BlockLimiter.Punishment
 
             var onlinePlayers = MySession.Static.Players.GetOnlinePlayers().ToList();
             var annoyList = new List<ulong>();
-            var violatingEntities = limitItems.SelectMany(x => x.ViolatingEntities.Keys).ToList();
-            if (!onlinePlayers.Any() || !violatingEntities.Any())return;
+            var violatingEntities = limitItems.SelectMany(x=>x.FoundEntities).ToList();
+            
+            if (onlinePlayers?.Any()==false || violatingEntities?.Any()==false)return;
 
 
+            var pairs = violatingEntities.ToList();
             foreach (var player in onlinePlayers)
             {
                 var playerId = player.Id.SteamId;
@@ -46,9 +48,9 @@ namespace BlockLimiter.Punishment
                 if (annoyList.Contains(playerId))continue;
 
                 var playerFaction = MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId);
-                foreach (var identity in violatingEntities)
+                foreach (var (identity,count) in violatingEntities)
                 {
-                    
+                    if (count < 1) continue;
 
                     if (identity == player.Identity.IdentityId)
                     {

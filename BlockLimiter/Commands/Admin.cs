@@ -13,9 +13,11 @@ using Sandbox.Game.Entities.Character;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using Torch.Commands;
+using Torch.Commands.Permissions;
 using Torch.Mod;
 using Torch.Mod.Messages;
 using VRage.Game;
+using VRage.Game.ModAPI;
 using VRage.ObjectBuilders;
 
 namespace BlockLimiter.Commands
@@ -23,11 +25,12 @@ namespace BlockLimiter.Commands
     public partial class Player
     {
         [Command("violations", "gets the list of violations per limit")]
+        [Permission(MyPromoteLevel.Moderator)]
         public void GetViolations()
         {
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
 
-            if (!limitItems.Any(x=>x.ViolatingEntities.Any()))
+            if (!limitItems.Any(x=>x.FoundEntities.Any()))
             {
                 Context.Respond("No violations found");
                 return;
@@ -58,50 +61,39 @@ namespace BlockLimiter.Commands
             }
             
             var sb = new StringBuilder();
+            
             foreach (var item in limitItems)
             {
-                if (!item.BlockPairName.Any() || !item.ViolatingEntities.Any()) continue;
-                var limitName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
-                var violatingEntities = item.ViolatingEntities.Select(y=>y.Key).ToList();
-                var factions = violatingEntities.Select(de => MySession.Static.Factions.TryGetFactionById(de)).Where(x=>x!=null).ToList();
-                var players = violatingEntities.Select(de => MySession.Static.Players.TryGetIdentity(de)).Where(x=>x!=null).ToList();
-                var grids = violatingEntities.Select(de => MyEntities.GetEntityById(de)).OfType<MyCubeGrid>().ToList();
-                sb.AppendLine();
-                sb.AppendLine($"{limitName}");
-                if (factions.Any())
-                {
-                    sb.AppendLine("Violating Factions: ");
-                    foreach (var faction in factions)
-                    {
-                        sb.AppendLine(
-                            $"[{faction.Name} -- {faction.Tag}] -- {item.ViolatingEntities[faction.FactionId] + item.Limit}/{item.Limit}");
-                    }
-
-                }
+                if (!item.BlockPairName.Any() || !item.FoundEntities.Any(x => x.Value > 0)) continue;
                 
-                if (players.Any())
+                var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
+
+                sb.AppendLine($"{itemName} Violators");
+
+                foreach (var (entity,count) in item.FoundEntities)
                 {
-                    sb.AppendLine("Violating Players: ");
-                    foreach (var player in players)
+                    if (count <= 0) continue;
+                    
+                    var faction = MySession.Static.Factions.TryGetFactionById(entity);
+                    if (faction != null)
                     {
-                        sb.AppendLine(
-                            $"[{player.DisplayName} -- {player.IdentityId}] -- {item.ViolatingEntities[player.IdentityId] + item.Limit}/{item.Limit}");
+                        sb.AppendLine($"FactionLimit for {faction.Tag} = {item.Limit + count}/{item.Limit}");
+                        continue;
                     }
-                    sb.AppendLine();
-                }
 
-                if (grids.Any())
-                {
-                    sb.AppendLine("Violating Grids: ");
-                    foreach (var grid in grids)
+                    var player = MySession.Static.Players.TryGetIdentity(entity);
+                    if (player != null)
                     {
-                        sb.AppendLine(
-                            $"[{grid.DisplayName} -- {grid.EntityId}] -- {item.ViolatingEntities[grid.EntityId] + item.Limit}/{item.Limit}");
+                        sb.AppendLine($"PlayerLimit for {player.DisplayName} = {item.Limit + count}/{item.Limit}");
+                        continue;
                     }
+                    
+                    if(!EntityCache.TryGetEntityById(entity, out var grid)|| !(grid is MyCubeGrid))continue;
+                    sb.AppendLine($"GridLimit for {grid.DisplayName} =  {item.Limit + count}/{item.Limit}");
                 }
-
-
             }
+
+            sb.AppendLine();
 
 
             if (Context.Player == null || Context.Player.IdentityId == 0)
@@ -121,7 +113,7 @@ namespace BlockLimiter.Commands
             
             if (long.TryParse(id, out var identityId))
             {
-               sb = GetLimit(identityId);
+               sb = Utilities.GetLimit(identityId);
             }
 
             else
@@ -140,7 +132,7 @@ namespace BlockLimiter.Commands
                     Context.Respond("Player not found");
                     return;
                 }
-                sb = GetLimit(playerId);
+                sb = Utilities.GetLimit(playerId);
             }
             
             if (Context.Player == null || Context.Player.IdentityId == 0)
@@ -169,8 +161,39 @@ namespace BlockLimiter.Commands
                 Context.Respond($"Faction with tag {factionTag} not found");
                 return;
             }
+            var sb = new StringBuilder();
+            
+            var limitItems = new List<LimitItem>();
+            
+            limitItems.AddRange(BlockLimiterConfig.Instance.AllLimits);
+
+            if (!limitItems.Any())
+            {
+                Context.Respond("No limit found");
+                return;
+            }
+
+            sb.AppendLine($"Faction Limits for {faction.Tag}");
+
+            foreach (var item in limitItems.Where(x=>x.LimitFaction))
+            {
+                {
+                    if (!item.FoundEntities.TryGetValue(faction.FactionId, out var fCount))continue;
+
+                    var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
+                        
+                    sb.AppendLine($"-->{itemName} = {fCount + item.Limit}/{item.Limit}");
+                }
+            }
             
             
+            if (Context.Player == null || Context.Player.IdentityId == 0)
+            {
+                Context.Respond(sb.ToString());
+                return;
+            }
+
+            ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"Faction Limits",sb.ToString()),Context.Player.SteamUserId);
         }
 
         

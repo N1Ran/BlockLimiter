@@ -44,7 +44,7 @@ namespace BlockLimiter.Commands
             
             var sb = new StringBuilder();
 
-            sb = GetLimit(playerId);
+            sb = Utilities.GetLimit(playerId);
 
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"PlayerLimit",sb.ToString()),Context.Player.SteamUserId);
 
@@ -85,77 +85,5 @@ namespace BlockLimiter.Commands
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of Limits",sb.ToString()),Context.Player.SteamUserId);
         }
 
-
-        public StringBuilder GetLimit(long playerId)
-        {
-            
-            var sb = new StringBuilder();
-            if (playerId == 0)
-            {
-                sb.AppendLine("Player not found");
-                return sb;
-            }
-            var newList = BlockLimiterConfig.Instance.AllLimits;
-
-            if (!newList.Any())
-            {
-                sb.AppendLine("No limit found");
-                return sb;
-            }
-            
-            var grids = MyEntities.GetEntities().OfType<MyCubeGrid>().ToList();
-
-            var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
-
-            foreach (var item in newList)
-            {
-                if (!item.BlockPairName.Any()) continue;
-                var itemName = string.IsNullOrEmpty(item.Name)?item.BlockPairName.FirstOrDefault():item.Name;
-                sb.AppendLine(itemName);
-                var count = 0;
-                if (item.LimitPlayers)
-                {
-                    foreach (var block in grids.SelectMany(x=>x.CubeBlocks))
-                    {
-                        if (!Utilities.IsOwner(item.BlockOwnerState, block, playerId)) continue;
-                        if (!Utilities.IsMatch(block.BlockDefinition,item)) continue;
-                        count++;
-                    }
-                    sb.AppendLine($"Player Limit = {count}/{item.Limit}");
-                }
-
-                if (item.LimitGrids)
-                {
-                    sb.AppendLine("Grid Limits");
-                    foreach (var grid in grids.Where(x=>x.BigOwners.Contains(playerId)))
-                    {
-                        count = 0;
-                        var gridBlocks = grid.CubeBlocks;
-                        foreach (var block in gridBlocks)
-                        {
-                            if (!Utilities.IsMatch(block.BlockDefinition,item)) continue;
-                            count++;
-                        }
-                        sb.AppendLine($"->{grid.DisplayName} = {count}/{item.Limit}");
-                    }
-                }
-                
-                if (playerFaction == null || !item.LimitFaction) continue;
-                count = 0;
-                foreach (var block in grids.SelectMany(g=>g.CubeBlocks))
-                {
-                    if (!block.FatBlock.GetOwnerFactionTag().Equals(playerFaction.Tag)) continue;
-                    if (!Utilities.IsMatch(block.BlockDefinition, item)) continue;
-                    count++;
-                    sb.AppendLine($"Faction Limit [{playerFaction.Tag}] = {count}/{item.Limit}");
-                }
-
-                sb.AppendLine();
-
-            }
-
-            return sb;
-
-        }
     }
 }

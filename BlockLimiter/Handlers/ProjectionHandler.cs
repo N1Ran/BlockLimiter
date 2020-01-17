@@ -151,15 +151,22 @@ namespace BlockLimiter.Handlers
                     break;
                 }
 
-                if (item.DisabledEntities.Contains(playerId))
+                if (item.FoundEntities.TryGetValue(playerId, out var playerCount))
                 {
-                    remove = true;
-                    break;
+                    if (playerCount >= 0)
+                    {
+                        remove = true;
+                        break;
+                    }
                 }
 
 
                 if (playerFaction==null)break;
-                if (!item.DisabledEntities.Contains(playerFaction.FactionId)) continue;
+                if (!item.FoundEntities.TryGetValue(playerId, out var factionCount)|| factionCount >= 0)
+                {
+                    continue;
+                }
+
                 remove = true;
                 break;
 

@@ -118,15 +118,18 @@ namespace BlockLimiter.Handlers
                     break;
                 }
 
-                if (item.DisabledEntities.Contains(playerId))
+                if (item.FoundEntities.TryGetValue(playerId, out var pCount))
                 {
-                    found = true;
-                    break;
+                    if (pCount >= 0)
+                    {
+                        found = true;
+                        break;
+                    }
                 }
 
 
                 if (playerFaction==null)break;
-                if (!item.DisabledEntities.Contains(playerFaction.FactionId)) continue;
+                if (!item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount) || fCount < 0) continue;
                 found = true;
                 break;
 

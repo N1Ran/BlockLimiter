@@ -60,12 +60,19 @@ namespace BlockLimiter.Punishment
 
             foreach (var item in limitItems)
             {
-                if (!item.ViolatingEntities.Any() ||
+                if (!item.FoundEntities.Any() ||
                     item.Punishment == LimitItem.PunishmentType.None) continue;
+                
+                
+                
                 var count = 0;
-                foreach (var (id,overCount) in item.ViolatingEntities)
+                
+                foreach (var (id,overCount) in item.FoundEntities)
                 {
                     if (item.Exceptions.Contains(id.ToString())) continue;
+
+                    if (overCount - item.Limit <= 0) continue;
+                    
                     if (overCount - count <= 0)
                     {
                         continue;

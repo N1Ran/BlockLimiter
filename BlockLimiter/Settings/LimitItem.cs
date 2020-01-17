@@ -25,19 +25,20 @@ namespace BlockLimiter.Settings
         private List<string> _exceptions = new List<string>();
         private int _limit;
         private bool _restrictProjection;
-        private MyConcurrentHashSet<long> _disabledEntities = new MyConcurrentHashSet<long>();
-        private MyConcurrentDictionary<long,double> _violatingEntities = new MyConcurrentDictionary<long, double>();
+        //private MyConcurrentHashSet<long> _disabledEntities = new MyConcurrentHashSet<long>();
+        private MyConcurrentDictionary<long,double> _foundEntities = new MyConcurrentDictionary<long, double>();
         private bool _ignoreNpc;
         private OwnerState _ownerState = OwnerState.BuiltbyId;
 
 
-        [XmlIgnore]
+        /*[XmlIgnore]
         [Display(Visible = false)]
         public MyConcurrentHashSet<long> DisabledEntities => _disabledEntities;
-
+        */
+        
         [XmlIgnore]
         [Display(Visible = false)]
-        public MyConcurrentDictionary<long,double> ViolatingEntities => _violatingEntities;
+        public MyConcurrentDictionary<long,double> FoundEntities => _foundEntities;
 
 
 
@@ -193,8 +194,8 @@ namespace BlockLimiter.Settings
 
         public void BlockReset()
         {
-            _violatingEntities.Clear();
-            _disabledEntities.Clear();
+            _foundEntities.Clear();
+            //_disabledEntities.Clear();
         }
         
         public override string ToString()

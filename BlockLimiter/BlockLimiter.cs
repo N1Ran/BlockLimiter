@@ -263,18 +263,29 @@ namespace BlockLimiter
 
                     foreach (var block in gridBlocks)
                     {
-                        if (item.DisabledEntities.Contains(block.BuiltBy) ||
-                            item.DisabledEntities.Contains(block.Owner))
+                        if (item.FoundEntities.TryGetValue(block.BuiltBy, out var bCount))
                         {
-                            hasLimit = true;
-                            break;
+                            if (bCount >= 0)
+                            {
+                                hasLimit = true;
+                                break;
+                            }
+                        }
+                        
+                        if (item.FoundEntities.TryGetValue(block.Owner, out var oCount))
+                        {
+                            if (bCount >= 0)
+                            {
+                                hasLimit = true;
+                                break;
+                            }
                         }
 
                         var ownerFaction = MySession.Static.Factions.GetPlayerFaction(block.BuiltBy);
 
                         if (ownerFaction == null) continue;
 
-                        if (!item.DisabledEntities.Contains(ownerFaction.FactionId)) continue;
+                        if (!item.FoundEntities.ContainsKey(ownerFaction.FactionId)) continue;
 
                         hasLimit = true;
                         break;
