@@ -29,7 +29,7 @@ namespace BlockLimiter.ProcessHandlers
 
         public override int GetUpdateResolution()
         {
-            return 200;
+            return 700;
         }
 
         /// <summary>
@@ -45,12 +45,10 @@ namespace BlockLimiter.ProcessHandlers
             
             _entityCache.Clear();
             EntityCache.GetEntities(_entityCache);
-            
-            var grids = _entityCache.OfType<MyCubeGrid>().ToList();
 
-            if (grids?.Any() == false)
+
+            if (!_entityCache.Any())
             {
-                Log.Debug("No grid found");
                 return;
             }
 
@@ -62,9 +60,10 @@ namespace BlockLimiter.ProcessHandlers
                 return;
             }
             
-            foreach (var grid in grids)
+            foreach (var myEntity in _entityCache)
             {
-                if (grid == null || grid.EntityId == 0)
+                if (!(myEntity is MyCubeGrid grid)) continue;
+                if (grid.EntityId == 0)
                 {
                     continue;
                 }
@@ -104,12 +103,22 @@ namespace BlockLimiter.ProcessHandlers
                     }
                 }
                     
-                    
+                var builders = EntityCache.GetBuilders(grid);
+                var gridBlocks = new List<MySlimBlock>();
+                gridBlocks.AddRange(grid.CubeBlocks);
+                var gridId = grid.EntityId;
 
                 foreach (var item in limitItems)
                 {
                     if (!item.BlockPairName.Any() || !item.LimitGrids)
                     {
+                        continue;
+                    }
+
+                    if (item.Exceptions.Contains(grid.EntityId.ToString()) ||
+                        item.Exceptions.Contains(grid.DisplayName))
+                    {
+                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
 
@@ -147,7 +156,6 @@ namespace BlockLimiter.ProcessHandlers
                         continue;
                     }
                     
-                    var builders = EntityCache.GetBuilders(grid);
                     if (builders == null || builders?.Any() == false)
                     {
                         item.FoundEntities.Remove(grid.EntityId);
@@ -160,10 +168,6 @@ namespace BlockLimiter.ProcessHandlers
                         item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
-
-                    var gridBlocks = new List<MySlimBlock>();
-                    
-                    gridBlocks.AddRange(grid.CubeBlocks);
                     
                     if (gridBlocks?.Any()== false) 
                     {
@@ -188,7 +192,6 @@ namespace BlockLimiter.ProcessHandlers
                         continue;
                     }*/
                     
-                    var gridId = grid.EntityId;
                     
                     /*if (!item.DisabledEntities.Contains(gridId))item.DisabledEntities.Add(gridId);
 

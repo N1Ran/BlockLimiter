@@ -102,7 +102,7 @@ namespace BlockLimiter.Commands
                 return;
             }
 
-            ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of Violatons",sb.ToString()),Context.Player.SteamUserId);
+            ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of Violations",sb.ToString()),Context.Player.SteamUserId);
 
         }
 

@@ -27,7 +27,7 @@ namespace BlockLimiter.ProcessHandlers
 
         public override int GetUpdateResolution()
         {
-            return 400;
+            return 800;
         }
 
         public override void Handle()

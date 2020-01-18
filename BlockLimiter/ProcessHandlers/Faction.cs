@@ -30,7 +30,7 @@ namespace BlockLimiter.ProcessHandlers
 
         public override int GetUpdateResolution()
         {
-            return 200;
+            return 900;
         }
 
 

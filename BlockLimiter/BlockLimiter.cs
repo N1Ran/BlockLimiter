@@ -32,7 +32,7 @@ namespace BlockLimiter
         private PatchManager _pm;
         private PatchContext _context;
 
-        public Logger Log = LogManager.GetLogger("BlockLimiter");
+        private readonly Logger _log = LogManager.GetLogger("BlockLimiter");
         private Thread _processThread;
         private List<Thread> _processThreads;
         private static bool _running;
@@ -121,7 +121,7 @@ namespace BlockLimiter
                                 catch (Exception ex)
                                 {
                                     if (BlockLimiterConfig.Instance.EnableLog)
-                                        Log.Warn("Handler Problems: {0} - {1}", currentHandler.GetUpdateResolution(),
+                                        _log.Warn("Handler Problems: {0} - {1}", currentHandler.GetUpdateResolution(),
                                             ex);
                                 }
 
@@ -143,12 +143,12 @@ namespace BlockLimiter
             catch (ThreadAbortException ex)
             {
                 if (BlockLimiterConfig.Instance.EnableLog) 
-                    Log.Trace(ex);
+                    _log.Trace(ex);
             }
             catch (Exception ex)
             {
                 if (BlockLimiterConfig.Instance.EnableLog) 
-                    Log.Error(ex);
+                    _log.Error(ex);
             }
         }
 
