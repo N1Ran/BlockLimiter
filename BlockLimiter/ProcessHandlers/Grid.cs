@@ -88,11 +88,11 @@ namespace BlockLimiter.ProcessHandlers
                         continue;
                     }
 
-                    /*if (grid.Flags == (EntityFlags)4)
+                    if (grid.Flags == (EntityFlags)4)
                     {
                         item.FoundEntities.Remove(grid.EntityId);
                         continue;
-                    }*/
+                    }
 
                     if (grid.MarkedForClose || grid.MarkedForClose)
                     {

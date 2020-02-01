@@ -16,6 +16,7 @@ using Torch.Managers;
 using Torch.Mod;
 using Torch.Mod.Messages;
 using Torch.Utils;
+using VRage.Dedicated.Configurator;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.ModAPI;
@@ -117,6 +118,17 @@ namespace BlockLimiter.Utility
             return correctOwner;
         }
         
+        public static void UpdateLimits(bool useVanilla, out HashSet<LimitItem> items)
+        {
+            items = new HashSet<LimitItem>();
+            if (useVanilla && BlockLimiter.Instance.VanillaLimits.Count > 0)
+            {
+                items.UnionWith(BlockLimiter.Instance.VanillaLimits);
+            }
+
+            items.UnionWith(BlockLimiterConfig.Instance.LimitItems);
+        }
+
         public static StringBuilder GetLimit(long playerId)
         {
             
@@ -138,6 +150,35 @@ namespace BlockLimiter.Utility
 
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
 
+
+            if (BlockLimiterConfig.Instance.DisabledEntities.Count > 0)
+            {
+                sb.AppendLine("General Block Limit is Active on the server");
+                foreach (var id in BlockLimiterConfig.Instance.DisabledEntities)
+                {
+                    if (!GridCache.TryGetGridById(id, out var grid)|| !grid.BigOwners.Contains(playerId))continue;
+                    sb.AppendLine();
+                    sb.AppendLine($"GridName = {grid.DisplayName}");
+                    if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !grid.IsStatic)
+                    {
+                        sb.AppendLine($"GridSize Ship Limit = {grid.CubeBlocks.Count}/{BlockLimiterConfig.Instance.MaxBlockSizeShips}");
+                    }
+                    if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && grid.IsStatic)
+                    {
+                        sb.AppendLine($"GridSize Station Limit = {grid.CubeBlocks.Count}/{BlockLimiterConfig.Instance.MaxBlockSizeShips}");
+                    }
+                    if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && grid.GridSizeEnum == MyCubeSize.Large)
+                    {
+                        sb.AppendLine($"GridSize LargeGrid Limit = {grid.CubeBlocks.Count}/{BlockLimiterConfig.Instance.MaxBlockSizeShips}");
+                    }
+                    if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && grid.GridSizeEnum == MyCubeSize.Small)
+                    {
+                        sb.AppendLine($"GridSize SmallGrid Limit = {grid.CubeBlocks.Count}/{BlockLimiterConfig.Instance.MaxBlockSizeShips}");
+                    }
+                }
+                
+            }
+            
             sb.AppendLine($"{limitItems.Count} limits found on this server");
 
             foreach (var item in limitItems)

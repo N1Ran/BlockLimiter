@@ -60,7 +60,7 @@ namespace BlockLimiter
             _processThread.Start();
 
             GetVanillaLimits();
-            BlockLimiterConfig.Instance.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits);
+            Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits, out BlockLimiterConfig.Instance.AllLimits);
         }
 
         private void GetVanillaLimits()

@@ -96,53 +96,6 @@ namespace BlockLimiter.ProcessHandlers
                 }
             }
 
-            /*foreach (var item in limitItems)
-            {
-
-                if (!item.LimitPlayers || item.BlockPairName.Count < 1) continue;
-                
-                foreach (var player in players)
-                {
-                    var playerId= player.Identity.IdentityId;
-                    if (playerId == 0)continue;
-
-                    var playerBlocks = new HashSet<MySlimBlock>();
-                    
-                    playerBlocks.UnionWith(_blockCache.Where(x=> Utilities.IsMatch(x.BlockDefinition,item) && Utilities.IsOwner(item.BlockOwnerState, x, playerId)));
-
-                   foreach (var block in _blockCache)
-                    {
-                        if (!Utilities.IsMatch(block.BlockDefinition, item)) continue;
-                        if (!Utilities.IsOwner(item.BlockOwnerState, block, playerId)) continue;
-                        playerBlocks.Add(block);
-                    }
-                    
-                    if (playerBlocks.Count < 1)
-                    {
-                        item.FoundEntities.Remove(playerId);
-                        continue;
-                    }
-
-
-                    if (item.IgnoreNpcs && MySession.Static.Players.IdentityIsNpc(playerId))
-                    {
-                        item.FoundEntities.Remove(playerId);
-                        continue;
-                    }
-
-                    var filteredBlocksCount = playerBlocks.Count;
-                    
-                    var overCount = filteredBlocksCount - item.Limit;
-                    
-                    if (!item.FoundEntities.ContainsKey(playerId))
-                    {
-                        item.FoundEntities.Add(playerId, overCount);
-                    }
-
-                    item.FoundEntities[playerId] = overCount;
-                }
-
-            }*/
 
             _blockCache.Clear();
             

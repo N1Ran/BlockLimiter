@@ -136,7 +136,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _vanillaLimits = value;
-                Instance.UpdateLimits(_vanillaLimits);
+                Utilities.UpdateLimits(_vanillaLimits, out AllLimits);
                 OnPropertyChanged();
                 Instance.Save();
             }
@@ -265,18 +265,6 @@ namespace BlockLimiter.Settings
             }
         }
         
-        public void UpdateLimits(bool useVanilla)
-        {
-            AllLimits.Clear();
-            if (useVanilla && BlockLimiter.Instance.VanillaLimits.Any())
-            {
-                AllLimits.UnionWith(BlockLimiter.Instance.VanillaLimits);
-            }
-
-            AllLimits.UnionWith(Instance.LimitItems);
-        }
-
-
         /// <summary>
         ///     Saves our settings
         /// </summary>
@@ -324,7 +312,7 @@ namespace BlockLimiter.Settings
 private void ItemsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 {
     OnPropertyChanged();
-    UpdateLimits(UseVanillaLimits);
+    Utilities.UpdateLimits(UseVanillaLimits, out AllLimits);
     Instance.Save(); 
 }
 
