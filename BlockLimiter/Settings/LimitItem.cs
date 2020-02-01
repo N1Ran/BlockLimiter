@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Torch;
 using Torch.Views;
@@ -7,6 +8,7 @@ using System.Xml.Serialization;
 using VRage;
 using VRage.Collections;
 using VRage.Dedicated.Configurator;
+using VRage.Profiler;
 
 namespace BlockLimiter.Settings
 {
@@ -18,6 +20,7 @@ namespace BlockLimiter.Settings
         private bool _limitFaction;
         private bool _limitGrids;
         private bool _limitPlayer;
+        private bool _useBlockType;
         private PunishmentType _punishType = PunishmentType.None;
         private GridType _gridType = GridType.AllGrids;
         private string _name;
@@ -25,16 +28,11 @@ namespace BlockLimiter.Settings
         private List<string> _exceptions = new List<string>();
         private int _limit;
         private bool _restrictProjection;
-        //private MyConcurrentHashSet<long> _disabledEntities = new MyConcurrentHashSet<long>();
         private MyConcurrentDictionary<long,double> _foundEntities = new MyConcurrentDictionary<long, double>();
         private bool _ignoreNpc;
         private OwnerState _ownerState = OwnerState.BuiltbyId;
 
 
-        /*[XmlIgnore]
-        [Display(Visible = false)]
-        public MyConcurrentHashSet<long> DisabledEntities => _disabledEntities;
-        */
         
         [XmlIgnore]
         [Display(Visible = false)]
@@ -64,6 +62,13 @@ namespace BlockLimiter.Settings
                 OnPropertyChanged();
                 Save();
             }
+        }
+        
+        [Display(Name = "Use BlockType", Description = "Sets the limit to use blocktypes")]
+        public bool UseBlockType
+        {
+            get => _useBlockType;
+            set => _useBlockType = value;
         }
 
         [Display(Name = "Exceptions", Description = "List of player or grid exception. You can also use entityId.")]
@@ -192,10 +197,9 @@ namespace BlockLimiter.Settings
             }
         }
 
-        public void BlockReset()
+        private  void BlockReset()
         {
             _foundEntities.Clear();
-            //_disabledEntities.Clear();
         }
         
         public override string ToString()
@@ -204,13 +208,9 @@ namespace BlockLimiter.Settings
             return $"{useName} - [{BlockPairName.Count} : {Limit}]";
         }
 
-        private static void Save()
+        private void Save()
         {
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
-            {
-                limit.BlockReset();
-            }
-            
+            BlockReset();
             BlockLimiterConfig.Instance.Save();
         }
         

@@ -58,7 +58,7 @@ namespace BlockLimiter.Punishment
                         break;
                     }
 
-                    if (EntityCache.TryGetEntityById(identity, out var grid) && ((MyCubeGrid)grid).BigOwners.Contains(player.Identity.IdentityId))
+                    if (GridCache.TryGetGridById(identity, out var grid) && ((MyCubeGrid)grid).BigOwners.Contains(player.Identity.IdentityId))
                     {
                         annoyList.Add(playerId);
                         break;

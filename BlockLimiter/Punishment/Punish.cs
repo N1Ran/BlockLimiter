@@ -44,7 +44,7 @@ namespace BlockLimiter.Punishment
             
 
             _entityCache.Clear();
-            EntityCache.GetEntities(_entityCache);
+            GridCache.GetGrids(_entityCache);
             var grids = new List<MyCubeGrid>();
             
             grids.AddRange(_entityCache.OfType<MyCubeGrid>());
@@ -80,7 +80,7 @@ namespace BlockLimiter.Punishment
                     
                     if (player != null)
                     {
-                        if (item.Exceptions.Contains(player.IdentityId.ToString())) continue;
+                        if (item.Exceptions.Contains(player.DisplayName)) continue;
                         foreach (var block in grids.SelectMany(x=>x.GetBlocks()))
                         {
                             if (overCount - count <= 0) break;
@@ -94,7 +94,7 @@ namespace BlockLimiter.Punishment
 
                     }
 
-                    if (EntityCache.TryGetEntityById(id, out var entity))
+                    if (GridCache.TryGetGridById(id, out var entity))
                     {
                         if (entity is MyCubeGrid grid)
                         {
@@ -103,8 +103,8 @@ namespace BlockLimiter.Punishment
                                 if (grid.BigOwners.Any(x=>MySession.Static.Players.IdentityIsNpc(x)))
                                     continue;
                             }
-
-                            foreach (var block in grid.GetBlocks())
+                            
+                            foreach (var block in grid.CubeBlocks)
                             {
                                 if (overCount - count <= 0) break;
                                 if (!Utilities.IsMatch(block.BlockDefinition,item))continue;

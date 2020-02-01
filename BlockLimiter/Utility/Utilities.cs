@@ -87,16 +87,10 @@ namespace BlockLimiter.Utility
 
         public static bool IsMatch(MyCubeBlockDefinition block, LimitItem item)
         {
-            var found = false;
-            if (item.BlockPairName.Count < 1) return false;
-            foreach (var name in item.BlockPairName)
-            {
-                if (!name.Equals(block.BlockPairName, StringComparison.OrdinalIgnoreCase)) continue;
-                found = true;
-                break;
-            }
-
-            return found;
+            if (item.UseBlockType)
+                return item.BlockPairName.Count > 0 && item.BlockPairName.Any(x =>
+                           x.Equals(block.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase));
+            return item.BlockPairName.Count> 0 && item.BlockPairName.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase));
         }
 
         public static bool IsOwner(LimitItem.OwnerState state, MySlimBlock block, long playerId)
@@ -133,107 +127,58 @@ namespace BlockLimiter.Utility
                 return sb;
             }
 
-            var limitItems = new List<LimitItem>();
+            var limitItems = BlockLimiterConfig.Instance.AllLimits;
             
-            limitItems.AddRange(BlockLimiterConfig.Instance.AllLimits);
-
-            if (!limitItems.Any())
+            if (limitItems.Count < 1)
             {
                 sb.AppendLine("No limit found");
                 return sb;
             }
             
-            var grids = MyEntities.GetEntities().OfType<MyCubeGrid>().ToList();
 
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
 
-            foreach (var item in limitItems.Where(x =>x.LimitPlayers))
+            sb.AppendLine($"{limitItems.Count} limits found on this server");
+
+            foreach (var item in limitItems)
             {
-                if (!item.BlockPairName.Any()) continue;
+                if (item.BlockPairName.Count == 0 || item.FoundEntities.Count == 0) continue;
+                
+                sb.AppendLine();
                 var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
-                if (item.LimitPlayers)
+
+                sb.AppendLine($"----->{itemName}<-----");
+
+                if (item.LimitPlayers && item.FoundEntities.TryGetValue(playerId, out var pCount))
                 {
-                    if (!item.FoundEntities.TryGetValue(playerId, out var pCount)) continue;
-                    sb.AppendLine($"-->{itemName} Player Limit = {pCount + item.Limit}/{item.Limit}");
+                    var count = pCount + item.Limit;
+                    if (count < 1) continue;
+                    sb.AppendLine($"Player Limit = {count}/{item.Limit}");
                 }
-            }
 
-            foreach (var item in limitItems.Where(x=>x.LimitFaction))
-            {
+                if (item.LimitFaction && playerFaction != null &&
+                    item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount))
                 {
-
-                    if (playerFaction == null) continue;
-                    if (!item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount))continue;
-
-                    sb.AppendLine($"-->Faction Limit = {fCount - item.Limit}/{item.Limit}");
+                    var count = fCount + item.Limit;
+                    if (count < 1) continue;
+                    sb.AppendLine($"Faction Limit = {count}/{item.Limit} ");
                 }
-            }
 
-            var playerGrids = grids.Where(x => x.BigOwners.Contains(playerId)).ToList();
+                if (!item.LimitGrids || !item.FoundEntities.Any(x =>
+                    GridCache.TryGetGridById(x.Key, out var grid) && grid.BigOwners.Contains(playerId))) continue;
 
-            if (playerGrids?.Any() == true)
-            {
                 sb.AppendLine("Grid Limits");
-                foreach (var grid in playerGrids)
+
+                foreach (var (id,gCount) in item.FoundEntities)
                 {
-                    var isStatic = grid.IsStatic;
-                    var gridSize = grid.GridSizeEnum;
-                    var blockCount = grid.BlocksCount;
-                
-                    string gridType = isStatic ? "Station" : "Static";
-                    sb.AppendLine($"GridName = {grid.DisplayName}");
-                    sb.AppendLine($"->GridType = {gridType}");
-               
-                    if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && grid.IsStatic)
-                    {
-                        sb.AppendLine($"->Active Station Limit = {blockCount}/{BlockLimiterConfig.Instance.MaxBlockSizeStations}");
-                    }
-                
-                    if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !grid.IsStatic)
-                    {
-                        sb.AppendLine($"->Active Moving Grid Limit = {blockCount}/{BlockLimiterConfig.Instance.MaxBlockSizeShips}");
-                    }
-                
-                    if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridSize == MyCubeSize.Large)
-                    {
-                        sb.AppendLine($"->Active LargeGrid Limit = {blockCount}/{BlockLimiterConfig.Instance.MaxBlocksLargeGrid}");
-                    }
-                
-                    if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && gridSize == MyCubeSize.Small)
-                    {
-                        sb.AppendLine($"->Active SmallGrid Limit = {blockCount}/{BlockLimiterConfig.Instance.MaxBlocksSmallGrid}");
-                    }
-                
-                    foreach (var item in limitItems)
-                    {
-                        if (!item.BlockPairName.Any() || !item.LimitGrids) continue;
-
-                        var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
-
-                        if (!item.FoundEntities.TryGetValue(grid.EntityId, out var count))continue;
-                        sb.AppendLine($"-->{itemName} = {count+item.Limit}/{item.Limit}");
-                    }
-
-                    sb.AppendLine();
-
+                    if (!GridCache.TryGetGridById(id, out var grid) || !grid.BigOwners.Contains(playerId)) continue;
+                    var count = gCount + item.Limit;
+                    if (count < 1) continue;
+                    sb.AppendLine($"->{grid.DisplayName} = {count} / {item.Limit}");
                 }
+
             }
-            if (playerFaction != null)
-            {
-                sb.AppendLine($"Faction Limits for {playerFaction.Tag}");
-
-                foreach (var item in limitItems.Where(x=>x.LimitFaction))
-                {
-                    {
-                        var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
-                        
-                        if (!item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount))continue;
-
-                        sb.AppendLine($"-->{itemName} = {fCount + item.Limit}/{item.Limit}");
-                    }
-                }
-            }
-
+            
 
             return sb;
 

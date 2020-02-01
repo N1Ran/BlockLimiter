@@ -8,22 +8,23 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using VRage;
 using VRage.Game.Entity;
+using VRage.ModAPI;
 
 namespace BlockLimiter.Utility
 {
     /// <summary>
     /// Thread safe wrapper to get entities
     /// </summary>
-    public static class EntityCache
+    public static class GridCache
     {
-        private static readonly HashSet<MyEntity> _entityCache = new HashSet<MyEntity>();
+        private static readonly HashSet<MyCubeGrid> _gridCache = new HashSet<MyCubeGrid>();
         private static readonly Dictionary<long, List<long>> _bigBuilders = new Dictionary<long, List<long>>();
         private static readonly HashSet<MyCubeGrid> _dirtyEntities = new HashSet<MyCubeGrid>();
         private static int _updateCounter;
         private static readonly FastResourceLock _entityLock = new FastResourceLock();
         private static readonly FastResourceLock _builderLock = new FastResourceLock();
 
-       static EntityCache()
+       static GridCache()
         {
             BlockLimiter.SlimOwnerChanged += SlimOwnerChanged;
         }
@@ -42,10 +43,10 @@ namespace BlockLimiter.Utility
             {
                 var e = MyEntities.GetEntities();
                 //KEEN WHAT THE FUCK ARE YOU **DOING?!?!**
-                if (e.Any())
+                if (e.Count > 0)
                 {
-                    _entityCache.Clear();
-                    _entityCache.UnionWith(e);
+                    _gridCache.Clear();
+                    _gridCache.UnionWith(e.OfType<MyCubeGrid>().Where(x=>x.Flags != (EntityFlags)4));
                 }
             }
 
@@ -55,20 +56,20 @@ namespace BlockLimiter.Utility
             }
         }
 
-        public static bool TryGetEntityById(long entityId, out MyEntity entity)
+        public static bool TryGetGridById(long entityId, out MyCubeGrid entity)
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entity = _entityCache.FirstOrDefault(e => e.EntityId == entityId);
+                entity = _gridCache.FirstOrDefault(e => e.EntityId == entityId);
                 return entity != null;
             }
         }
 
-        public static void GetEntities(HashSet<MyEntity> entities)
+        public static void GetGrids(HashSet<MyEntity> entities)
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_entityCache);
+                entities.UnionWith(_gridCache);
             }
         }
         
@@ -76,7 +77,7 @@ namespace BlockLimiter.Utility
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_entityCache.OfType<MyCubeGrid>().SelectMany(g=>g.CubeBlocks));
+                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks));
             }
         }
 
@@ -84,12 +85,12 @@ namespace BlockLimiter.Utility
         {
             Parallel.ForEach(_dirtyEntities, g => UpdateGridBuilders(g));
             _dirtyEntities.Clear();
-                var rem = new List<long>();
+                var rem = new HashSet<long>();
 
             using(_entityLock.AcquireSharedUsing())
             using (_builderLock.AcquireSharedUsing())
             {
-                rem.AddRange(from e in _bigBuilders where _entityCache.All(en => en.EntityId != e.Key) select e.Key);
+                rem.UnionWith(from e in _bigBuilders where _gridCache.All(en => en.EntityId != e.Key) select e.Key);
             }
             using (_builderLock.AcquireExclusiveUsing())
             {
@@ -128,8 +129,8 @@ namespace BlockLimiter.Utility
                 _bigBuilders[grid.EntityId] = bigs;
 
             return bigs;
-        }
-
+        } 
+        
         public static List<long> GetBuilders(MyCubeGrid grid)
         {
             List<long> l;

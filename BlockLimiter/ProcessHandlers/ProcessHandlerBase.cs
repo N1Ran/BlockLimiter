@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Linq;
+using BlockLimiter.Settings;
+using Sandbox.Game.World;
 
 namespace BlockLimiter.ProcessHandlers
 {
@@ -32,7 +35,7 @@ namespace BlockLimiter.ProcessHandlers
         /// <returns></returns>
         public bool CanProcess()
         {
-            return DateTime.Now - m_lastUpdate > TimeSpan.FromMilliseconds(GetUpdateResolution());
+            return DateTime.Now - m_lastUpdate > TimeSpan.FromMilliseconds(GetUpdateResolution()) && BlockLimiterConfig.Instance.EnableLimits && MySession.Static.Players.GetOnlinePlayers().Count > 0;
         }
 
         /// <summary>

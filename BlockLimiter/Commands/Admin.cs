@@ -88,7 +88,7 @@ namespace BlockLimiter.Commands
                         continue;
                     }
                     
-                    if(!EntityCache.TryGetEntityById(entity, out var grid)|| !(grid is MyCubeGrid))continue;
+                    if(!GridCache.TryGetGridById(entity, out var grid)|| !(grid is MyCubeGrid))continue;
                     sb.AppendLine($"GridLimit for {grid.DisplayName} =  {item.Limit + count}/{item.Limit}");
                 }
             }

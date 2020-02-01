@@ -63,7 +63,7 @@ namespace BlockLimiter.Handlers
                 Log.Debug("Null grid in BuildBlockHandler");
                 return true;
             }
-            var block = MyDefinitionManager.Static.GetCubeBlockDefinition(locations.ToList().FirstOrDefault().BlockDefinition);
+            var block = MyDefinitionManager.Static.GetCubeBlockDefinition(locations.FirstOrDefault().BlockDefinition);
             
             if (block == null)
             {
@@ -72,125 +72,164 @@ namespace BlockLimiter.Handlers
             }
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
 
-            if (!limitItems.Any()) return true;
+            if (limitItems.Count < 1) return true;
+
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             var subGrids = MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Physical);
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
-            bool found = BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId);
+            bool found = false;
+            
+            var gridSize = grid.BlocksCount;
+            var gridType = grid.GridSizeEnum;
+            var isStatic = grid.IsStatic;
 
-            foreach (var item in limitItems)
+            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
             {
-                if (found) break;
-                if (!Utilities.IsMatch(block,item))continue;
+                found = true;
+            }
 
-                if (item.Exceptions.Any())
-                {
-                    var skip = false;
-                    foreach (var id in item.Exceptions)
-                    {
-                        if (long.TryParse(id, out var someId) && (someId == playerId || someId == playerFaction?.FactionId|| someId == grid.EntityId))
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                        if (ulong.TryParse(id, out var steamId) && steamId == remoteUserId)
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                        if (Utilities.TryGetEntityByNameOrId(id, out var entity) && entity != null &&( entity == grid ||
-                                                                                                       ((MyCharacter) entity).ControlSteamId == remoteUserId))
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                        if (id.Length > 4 && playerFaction == null) continue;
-                        if (id.Equals(playerFaction?.Tag,StringComparison.OrdinalIgnoreCase)) continue;
-                        skip = true;
-                        break;
-                    }
-                    
-                    if (skip)continue;
-                }
-                var isGridType = false;
-                
-                switch (item.GridTypeBlock)
-                {
-                    case LimitItem.GridType.SmallGridsOnly:
-                        isGridType = grid.GridSizeEnum == MyCubeSize.Small;
-                        break;
-                    case LimitItem.GridType.LargeGridsOnly:
-                        isGridType = grid.GridSizeEnum == MyCubeSize.Large;
-                        break;
-                    case LimitItem.GridType.StationsOnly:
-                        isGridType = grid.IsStatic;
-                        break;
-                    case LimitItem.GridType.AllGrids:
-                        isGridType = true;
-                        break;
-                    case LimitItem.GridType.ShipsOnly:
-                        isGridType = !grid.IsStatic;
-                        break;
-                }
-
-                if (!isGridType) continue;
-
-                if (item.Limit == 0)
+            if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
+            {
+                if (!BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId))
                 {
                     found = true;
-                    break;
                 }
-                if (item.FoundEntities.TryGetValue(playerId, out var pCount))
+            }
+
+            if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridType == MyCubeSize.Large && gridSize >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
+            {
+                if (!BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId))
                 {
-                    if (pCount >= 0)
+                    found = true;
+                }
+            }
+
+            if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && gridType == MyCubeSize.Small && gridSize >= BlockLimiterConfig.Instance.MaxBlocksSmallGrid)
+            {
+                if (!BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId))
+                {
+                    found = true;
+                }
+            }
+
+            if (!found)
+            {
+                foreach (var item in limitItems)
+                {
+                    if (found) break;
+                    if (!Utilities.IsMatch(block,item))continue;
+
+                    if (item.Exceptions.Count > 0)
+                    {
+                        var skip = false;
+                        foreach (var id in item.Exceptions)
+                        {
+                            if (long.TryParse(id, out var someId) && (someId == playerId || someId == playerFaction?.FactionId|| someId == grid.EntityId))
+                            {
+                                skip = true;
+                                break;
+                            }
+
+                            if (ulong.TryParse(id, out var steamId) && steamId == remoteUserId)
+                            {
+                                skip = true;
+                                break;
+                            }
+
+                            if (Utilities.TryGetEntityByNameOrId(id, out var entity) && entity != null &&( entity == grid ||
+                                                                                                           ((MyCharacter) entity).ControlSteamId == remoteUserId))
+                            {
+                                skip = true;
+                                break;
+                            }
+
+                            if (id.Length > 4 && playerFaction == null) continue;
+                            if (id.Equals(playerFaction?.Tag,StringComparison.OrdinalIgnoreCase)) continue;
+                            skip = true;
+                            break;
+                        }
+                    
+                        if (skip)continue;
+                    }
+                    var isGridType = false;
+                
+                    switch (item.GridTypeBlock)
+                    {
+                        case LimitItem.GridType.SmallGridsOnly:
+                            isGridType = grid.GridSizeEnum == MyCubeSize.Small;
+                            break;
+                        case LimitItem.GridType.LargeGridsOnly:
+                            isGridType = grid.GridSizeEnum == MyCubeSize.Large;
+                            break;
+                        case LimitItem.GridType.StationsOnly:
+                            isGridType = grid.IsStatic;
+                            break;
+                        case LimitItem.GridType.AllGrids:
+                            isGridType = true;
+                            break;
+                        case LimitItem.GridType.ShipsOnly:
+                            isGridType = !grid.IsStatic;
+                            break;
+                    }
+
+                    if (!isGridType) continue;
+
+                    if (item.Limit == 0)
                     {
                         found = true;
                         break;
                     }
-                }
-
-                double subBlockCount = 0;
-                
-                if (subGrids.Any())
-                {
-                    foreach (var subGrid in subGrids)
+                    if (item.FoundEntities.TryGetValue(playerId, out var pCount))
                     {
-                        if (item.FoundEntities.TryGetValue(subGrid.EntityId, out var sCount))
+                        if (pCount >= 0)
                         {
-                            if (sCount >= 0)
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    double subBlockCount = 0;
+                
+                    if (subGrids.Any())
+                    {
+                        foreach (var subGrid in subGrids)
+                        {
+                            if (item.FoundEntities.TryGetValue(subGrid.EntityId, out var sCount))
                             {
-                                subBlockCount += sCount;
-                                break;
+                                if (sCount >= 0)
+                                {
+                                    subBlockCount += sCount;
+                                    break;
+                                }
                             }
                         }
                     }
-                }
 
-                if (item.FoundEntities.TryGetValue(grid.EntityId, out var gCount))
-                {
-
-                    if (subBlockCount + gCount >= 0)
+                    if (item.FoundEntities.TryGetValue(grid.EntityId, out var gCount))
                     {
-                        found = true;
-                        break;
+
+                        if (subBlockCount + gCount >= 0)
+                        {
+                            found = true;
+                            break;
+                        }
                     }
+                
+
+
+                    if (playerFaction==null || !item.LimitFaction)continue;
+
+                    if (!item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount) || fCount < 0) continue;
+                
+                    found = true;
+                    break;
+
                 }
-                
-
-
-                if (playerFaction==null || !item.LimitFaction)continue;
-
-                if (!item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount) || fCount < 0) continue;
-                
-                found = true;
-                break;
-
             }
+
+
             if (!found)
                 return true;
             var b = block.BlockPairName;

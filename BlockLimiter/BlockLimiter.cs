@@ -40,6 +40,9 @@ namespace BlockLimiter
         private TorchSessionManager _sessionManager;
         private List<ProcessHandlerBase> _limitHandlers;
         public List<LimitItem> VanillaLimits = new List<LimitItem>();
+        
+        private int _updateCounter;
+
 
         private void DoInit()
         {
@@ -169,9 +172,13 @@ namespace BlockLimiter
         public override void Update()
         {
             base.Update();
-            if (MyAPIGateway.Session == null)
+            if (MyAPIGateway.Session == null|| !BlockLimiterConfig.Instance.EnableLimits)
                 return;
-            EntityCache.Update();
+            if (++_updateCounter % 100 == 0)
+            {
+                GridCache.Update();
+            }
+
         }
 
 

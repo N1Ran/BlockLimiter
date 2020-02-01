@@ -150,7 +150,7 @@
     <Compile Include="ProcessHandlers\Player.cs" />
     <Compile Include="Punishment\Annoy.cs" />
     <Compile Include="Punishment\Punish.cs" />
-    <Compile Include="Utility\EntityCache.cs" />
+    <Compile Include="Utility\GridCache.cs" />
     <Compile Include="Settings\LimitItem.cs" />
     <Compile Include="Utility\MTObservableCollection.cs" />
     <Compile Include="Utility\Utilities.cs" />

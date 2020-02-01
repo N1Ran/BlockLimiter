@@ -25,7 +25,7 @@ namespace BlockLimiter.Settings
         private static BlockLimiterConfig _instance;
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private XmlAttributeOverrides _overrides;
-        public List<LimitItem> AllLimits = new List<LimitItem>();
+        public HashSet<LimitItem> AllLimits = new HashSet<LimitItem>();
         public BlockLimiterConfig()
         {
             LimitItems = new MtObservableCollection<LimitItem>();
@@ -80,28 +80,48 @@ namespace BlockLimiter.Settings
         public int MaxBlockSizeShips
         {
             get => _maxBlockSizeShips;
-            set => _maxBlockSizeShips = value;
+            set
+            {
+                _maxBlockSizeShips = value;
+                OnPropertyChanged();
+                Instance.Save();
+            }
         }
 
         [Display(Name = "Stations", GroupName = "General BlockCount Limit", Description = "Max size for static grids")]
         public int MaxBlockSizeStations
         {
             get => _maxBlockSizeStations;
-            set => _maxBlockSizeStations = value;
+            set
+            {
+                _maxBlockSizeStations = value;
+                OnPropertyChanged();
+                Instance.Save();
+            }
         }
 
         [Display(Name = "LargeGrids", GroupName = "General BlockCount Limit", Description = "Max size for large grids")]
         public int MaxBlocksLargeGrid
         {
             get => _maxBlocksLargeGrid;
-            set => _maxBlocksLargeGrid = value;
+            set
+            {
+                _maxBlocksLargeGrid = value;
+                OnPropertyChanged();
+                Instance.Save();
+            }
         }
         
         [Display(Name = "SmallGrids", GroupName = "General BlockCount Limit", Description = "Max size for small grids")]
         public int MaxBlocksSmallGrid
         {
             get => _maxBlocksSmallGrid;
-            set => _maxBlocksSmallGrid = value;
+            set
+            {
+                _maxBlocksSmallGrid = value;
+                OnPropertyChanged();
+                Instance.Save();
+            }
         }
 
         [XmlIgnore]
@@ -250,10 +270,10 @@ namespace BlockLimiter.Settings
             AllLimits.Clear();
             if (useVanilla && BlockLimiter.Instance.VanillaLimits.Any())
             {
-                AllLimits.AddRange(BlockLimiter.Instance.VanillaLimits);
+                AllLimits.UnionWith(BlockLimiter.Instance.VanillaLimits);
             }
 
-            AllLimits.AddRange(Instance.LimitItems);
+            AllLimits.UnionWith(Instance.LimitItems);
         }
 
 

@@ -54,9 +54,9 @@ namespace BlockLimiter.Handlers
 
             foreach (var item in limitItems)
             {
-                if (!item.BlockPairName.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase)))continue;
+                if (!Utilities.IsMatch(block,item))continue;
                 
-                if (item.Exceptions.Any())
+                if (item.Exceptions.Count > 0)
                 {
                     var skip = false;
                     foreach (var id in item.Exceptions)

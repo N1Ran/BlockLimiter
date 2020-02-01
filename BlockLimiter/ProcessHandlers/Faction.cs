@@ -42,42 +42,37 @@ namespace BlockLimiter.ProcessHandlers
                 return;
             }
             
-            _blockCache.Clear();
+            var allFactions = MySession.Static.Factions.Factions;
             
-            EntityCache.GetBlocks(_blockCache);
-
-            if (!_blockCache.Any())
+            if (allFactions.Keys.Count < 1)
             {
-                Log.Debug("No blocks found");
+                Log.Debug("No faction found");
                 return;
             }
 
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
 
-            if (!limitItems.Any(x=>x.LimitFaction))
+            if (limitItems.Count < 1)
             {
                 Log.Debug("No Faction limit found");
                 return;
             }
-
-            var blocks = _blockCache;
             
-            if (!blocks.Any())return;
-
-            var allFactions = MySession.Static.Factions.Factions;
+            _blockCache.Clear();
             
-            if (!allFactions.Any())
+            GridCache.GetBlocks(_blockCache);
+
+            if (_blockCache.Count < 1)
             {
-                Log.Debug("No eligible faction found");
+                Log.Debug("No blocks found");
                 return;
             }
-
             
-            foreach (var item in limitItems)
+            foreach (var (factionId,faction) in allFactions)
             {
-                if (!item.LimitFaction || !item.BlockPairName.Any()) continue;
+                if (faction.Members.All(x => !MySession.Static.Players.IsPlayerOnline(x.Key))) continue;
 
-                foreach (var (factionId,faction) in allFactions)
+                foreach (var item in limitItems)
                 {
                     if (item.IgnoreNpcs && faction.IsEveryoneNpc())
                     {
@@ -91,9 +86,9 @@ namespace BlockLimiter.ProcessHandlers
                         continue;
                     }
 
-                    var filteredBlocks = new List<MyCubeBlock>();
+                    var filteredBlocks = new HashSet<MyCubeBlock>();
 
-                    foreach (var block in blocks.Select(x=>x.FatBlock))
+                    foreach (var block in _blockCache.Select(x=>x.FatBlock))
                     {
                         if (block.GetOwnerFactionTag() != faction.Tag || !Utilities.IsMatch(block.BlockDefinition,item))continue;
                         filteredBlocks.Add(block);
@@ -111,16 +106,11 @@ namespace BlockLimiter.ProcessHandlers
                     item.FoundEntities[factionId] = overCount;
                     
                 }
-                
+                    
             }
 
             _blockCache.Clear();
 
         }
-
-
-        
-
-
     }
 }
