@@ -61,38 +61,28 @@ namespace BlockLimiter.ProcessHandlers
                 if (player == null|| !player.IsRealPlayer || player.Character?.IsIdle == true|| player.Character?.IsDead == true) continue;
                 foreach (var item in limitItems)
                 {
-                    if (!item.LimitPlayers) continue;
+                    if (item.BlockPairName.Count < 1 || !item.LimitPlayers) continue;
                     var playerId= player.Identity.IdentityId;
                     if (playerId == 0)continue;
-
-                    var playerBlocks = new HashSet<MySlimBlock>();
                     
-                    playerBlocks.UnionWith(_blockCache.Where(x=> Utilities.IsMatch(x.BlockDefinition,item) && Utilities.IsOwner(item.BlockOwnerState, x, playerId)));
-                    
-                    if (playerBlocks.Count < 1)
-                    {
-                        item.FoundEntities.Remove(playerId);
-                        continue;
-                    }
-
-
                     if (item.IgnoreNpcs && MySession.Static.Players.IdentityIsNpc(playerId))
                     {
                         item.FoundEntities.Remove(playerId);
                         continue;
                     }
 
-                    var filteredBlocksCount = playerBlocks.Count;
-                    
-                    var overCount = filteredBlocksCount - item.Limit;
-                    
-                    if (!item.FoundEntities.ContainsKey(playerId))
+
+                    var filteredBlocksCount = _blockCache.Count(x=> Utilities.IsMatch(x.BlockDefinition,item) && Utilities.IsOwner(item.BlockOwnerState, x, playerId));
+
+                    if (filteredBlocksCount < 1)
                     {
-                        item.FoundEntities.Add(playerId, overCount);
+                        item.FoundEntities.Remove(playerId);
+                        continue;
                     }
 
-                    item.FoundEntities[playerId] = overCount;
-
+                    var overCount = filteredBlocksCount - item.Limit;
+                    
+                    item.FoundEntities.AddOrUpdate(playerId,overCount, (key, oldValue) => overCount);
                 }
             }
 

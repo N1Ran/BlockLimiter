@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Timers;
 using System.Windows.Media.Effects;
@@ -74,7 +75,14 @@ namespace BlockLimiter.ProcessHandlers
 
                 foreach (var item in limitItems)
                 {
+                    if (item.BlockPairName.Count < 1 || !item.LimitFaction) continue;
                     if (item.IgnoreNpcs && faction.IsEveryoneNpc())
+                    {
+                        item.FoundEntities.Remove(factionId);
+                        continue;
+                    }
+
+                    if (item.Exceptions.Contains(factionId.ToString()) || item.Exceptions.Contains(faction.Tag))
                     {
                         item.FoundEntities.Remove(factionId);
                         continue;
@@ -86,24 +94,19 @@ namespace BlockLimiter.ProcessHandlers
                         continue;
                     }
 
-                    var filteredBlocks = new HashSet<MyCubeBlock>();
+                    var filteredBlocksCount = _blockCache.Count(x =>
+                        Utilities.IsMatch(x.BlockDefinition, item) &&
+                        x.FatBlock.GetOwnerFactionTag() == faction.Tag);
 
-                    foreach (var block in _blockCache.Select(x=>x.FatBlock))
+                    if (filteredBlocksCount < 1)
                     {
-                        if (block.GetOwnerFactionTag() != faction.Tag || !Utilities.IsMatch(block.BlockDefinition,item))continue;
-                        filteredBlocks.Add(block);
+                        item.FoundEntities.Remove(factionId);
+                        continue;
                     }
-                   
-                    var filteredBlocksCount = filteredBlocks.Count;
                     
-                    var overCount = filteredBlocksCount - item.Limit;
+                    double overCount = filteredBlocksCount - item.Limit;
 
-                    if (!item.FoundEntities.ContainsKey(factionId))
-                    {
-                        item.FoundEntities.Add(factionId,overCount);
-                    }
-
-                    item.FoundEntities[factionId] = overCount;
+                    item.FoundEntities.AddOrUpdate(factionId,overCount, (key, oldValue) => overCount);
                     
                 }
                     

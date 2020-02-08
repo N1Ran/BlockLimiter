@@ -19,6 +19,7 @@ using Torch.Utils;
 using VRage.Dedicated.Configurator;
 using VRage.Game;
 using VRage.Game.Entity;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Network;
 
@@ -88,10 +89,144 @@ namespace BlockLimiter.Utility
 
         public static bool IsMatch(MyCubeBlockDefinition block, LimitItem item)
         {
+            var typeMatch = true;
             if (item.UseBlockType)
-                return item.BlockPairName.Count > 0 && item.BlockPairName.Any(x =>
+                typeMatch = item.BlockPairName.Count > 0 && item.BlockPairName.Any(x =>
                            x.Equals(block.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase));
-            return item.BlockPairName.Count> 0 && item.BlockPairName.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase));
+            return typeMatch && item.BlockPairName.Count> 0 && item.BlockPairName.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase));
+        }
+
+        public static bool GridSizeViolation(MyCubeGrid grid)
+        {
+            
+            var gridSize = grid.BlocksCount;
+            var gridType = grid.GridSizeEnum;
+            var isStatic = grid.IsStatic;
+
+            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
+            {
+                return  true;
+            }
+
+            if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
+            {
+                return  true;
+            }
+
+            if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridType == MyCubeSize.Large && gridSize >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
+            {
+                return  true;
+            }
+
+            if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && gridType == MyCubeSize.Small && gridSize >= BlockLimiterConfig.Instance.MaxBlocksSmallGrid)
+            {
+                return  true;
+            }
+
+            return false;
+
+        }
+
+        public static bool AllowBlock(MyCubeBlockDefinition block, long playerId, MyCubeGrid grid = null)
+        {
+            
+            var nope = false;
+            var blockCache = new HashSet<MySlimBlock>();
+            GridCache.GetBlocks(blockCache);
+
+            var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
+
+            foreach (var item in BlockLimiterConfig.Instance.AllLimits)
+            {
+                if (!item.BlockPairName.Any() || !IsMatch(block, item)) continue;
+
+                if (item.Exceptions.Any())
+                {
+                    if (item.Exceptions.Contains(playerId.ToString()))
+                    {
+                        item.FoundEntities.Remove(playerId);
+                        continue;
+                    }
+                    if (faction != null && item.Exceptions.Contains(faction.Tag))
+                    {
+                        item.FoundEntities.Remove(faction.FactionId);
+                        continue;
+                    }
+                    var playerSteamId = MyAPIGateway.Multiplayer.Players.TryGetSteamId(playerId);
+                    if (item.Exceptions.Contains(playerSteamId.ToString()))
+                    {
+                        item.FoundEntities.Remove(playerId);
+                        continue;
+                    }
+                    if (item.Exceptions.Contains(MySession.Static.Players.TryGetIdentityNameFromSteamId(playerSteamId)))
+                    {
+                        item.FoundEntities.Remove(playerId);
+                        continue;
+                    }
+                    if (grid != null && (item.Exceptions.Contains(grid.EntityId.ToString()) || item.Exceptions.Contains(grid.DisplayName)))
+                    {
+                        item.FoundEntities.Remove(grid.EntityId);
+                        continue;
+                    }
+                }
+                
+                if (playerId != 0 && item.LimitPlayers)
+                {
+                    var filteredBlocksCount = blockCache.Count(x=> x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
+                    if (filteredBlocksCount >= item.Limit)
+                    {
+                        nope = true;
+                        var overCount = filteredBlocksCount - item.Limit;
+                        item.FoundEntities[playerId] = overCount;
+                        break;
+                    }
+                }
+
+                if (grid != null && item.LimitGrids)
+                {
+                    var subGrids = MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Physical);
+
+                    var filteredBlocksCount = blockCache.Count(x=> x.CubeGrid == grid && x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
+                    if (filteredBlocksCount >= item.Limit)
+                    {
+                        nope = true;
+                        var overCount = filteredBlocksCount - item.Limit;
+                        item.FoundEntities[grid.EntityId] = overCount;
+                        break;
+                    }
+
+                    if (subGrids.Any())
+                    {
+                        foreach (var subGrid in subGrids)
+                        {
+                            var subGridBlockCount = blockCache.Count(x=> x.CubeGrid == subGrid && x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
+                            if (subGridBlockCount >= item.Limit)
+                            {
+                                nope = true;
+                                var overCount = filteredBlocksCount - item.Limit;
+                                item.FoundEntities[subGrid.EntityId] = overCount;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (faction != null && item.LimitFaction)
+                {
+                    var filteredBlocksCount = blockCache.Count(x =>
+                        x.BlockDefinition == block &&  x.FatBlock.GetOwnerFactionTag() == faction.Tag);
+                    if (filteredBlocksCount >= item.Limit)
+                    {
+                        nope = true;
+                        var overCount = filteredBlocksCount - item.Limit;
+                        item.FoundEntities[faction.FactionId] = overCount;
+                        break;
+                    }
+                }
+                
+            }
+
+            return !nope;
         }
 
         public static bool IsOwner(LimitItem.OwnerState state, MySlimBlock block, long playerId)
@@ -179,8 +314,6 @@ namespace BlockLimiter.Utility
                 
             }
             
-            sb.AppendLine($"{limitItems.Count} limits found on this server");
-
             foreach (var item in limitItems)
             {
                 if (item.BlockPairName.Count == 0 || item.FoundEntities.Count == 0) continue;

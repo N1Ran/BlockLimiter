@@ -49,9 +49,9 @@ namespace BlockLimiter
 
             _limitHandlers = new List<ProcessHandlerBase>
             {
-                new Player(),
-                new Faction(),
-                new ProcessHandlers.Grid(),
+                //new Player(),
+                //new Faction(),
+                //new ProcessHandlers.Grid(),
                 new Annoy(),
                 new Punish()
             };

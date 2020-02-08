@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -28,7 +29,7 @@ namespace BlockLimiter.Settings
         private List<string> _exceptions = new List<string>();
         private int _limit;
         private bool _restrictProjection;
-        private MyConcurrentDictionary<long,double> _foundEntities = new MyConcurrentDictionary<long, double>();
+        private ConcurrentDictionary<long,double> _foundEntities = new ConcurrentDictionary<long, double>();
         private bool _ignoreNpc;
         private OwnerState _ownerState = OwnerState.BuiltbyId;
 
@@ -36,7 +37,7 @@ namespace BlockLimiter.Settings
         
         [XmlIgnore]
         [Display(Visible = false)]
-        public MyConcurrentDictionary<long,double> FoundEntities => _foundEntities;
+        public ConcurrentDictionary<long,double> FoundEntities => _foundEntities;
 
 
 

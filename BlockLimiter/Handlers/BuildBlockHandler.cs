@@ -70,6 +70,15 @@ namespace BlockLimiter.Handlers
                 Log.Debug("Null block in BuildBlockHandler");
                 return true;
             }
+            var remoteUserId = MyEventContext.Current.Sender.Value;
+            var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
+
+            if (Utilities.AllowBlock(block, playerId, grid))
+                return true;
+            
+            
+
+            /*
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
 
             if (limitItems.Count < 1) return true;
@@ -181,6 +190,9 @@ namespace BlockLimiter.Handlers
                         found = true;
                         break;
                     }
+                    
+                    
+                    
                     if (item.FoundEntities.TryGetValue(playerId, out var pCount))
                     {
                         if (pCount >= 0)
@@ -231,7 +243,7 @@ namespace BlockLimiter.Handlers
 
 
             if (!found)
-                return true;
+                return true;*/
             var b = block.BlockPairName;
             if (BlockLimiterConfig.Instance.EnableLog)
                 Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing a {b}");

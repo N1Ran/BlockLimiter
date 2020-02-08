@@ -147,22 +147,17 @@ namespace BlockLimiter.ProcessHandlers
                         continue;
                     }
 
-                    var filteredBlocks = new HashSet<MySlimBlock>();
-                    
-                    filteredBlocks.UnionWith(gridBlocks.Where(x=>Utilities.IsMatch(x.BlockDefinition,item)));
-                    
-                    
-                    var filteredBlocksCount = filteredBlocks.Count;
+                    var filteredBlocksCount = gridBlocks.Count(x=>Utilities.IsMatch(x.BlockDefinition,item));
 
-                    var overCount = filteredBlocksCount - item.Limit;
-                    
-                    if (!item.FoundEntities.ContainsKey(gridId))
+                    if (filteredBlocksCount < 1)
                     {
-                        item.FoundEntities.Add(gridId, overCount);
+                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
 
-                    item.FoundEntities[gridId] = overCount;
+                    double overCount = filteredBlocksCount - item.Limit;
+                    
+                    item.FoundEntities.AddOrUpdate(gridId,overCount, (key, oldValue) => overCount);
                 }
                 
             }
