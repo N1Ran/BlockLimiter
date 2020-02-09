@@ -6,7 +6,9 @@ using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Character;
 using Sandbox.Game.World;
+using Torch;
 using Torch.Mod;
 using Torch.Mod.Messages;
 using VRage.Game;
@@ -35,45 +37,56 @@ namespace BlockLimiter.Punishment
 
             var onlinePlayers = MySession.Static.Players.GetOnlinePlayers().ToList();
             var annoyList = new List<ulong>();
-            var violatingEntities = limitItems.SelectMany(x=>x.FoundEntities).ToList();
-            
-            if (onlinePlayers?.Any()==false || violatingEntities?.Any()==false)return;
 
-
-            var pairs = violatingEntities.ToList();
-            foreach (var player in onlinePlayers)
+            foreach (var (x,y) in limitItems.SelectMany(x=>x.FoundEntities))
             {
-                var playerId = player.Id.SteamId;
-                
-                if (annoyList.Contains(playerId))continue;
+                if (y <= 0) continue;
 
-                var playerFaction = MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId);
-                foreach (var (identity,count) in violatingEntities)
+                if (Utilities.TryGetEntityByNameOrId(x.ToString(), out var entity))
                 {
-                    if (count < 1) continue;
-
-                    if (identity == player.Identity.IdentityId)
+                    if (entity is MyCharacter character)
                     {
-                        annoyList.Add(playerId);
-                        break;
-                    }
-
-                    if (GridCache.TryGetGridById(identity, out var grid) && grid.BigOwners.Contains(player.Identity.IdentityId))
-                    {
-                        annoyList.Add(playerId);
-                        break;
-                    }
-
-                    if (playerFaction == null || identity != MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId).FactionId) continue;
-                    if (identity != MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId).FactionId)
+                        if (character.IsBot || character.IsDead) continue;
+                        var steamId = MySession.Static.Players.TryGetSteamId(character.GetPlayerIdentityId());
+                        if(!annoyList.Contains(steamId))
+                            annoyList.Add(steamId);
                         continue;
-                    annoyList.Add(playerId);
-                    break;
-
-
+                    }
+                    if (entity is MyCubeGrid grid)
+                    {
+                        foreach (var ownerId in grid.BigOwners)
+                        {
+                            if (ownerId == 0) continue;
+                            var steamId = MySession.Static.Players.TryGetSteamId(ownerId);
+                            if(!annoyList.Contains(steamId))
+                                annoyList.Add(steamId);
+                        }
+                        continue;
+                    }
                 }
+                
+                //player
+                var playerSteamId = MySession.Static.Players.TryGetSteamId(x);
+                if (playerSteamId > 0)
+                {
+                    if(!annoyList.Contains(playerSteamId))
+                        annoyList.Add(playerSteamId);
+                    continue;
+                }
+
+                //faction
+                var faction = MySession.Static.Factions.TryGetFactionById(x);
+                if (faction == null)continue;
+                foreach (var member in faction.Members.Keys)
+                {
+                    var memberId = MySession.Static.Players.TryGetSteamId(member);
+                    if(!annoyList.Contains(playerSteamId))
+                        annoyList.Add(playerSteamId);
+                }
+
             }
-            if (!annoyList.Any())return;
+            
+            if (onlinePlayers?.Any()==false || annoyList?.Any()==false)return;
 
             foreach (var id in annoyList)
             {

@@ -24,36 +24,67 @@ using VRage.Game.ModAPI;
 using VRage.Scripting;
 using VRageRender;
 
+
 namespace BlockLimiter.Handlers
 {
-    [PatchShim]
     public static class BuildBlockHandler
     {
-        private static readonly HashSet<string> PatchMethods = new HashSet<string>()
-        {
-           // "BuildBlockRequest",
-            "BuildBlocksRequest",
-           // "BuildBlocksAreaRequest"
-        };
 
         private static Logger Log = LogManager.GetCurrentClassLogger();
 
+        
         public static void Patch(PatchContext ctx)
         {
             var t = typeof(MyCubeGrid);
-            var m = typeof(BuildBlockHandler).GetMethod(nameof(Prefix));
+            var bBr = t.GetMethod("BuildBlocksRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            ctx.GetPattern(bBr).Prefixes.Add(typeof(BuildBlockHandler).GetMethod(nameof(BuildBlocksRequest),BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static));
+            
             foreach (var met in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
             {
 
-                if (PatchMethods.Contains(met.Name))
+                if (met.Name.Contains("BuildBlockRequest"))
                 {
-                    ctx.GetPattern(met).Prefixes.Add(m);
+                    ctx.GetPattern(met).Prefixes.Add(typeof(BuildBlockHandler).GetMethod(nameof(BuildBlockRequest),BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static));
                 }
             }
+
         }
 
+        public static bool BuildBlockRequest(MyCubeGrid __instance, MyCubeGrid.MyBlockLocation location)
+        {
+            
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+            var grid = __instance;
+            if (grid == null)
+            {
+                Log.Debug("Null grid in BuildBlockHandler");
+                return true;
+            }
+            var block = MyDefinitionManager.Static.GetCubeBlockDefinition(location.BlockDefinition);
+            
+            if (block == null)
+            {
+                Log.Debug("Null block in BuildBlockHandler");
+                return true;
+            }
+            var remoteUserId = MyEventContext.Current.Sender.Value;
+            var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
-        public static bool Prefix(MyCubeGrid __instance, HashSet<MyCubeGrid.MyBlockLocation> locations)
+            if (Utilities.AllowBlock(block, playerId, grid))
+                return true;
+            
+            var b = block.BlockPairName;
+            if (BlockLimiterConfig.Instance.EnableLog)
+                Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing a {b}");
+            //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
+            MyVisualScriptLogicProvider.SendChatMessage($"Limit reached",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+
+            Utilities.SendFailSound(remoteUserId);
+            Utilities.ValidationFailed();
+            return false;
+        }
+
+        public static bool BuildBlocksRequest(MyCubeGrid __instance, HashSet<MyCubeGrid.MyBlockLocation> locations)
         {
             
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
@@ -76,174 +107,6 @@ namespace BlockLimiter.Handlers
             if (Utilities.AllowBlock(block, playerId, grid))
                 return true;
             
-            
-
-            /*
-            var limitItems = BlockLimiterConfig.Instance.AllLimits;
-
-            if (limitItems.Count < 1) return true;
-
-
-            var remoteUserId = MyEventContext.Current.Sender.Value;
-            var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
-            var subGrids = MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Physical);
-            var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
-            bool found = false;
-            
-            var gridSize = grid.BlocksCount;
-            var gridType = grid.GridSizeEnum;
-            var isStatic = grid.IsStatic;
-
-            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
-            {
-                found = true;
-            }
-
-            if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
-            {
-                if (!BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId))
-                {
-                    found = true;
-                }
-            }
-
-            if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridType == MyCubeSize.Large && gridSize >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
-            {
-                if (!BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId))
-                {
-                    found = true;
-                }
-            }
-
-            if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && gridType == MyCubeSize.Small && gridSize >= BlockLimiterConfig.Instance.MaxBlocksSmallGrid)
-            {
-                if (!BlockLimiterConfig.Instance.DisabledEntities.Contains(grid.EntityId))
-                {
-                    found = true;
-                }
-            }
-
-            if (!found)
-            {
-                foreach (var item in limitItems)
-                {
-                    if (found) break;
-                    if (!Utilities.IsMatch(block,item))continue;
-
-                    if (item.Exceptions.Count > 0)
-                    {
-                        var skip = false;
-                        foreach (var id in item.Exceptions)
-                        {
-                            if (long.TryParse(id, out var someId) && (someId == playerId || someId == playerFaction?.FactionId|| someId == grid.EntityId))
-                            {
-                                skip = true;
-                                break;
-                            }
-
-                            if (ulong.TryParse(id, out var steamId) && steamId == remoteUserId)
-                            {
-                                skip = true;
-                                break;
-                            }
-
-                            if (Utilities.TryGetEntityByNameOrId(id, out var entity) && entity != null &&( entity == grid ||
-                                                                                                           ((MyCharacter) entity).ControlSteamId == remoteUserId))
-                            {
-                                skip = true;
-                                break;
-                            }
-
-                            if (id.Length > 4 && playerFaction == null) continue;
-                            if (id.Equals(playerFaction?.Tag,StringComparison.OrdinalIgnoreCase)) continue;
-                            skip = true;
-                            break;
-                        }
-                    
-                        if (skip)continue;
-                    }
-                    var isGridType = false;
-                
-                    switch (item.GridTypeBlock)
-                    {
-                        case LimitItem.GridType.SmallGridsOnly:
-                            isGridType = grid.GridSizeEnum == MyCubeSize.Small;
-                            break;
-                        case LimitItem.GridType.LargeGridsOnly:
-                            isGridType = grid.GridSizeEnum == MyCubeSize.Large;
-                            break;
-                        case LimitItem.GridType.StationsOnly:
-                            isGridType = grid.IsStatic;
-                            break;
-                        case LimitItem.GridType.AllGrids:
-                            isGridType = true;
-                            break;
-                        case LimitItem.GridType.ShipsOnly:
-                            isGridType = !grid.IsStatic;
-                            break;
-                    }
-
-                    if (!isGridType) continue;
-
-                    if (item.Limit == 0)
-                    {
-                        found = true;
-                        break;
-                    }
-                    
-                    
-                    
-                    if (item.FoundEntities.TryGetValue(playerId, out var pCount))
-                    {
-                        if (pCount >= 0)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    double subBlockCount = 0;
-                
-                    if (subGrids.Any())
-                    {
-                        foreach (var subGrid in subGrids)
-                        {
-                            if (item.FoundEntities.TryGetValue(subGrid.EntityId, out var sCount))
-                            {
-                                if (sCount >= 0)
-                                {
-                                    subBlockCount += sCount;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (item.FoundEntities.TryGetValue(grid.EntityId, out var gCount))
-                    {
-
-                        if (subBlockCount + gCount >= 0)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                
-
-
-                    if (playerFaction==null || !item.LimitFaction)continue;
-
-                    if (!item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount) || fCount < 0) continue;
-                
-                    found = true;
-                    break;
-
-                }
-            }
-
-
-            if (!found)
-                return true;*/
             var b = block.BlockPairName;
             if (BlockLimiterConfig.Instance.EnableLog)
                 Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing a {b}");

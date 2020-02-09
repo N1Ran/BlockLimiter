@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using Torch;
@@ -15,7 +16,7 @@ namespace BlockLimiter.Settings
 {
     [Serializable]
 
-    public class LimitItem:ViewModel
+    public class LimitItem : ViewModel
     {
 
         private bool _limitFaction;
@@ -34,7 +35,17 @@ namespace BlockLimiter.Settings
         private OwnerState _ownerState = OwnerState.BuiltbyId;
 
 
-        
+        public LimitItem()
+        {
+            CollectionChanged += OnCollectionChanged;
+        }
+
+        private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            Save();
+        }
+
+
         [XmlIgnore]
         [Display(Visible = false)]
         public ConcurrentDictionary<long,double> FoundEntities => _foundEntities;
@@ -69,7 +80,12 @@ namespace BlockLimiter.Settings
         public bool UseBlockType
         {
             get => _useBlockType;
-            set => _useBlockType = value;
+            set
+            {
+                _useBlockType = value;
+                OnPropertyChanged();
+                Save();
+            }
         }
 
         [Display(Name = "Exceptions", Description = "List of player or grid exception. You can also use entityId.")]
@@ -208,6 +224,8 @@ namespace BlockLimiter.Settings
             var useName = string.IsNullOrEmpty(Name) ? BlockPairName.FirstOrDefault() : Name;
             return $"{useName} - [{BlockPairName.Count} : {Limit}]";
         }
+        
+
 
         private void Save()
         {

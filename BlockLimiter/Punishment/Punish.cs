@@ -18,6 +18,7 @@ using Torch;
 using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Entity;
+using VRage.Game.ModAPI;
 using VRage.Library.Collections;
 using VRageMath;
 
@@ -26,7 +27,7 @@ namespace BlockLimiter.Punishment
     public class Punish : ProcessHandlerBase
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private readonly HashSet<MyEntity> _entityCache = new HashSet<MyEntity>();
+        private readonly HashSet<MySlimBlock> _blockCache = new HashSet<MySlimBlock>();
 
         public override int GetUpdateResolution()
         {
@@ -43,17 +44,11 @@ namespace BlockLimiter.Punishment
             }
             
 
-            _entityCache.Clear();
-            GridCache.GetGrids(_entityCache);
-            var grids = new List<MyCubeGrid>();
-            
-            grids.AddRange(_entityCache.OfType<MyCubeGrid>());
+            _blockCache.Clear();
+            GridCache.GetBlocks(_blockCache);
 
-            var blocks = new List<MySlimBlock>();
             
-            blocks.AddRange(grids.SelectMany(g=>g.CubeBlocks));
-            
-            if (!grids.Any() || !blocks.Any())
+            if (_blockCache.Any())
                 return;
             
             var removeBlocks = new Dictionary<MySlimBlock,LimitItem.PunishmentType>();
@@ -81,7 +76,7 @@ namespace BlockLimiter.Punishment
                     if (player != null)
                     {
                         if (item.Exceptions.Contains(player.DisplayName)) continue;
-                        foreach (var block in grids.SelectMany(x=>x.GetBlocks()))
+                        foreach (var block in _blockCache)
                         {
                             if (overCount - count <= 0) break;
                             if (removeBlocks.ContainsKey(block)||(block.OwnerId != player.IdentityId && block.BuiltBy != player.IdentityId)) continue;
@@ -90,6 +85,8 @@ namespace BlockLimiter.Punishment
                             removeBlocks.Add(block,item.Punishment);
                         }
                         
+                        if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
+                            item.FoundEntities.Remove(player.IdentityId);
                         continue;
 
                     }
@@ -112,9 +109,9 @@ namespace BlockLimiter.Punishment
                                 count++;
                                 removeBlocks.Add(block,item.Punishment);
                             }
-
+                            if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
+                                item.FoundEntities.Remove(grid.EntityId);
                         }
-                        
                         continue;
 
                     }
@@ -123,7 +120,7 @@ namespace BlockLimiter.Punishment
                     var faction = MySession.Static.Factions.TryGetFactionById(id);
                     if (faction == null) continue;
                     if (item.IgnoreNpcs && faction.IsEveryoneNpc()) continue;
-                    foreach (var block in grids.SelectMany(y=>y.GetBlocks()).Where(x=>x.FatBlock.GetOwnerFactionTag().Equals(faction.Tag)))
+                    foreach (var block in _blockCache.Where(x=>x.FatBlock.GetOwnerFactionTag()==faction.Tag))
                     {
                         if (overCount - count <= 0) break;
                         if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
@@ -131,10 +128,14 @@ namespace BlockLimiter.Punishment
                         count++;
                         removeBlocks.Add(block,item.Punishment);
                     }
+                    if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
+                        item.FoundEntities.Remove(faction.FactionId);
                 }
                 
             }
-            grids.Clear();
+            
+            _blockCache.Clear();
+
             
             if (!removeBlocks.Keys.Any())
             {

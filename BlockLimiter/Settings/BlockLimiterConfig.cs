@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,15 +29,25 @@ namespace BlockLimiter.Settings
         public HashSet<LimitItem> AllLimits = new HashSet<LimitItem>();
         public BlockLimiterConfig()
         {
-            LimitItems = new MtObservableCollection<LimitItem>();
-            LimitItems.CollectionChanged += ItemsCollectionChanged;
-
+            _limitItems = new MtObservableCollection<LimitItem>();
+            _limitItems.CollectionChanged += ItemsCollectionChanged;
         }
+
 
         public static BlockLimiterConfig Instance => _instance ?? (_instance = new BlockLimiterConfig());
 
         [Display(EditorType = typeof(EmbeddedCollectionEditor))]
-        public MtObservableCollection<LimitItem> LimitItems { get; set; }
+        public MtObservableCollection<LimitItem> LimitItems
+        {
+            get => _limitItems;
+            set
+            {
+                _limitItems = value;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+
 
         private bool _loading;
         private bool _vanillaLimits;
@@ -51,7 +62,7 @@ namespace BlockLimiter.Settings
         private int _maxBlocksSmallGrid = 0;
         private int _maxBlocksLargeGrid = 0;
         private bool _enableLog;
-        private MyConcurrentHashSet<long> _disabledEntities = new MyConcurrentHashSet<long>();
+        private MtObservableCollection<LimitItem> _limitItems;
 
 
         public string ServerName
@@ -59,9 +70,9 @@ namespace BlockLimiter.Settings
             get => _serverName;
             set
             {
-                _serverName = value;
+                _serverName = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
@@ -70,9 +81,9 @@ namespace BlockLimiter.Settings
             get => _enable;
             set
             {
-                _enable = value;
+                _enable = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
@@ -82,9 +93,9 @@ namespace BlockLimiter.Settings
             get => _maxBlockSizeShips;
             set
             {
-                _maxBlockSizeShips = value;
+                _maxBlockSizeShips = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
@@ -94,9 +105,9 @@ namespace BlockLimiter.Settings
             get => _maxBlockSizeStations;
             set
             {
-                _maxBlockSizeStations = value;
+                _maxBlockSizeStations = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
@@ -106,9 +117,9 @@ namespace BlockLimiter.Settings
             get => _maxBlocksLargeGrid;
             set
             {
-                _maxBlocksLargeGrid = value;
+                _maxBlocksLargeGrid = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
         
@@ -118,15 +129,12 @@ namespace BlockLimiter.Settings
             get => _maxBlocksSmallGrid;
             set
             {
-                _maxBlocksSmallGrid = value;
+                _maxBlocksSmallGrid = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
-        [XmlIgnore]
-        [Display(Visible = false)]
-        public MyConcurrentHashSet<long> DisabledEntities => _disabledEntities;
         
         
         [Display(Name = "Use Vanilla Limits", Description = "This will add vanilla block limits to limiter's checks")]
@@ -138,7 +146,7 @@ namespace BlockLimiter.Settings
                 _vanillaLimits = value;
                 Utilities.UpdateLimits(_vanillaLimits, out AllLimits);
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
@@ -148,9 +156,9 @@ namespace BlockLimiter.Settings
             get => _enableLog;
             set
             {
-                _enableLog = value;
+                _enableLog = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
@@ -160,9 +168,9 @@ namespace BlockLimiter.Settings
             get => _annoy;
             set
             {
-                _annoy = value;
+                _annoy = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
@@ -172,9 +180,9 @@ namespace BlockLimiter.Settings
             get => _punishInterval;
             set
             {
-                _punishInterval = value;
+                _punishInterval = value; 
                 OnPropertyChanged();
-                Save();
+                Instance.Save(); 
             }
         }
 
@@ -184,9 +192,9 @@ namespace BlockLimiter.Settings
             get => _annoyMsg;
             set
             {
-                _annoyMsg = value;
+                _annoyMsg = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
@@ -196,9 +204,9 @@ namespace BlockLimiter.Settings
             get => _annoyInterval;
             set
             {
-                _annoyInterval = value;
+                _annoyInterval = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
         }
 
@@ -208,11 +216,10 @@ namespace BlockLimiter.Settings
             get => _annoyDuration;
             set
             {
-                _annoyDuration = value;
+                _annoyDuration = value; 
                 OnPropertyChanged();
-                Instance.Save();
+                Instance.Save(); 
             }
-
         }
 
 
@@ -257,7 +264,10 @@ namespace BlockLimiter.Settings
             }
             catch (Exception ex)
             {
-                Log.Error(ex);
+                lock (this)
+                {
+                    Log.Error(ex);
+                }
             }
             finally
             {
@@ -292,17 +302,21 @@ namespace BlockLimiter.Settings
                     Log.Info($"Saved");
 
                 }
-
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Log.Warn("Configuration failed to save");
+                lock (this)
+                {
+                    Log.Error(e);
+                }
             }
+
         }
 
 #endregion
 
 #region Events
+
 
 /// <summary>
 ///     Triggered when items changes.

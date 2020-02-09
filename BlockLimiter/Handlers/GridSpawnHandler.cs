@@ -18,12 +18,12 @@ using Torch.Managers.PatchManager;
 using Torch.Mod;
 using Torch.Mod.Messages;
 using VRage.Game;
+using VRage.Game.Components;
 using VRage.Network;
 
 namespace BlockLimiter.Handlers
 {
-    [PatchShim]
-    public static class SpawnGridHandler
+    public static class GridSpawnHandler
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -31,11 +31,11 @@ namespace BlockLimiter.Handlers
         {
             var t = typeof(MyCubeBuilder);
             var m = t.GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static);
-            ctx.GetPattern(m).Prefixes.Add(typeof(SpawnGridHandler).GetMethod(nameof(Prefix)));
+            ctx.GetPattern(m).Prefixes.Add(typeof(GridSpawnHandler).GetMethod(nameof(Prefix),BindingFlags.NonPublic|BindingFlags.Static));
 
         }
 
-        public static bool Prefix(DefinitionIdBlit definition)
+        private static bool Prefix(DefinitionIdBlit definition)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
             var block = MyDefinitionManager.Static.GetCubeBlockDefinition(definition);
@@ -43,100 +43,14 @@ namespace BlockLimiter.Handlers
             {
                 return true;
             }
-            var limitItems = BlockLimiterConfig.Instance.AllLimits;
-
-            if (!limitItems.Any()) return true;
-            var found = false;
+            
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var player = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId);
             var playerId = player.Identity.IdentityId;
-            var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
+            
+            if (Utilities.AllowBlock(block,playerId,(MyObjectBuilder_CubeGrid) null))
+                return true;
 
-            foreach (var item in limitItems)
-            {
-                if (!Utilities.IsMatch(block,item))continue;
-                
-                if (item.Exceptions.Count > 0)
-                {
-                    var skip = false;
-                    foreach (var id in item.Exceptions)
-                    {
-                        if (long.TryParse(id, out var someId) && (someId == playerId || someId == playerFaction?.FactionId))
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                        if (ulong.TryParse(id, out var steamId) && steamId == remoteUserId)
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                        if (Utilities.TryGetEntityByNameOrId(id, out var entity) && entity != null &&((MyCharacter) entity).ControlSteamId == remoteUserId)
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                        if (id.Length > 4 && playerFaction == null) continue;
-                        if (id.Equals(playerFaction?.Tag,StringComparison.OrdinalIgnoreCase)) continue;
-                        skip = true;
-                        break;
-                    }
-                    
-                    if (skip)continue;
-                }
-                
-                var isGridType = false;
-                switch (item.GridTypeBlock)
-                {
-                    case LimitItem.GridType.SmallGridsOnly:
-                        isGridType = block.CubeSize == MyCubeSize.Small;
-                        break;
-                    case LimitItem.GridType.LargeGridsOnly:
-                        isGridType = block.CubeSize == MyCubeSize.Large;
-                        break;
-                    case LimitItem.GridType.AllGrids:
-                        isGridType = true;
-                        break;
-                    case LimitItem.GridType.StationsOnly:
-                        break;
-                    case LimitItem.GridType.ShipsOnly:
-                        isGridType = true;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-
-                if (!isGridType) continue;
-
-                
-                if (item.Limit == 0)
-                {
-                    found = true;
-                    break;
-                }
-
-                if (item.FoundEntities.TryGetValue(playerId, out var pCount))
-                {
-                    if (pCount >= 0)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-
-
-                if (playerFaction==null)break;
-                if (!item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount) || fCount < 0) continue;
-                found = true;
-                break;
-
-            }
-
-            if (!found)
-                    return true;
             var b = block.BlockPairName;
             var p = player.DisplayName;
             if (BlockLimiterConfig.Instance.EnableLog)

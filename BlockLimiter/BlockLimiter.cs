@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Controls;
+using BlockLimiter.Handlers;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
@@ -49,18 +51,12 @@ namespace BlockLimiter
 
             _limitHandlers = new List<ProcessHandlerBase>
             {
-                //new Player(),
-                //new Faction(),
-                //new ProcessHandlers.Grid(),
                 new Annoy(),
                 new Punish()
             };
             _processThreads = new List<Thread>();
             _processThread = new Thread(PluginProcessing);
             _processThread.Start();
-
-            GetVanillaLimits();
-            Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits, out BlockLimiterConfig.Instance.AllLimits);
         }
 
         private void GetVanillaLimits()
@@ -160,13 +156,15 @@ namespace BlockLimiter
             base.Init(torch);
             _pm = torch.Managers.GetManager<PatchManager>();
             _context = _pm.AcquireContext();
-            //Patch(_context);
             Instance = this;
+            //Patch(_context);
+            BuildBlockHandler.Patch(_context);
+            ProjectionHandler.Patch(_context);
+            GridSpawnHandler.Patch(_context);
             Load();
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)
                 _sessionManager.SessionStateChanged += SessionChanged;
-            
         }
 
         public override void Update()
@@ -190,6 +188,8 @@ namespace BlockLimiter
                 case TorchSessionState.Loaded:
                     DoInit();
                     EnableControl();
+                    GetVanillaLimits();
+                    Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits, out BlockLimiterConfig.Instance.AllLimits);
                     break;
                 case TorchSessionState.Unloading:
                     Dispose();
@@ -229,94 +229,20 @@ namespace BlockLimiter
         
         public static bool CheckLimits_future(MyObjectBuilder_CubeGrid[] grids)
         {
-            var hasLimit = false;
-            
-            foreach (var grid in grids)
+
+            if (!BlockLimiterConfig.Instance.EnableLimits)
             {
-                foreach (var item in BlockLimiterConfig.Instance.LimitItems)
-                {
-                    if (grid == null)
-                    {
-                        continue;
-                    }
-                    
-                    var isGridType = false;
-                    switch (item.GridTypeBlock)
-                    {
-                        case LimitItem.GridType.SmallGridsOnly:
-                            isGridType = grid.GridSizeEnum == MyCubeSize.Small;
-                            break;
-                        case LimitItem.GridType.LargeGridsOnly:
-                            isGridType = grid.GridSizeEnum == MyCubeSize.Large;
-                            break;
-                        case LimitItem.GridType.StationsOnly:
-                            isGridType = grid.IsStatic;
-                            break;
-                        case LimitItem.GridType.AllGrids:
-                            isGridType = true;
-                            break;
-                        case LimitItem.GridType.ShipsOnly:
-                            isGridType = !grid.IsStatic;
-                            break;
-                    }
-
-                    if (!isGridType)
-                    {
-                        continue;
-                    }
-                    
-                    var gridBlocks = grid.CubeBlocks;
-                    var filteredBlocks = gridBlocks.Select(s=>MyDefinitionManager.Static.GetCubeBlockDefinition(s.GetId())).Where(def => Utilities.IsMatch(def, item)).ToList();
-
-                    foreach (var block in gridBlocks)
-                    {
-                        if (item.FoundEntities.TryGetValue(block.BuiltBy, out var bCount))
-                        {
-                            if (bCount >= 0)
-                            {
-                                hasLimit = true;
-                                break;
-                            }
-                        }
-                        
-                        if (item.FoundEntities.TryGetValue(block.Owner, out var oCount))
-                        {
-                            if (bCount >= 0)
-                            {
-                                hasLimit = true;
-                                break;
-                            }
-                        }
-
-                        var ownerFaction = MySession.Static.Factions.GetPlayerFaction(block.BuiltBy);
-
-                        if (ownerFaction == null) continue;
-
-                        if (!item.FoundEntities.ContainsKey(ownerFaction.FactionId)) continue;
-
-                        hasLimit = true;
-                        break;
-
-                    }
-                    
-                    if (!filteredBlocks.Any() || filteredBlocks.Count() < item.Limit)
-                    {
-                        continue;
-                    }
-
-                    hasLimit = true;
-                    break;
-
-                }
+                return true;
             }
 
-            return hasLimit;
+            return grids.Any(x => Utilities.GridSizeViolation(x));
         }
 
        private static void Patch(PatchContext ctx)
         {
             ctx.GetPattern(typeof(MySlimBlock).GetMethod(nameof(MySlimBlock.TransferAuthorship))).Prefixes.
                 Add(typeof(BlockLimiter).GetMethod(nameof(OnTransfer), BindingFlags.Static | BindingFlags.NonPublic));
+            
         }
 
         public static event Action<MySlimBlock, long> SlimOwnerChanged;
@@ -327,7 +253,6 @@ namespace BlockLimiter
             SlimOwnerChanged?.Invoke(__instance, newOwner);
             return true; // false cancels.
         }
-        
         
     }
 

@@ -25,11 +25,11 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
+using Torch;
 using VRage.Utils;
 
 namespace BlockLimiter.Handlers
 {
-    [PatchShim]
     public static class ProjectionHandler
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -62,12 +62,14 @@ namespace BlockLimiter.Handlers
                 var grid = projectedGrid;
                 var blocks = projectedGrid.CubeBlocks;
                 var remoteUserId = MyEventContext.Current.Sender.Value;
+                var playerId = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).Identity.IdentityId;
                 var count = 0;
                 for (var i = blocks.Count - 1; i >= 0; i--)
                 {
                     var block = blocks[i];
+                    var def = MyDefinitionManager.Static.GetCubeBlockDefinition(block);
                     block.BuiltBy = __instance.BuiltBy;
-                    if (IsAllowed(block, remoteUserId))
+                    if (Utilities.AllowBlock(def, playerId, grid))
                     {
                         _blockList.Add(block);
                         continue;
@@ -77,6 +79,7 @@ namespace BlockLimiter.Handlers
                 }
                 if (count <= 0) continue;
                 MyMultiplayer.RaiseEvent(__instance, x => (Action)Delegate.CreateDelegate(typeof(Action), x, RemoveProjectionMethod), new EndpointId(remoteUserId));
+                var stopSpawn = Utilities.GridSizeViolation(grid);
                 Task.Run(() =>
                 {
                     Thread.Sleep(100);
@@ -84,11 +87,17 @@ namespace BlockLimiter.Handlers
                         {
                             ((IMyProjector)__instance).SetProjectedGrid(null);
                             Thread.Sleep(500);
-                            ((IMyProjector)__instance).SetProjectedGrid(grid);
+                            if (!stopSpawn)((IMyProjector)__instance).SetProjectedGrid(grid);
                         },
                         "BlockLimiter");
                 });
-               ModCommunication.SendMessageTo(new NotificationMessage($"Blocklimiter removed {count} blocks blueprint!", 15000, MyFontEnum.Red), remoteUserId);
+
+                if (stopSpawn)
+                {
+                    ModCommunication.SendMessageTo(new NotificationMessage($"Gridsize block count is larger than permitted", 15000, MyFontEnum.Red), remoteUserId);
+                    return;
+                }
+                ModCommunication.SendMessageTo(new NotificationMessage($"Blocklimiter removed {count} blocks blueprint!", 15000, MyFontEnum.Red), remoteUserId);
                 //((IMyProjector)__instance).SetProjectedGrid(projectedGrid);
             }
 
