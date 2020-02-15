@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
@@ -35,58 +36,42 @@ namespace BlockLimiter.Punishment
             }
 
 
-            var onlinePlayers = MySession.Static.Players.GetOnlinePlayers().ToList();
+            var onlinePlayers = MySession.Static.Players.GetOnlinePlayers();
+
+            if (onlinePlayers.Count < 1) return;
             var annoyList = new List<ulong>();
 
-            foreach (var (x,y) in limitItems.SelectMany(x=>x.FoundEntities))
+            foreach (var player in onlinePlayers)
             {
-                if (y <= 0) continue;
-
-                if (Utilities.TryGetEntityByNameOrId(x.ToString(), out var entity))
-                {
-                    if (entity is MyCharacter character)
-                    {
-                        if (character.IsBot || character.IsDead) continue;
-                        var steamId = MySession.Static.Players.TryGetSteamId(character.GetPlayerIdentityId());
-                        if(!annoyList.Contains(steamId))
-                            annoyList.Add(steamId);
-                        continue;
-                    }
-                    if (entity is MyCubeGrid grid)
-                    {
-                        foreach (var ownerId in grid.BigOwners)
-                        {
-                            if (ownerId == 0) continue;
-                            var steamId = MySession.Static.Players.TryGetSteamId(ownerId);
-                            if(!annoyList.Contains(steamId))
-                                annoyList.Add(steamId);
-                        }
-                        continue;
-                    }
-                }
+                var steamId = MySession.Static.Players.TryGetSteamId(player.Identity.IdentityId);
                 
-                //player
-                var playerSteamId = MySession.Static.Players.TryGetSteamId(x);
-                if (playerSteamId > 0)
-                {
-                    if(!annoyList.Contains(playerSteamId))
-                        annoyList.Add(playerSteamId);
-                    continue;
-                }
+                if (annoyList.Contains(steamId)) continue;
 
-                //faction
-                var faction = MySession.Static.Factions.TryGetFactionById(x);
-                if (faction == null)continue;
-                foreach (var member in faction.Members.Keys)
+                foreach (var (id,count) in limitItems.SelectMany(x=>x.FoundEntities))
                 {
-                    var memberId = MySession.Static.Players.TryGetSteamId(member);
-                    if(!annoyList.Contains(playerSteamId))
-                        annoyList.Add(playerSteamId);
-                }
+                    if (id == player.Identity.IdentityId && count > 0)
+                    {
+                        annoyList.Add(steamId);
+                        break;
+                    }
 
+                    if (player.Grids.Any(x => x == id))
+                    {
+                        annoyList.Add(steamId);
+                        break;
+                    }
+                        
+
+                    var playerFaction = MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId);
+                    if (playerFaction == null || id != playerFaction.FactionId) continue;
+                    annoyList.Add(steamId);
+                    break;
+                }
             }
+
+            if (annoyList.Count < 1) return;
+
             
-            if (onlinePlayers?.Any()==false || annoyList?.Any()==false)return;
 
             foreach (var id in annoyList)
             {

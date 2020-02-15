@@ -28,9 +28,9 @@ using Sandbox.Game.World;
 using Torch;
 using VRage.Utils;
 
-namespace BlockLimiter.Handlers
+namespace BlockLimiter.Patch
 {
-    public static class ProjectionHandler
+    public static class ProjectionPatch
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static readonly FieldInfo OriginalGridFields = typeof(MyProjectorBase).GetField("m_originalGridBuilders", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -40,7 +40,7 @@ namespace BlockLimiter.Handlers
 
         public static void Patch(PatchContext ctx)
         {
-            ctx.GetPattern(NewBlueprintMethod).Prefixes.Add(typeof(ProjectionHandler).GetMethod(nameof(PrefixNewBlueprint)));
+            ctx.GetPattern(NewBlueprintMethod).Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixNewBlueprint)));
 
         }
 

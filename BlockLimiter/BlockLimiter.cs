@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Controls;
-using BlockLimiter.Handlers;
+using BlockLimiter.Patch;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
@@ -26,6 +26,8 @@ using Torch.Session;
 using Torch.Views;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.Game.VisualScripting;
+using VRage.Network;
 
 namespace BlockLimiter
 {
@@ -158,13 +160,14 @@ namespace BlockLimiter
             _context = _pm.AcquireContext();
             Instance = this;
             //Patch(_context);
-            BuildBlockHandler.Patch(_context);
-            ProjectionHandler.Patch(_context);
-            GridSpawnHandler.Patch(_context);
+            BuildBlockPatch.Patch(_context);
+            ProjectionPatch.Patch(_context);
+            GridSpawnPatch.Patch(_context);
             Load();
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)
                 _sessionManager.SessionStateChanged += SessionChanged;
+            
         }
 
         public override void Update()
@@ -232,10 +235,11 @@ namespace BlockLimiter
 
             if (!BlockLimiterConfig.Instance.EnableLimits)
             {
-                return true;
+                return false;
             }
 
-            return grids.Any(x => Utilities.GridSizeViolation(x));
+            return !grids.Any(Utilities.GridSizeViolation) && 
+                   !grids.Any(z=>z.CubeBlocks.Any(b=>Utilities.AllowBlock(MyDefinitionManager.Static.GetCubeBlockDefinition(b),0,z)));
         }
 
        private static void Patch(PatchContext ctx)
@@ -250,6 +254,9 @@ namespace BlockLimiter
         // ReSharper disable once InconsistentNaming
         private static bool OnTransfer(MySlimBlock __instance, long newOwner)
         {
+            
+            if (Utilities.AllowBlock(__instance.BlockDefinition, newOwner,(MyObjectBuilder_CubeGrid) null))
+                return false;
             SlimOwnerChanged?.Invoke(__instance, newOwner);
             return true; // false cancels.
         }

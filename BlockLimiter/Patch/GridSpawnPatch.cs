@@ -21,9 +21,9 @@ using VRage.Game;
 using VRage.Game.Components;
 using VRage.Network;
 
-namespace BlockLimiter.Handlers
+namespace BlockLimiter.Patch
 {
-    public static class GridSpawnHandler
+    public static class GridSpawnPatch
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -31,7 +31,7 @@ namespace BlockLimiter.Handlers
         {
             var t = typeof(MyCubeBuilder);
             var m = t.GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static);
-            ctx.GetPattern(m).Prefixes.Add(typeof(GridSpawnHandler).GetMethod(nameof(Prefix),BindingFlags.NonPublic|BindingFlags.Static));
+            ctx.GetPattern(m).Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(Prefix),BindingFlags.NonPublic|BindingFlags.Static));
 
         }
 

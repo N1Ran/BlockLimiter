@@ -37,6 +37,8 @@ namespace BlockLimiter.Punishment
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
+            
+            
 
             if (!limitItems.Any())
             {
@@ -47,11 +49,13 @@ namespace BlockLimiter.Punishment
             _blockCache.Clear();
             GridCache.GetBlocks(_blockCache);
 
-            
-            if (_blockCache.Any())
+
+            if (!_blockCache.Any())
+            {
                 return;
+            }
             
-            var removeBlocks = new Dictionary<MySlimBlock,LimitItem.PunishmentType>();
+            var removeBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
 
             foreach (var item in limitItems)
             {
@@ -62,74 +66,88 @@ namespace BlockLimiter.Punishment
                 
                 foreach (var (id,overCount) in item.FoundEntities)
                 {
-                    if (item.Exceptions.Contains(id.ToString())) continue;
+                    if (id == 0 || item.Exceptions.Contains(id.ToString())) continue;
 
                     if (overCount<= 0) continue;
                     
                     if (overCount - count <= 0)
                     {
+                        if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
+                            item.FoundEntities[id] = 0;
+                        break;
+                    }
+                    
+                    if (item.LimitGrids && GridCache.TryGetGridById(id, out var grid))
+                    {
+                        if (item.IgnoreNpcs)
+                        {
+                            if (grid.BigOwners.Any(x=>MySession.Static.Players.IdentityIsNpc(x)))
+                                continue;
+                        }
+                            
+                        foreach (var block in grid.CubeBlocks)
+                        {
+                            if (overCount - count <= 0)
+                            {
+                                break;
+                            }
+                            if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
+                            count++;
+                            removeBlocks[block] = item.Punishment;
+                        }
+                        if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
+                            item.FoundEntities[id] = 0;
                         continue;
+
                     }
 
                     var player = MySession.Static.Players.TryGetIdentity(id);
                     
-                    if (player != null)
+                    if (player != null && item.LimitPlayers)
                     {
                         if (item.Exceptions.Contains(player.DisplayName)) continue;
+                        
                         foreach (var block in _blockCache)
                         {
-                            if (overCount - count <= 0) break;
-                            if (removeBlocks.ContainsKey(block)||(block.OwnerId != player.IdentityId && block.BuiltBy != player.IdentityId)) continue;
+                            if (!Utilities.IsOwner(item.BlockOwnerState,block,player.IdentityId)) continue;
+                            if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
+
+                            if (overCount - count <= 0)
+                            {
+                                break;
+                            }
+                            if (!Utilities.IsOwner(item.BlockOwnerState,block,player.IdentityId)) continue;
                             if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
                             count++;
-                            removeBlocks.Add(block,item.Punishment);
+                            removeBlocks[block] = item.Punishment;
                         }
                         
                         if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                            item.FoundEntities.Remove(player.IdentityId);
+                            item.FoundEntities[id] = 0;
                         continue;
 
                     }
 
-                    if (GridCache.TryGetGridById(id, out var entity))
+                    if (!item.LimitFaction)
                     {
-                        if (entity is MyCubeGrid grid)
-                        {
-                            if (item.IgnoreNpcs)
-                            {
-                                if (grid.BigOwners.Any(x=>MySession.Static.Players.IdentityIsNpc(x)))
-                                    continue;
-                            }
-                            
-                            foreach (var block in grid.CubeBlocks)
-                            {
-                                if (overCount - count <= 0) break;
-                                if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
-                                if (removeBlocks.ContainsKey(block)) continue;
-                                count++;
-                                removeBlocks.Add(block,item.Punishment);
-                            }
-                            if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                                item.FoundEntities.Remove(grid.EntityId);
-                        }
                         continue;
-
                     }
-
-                    if (!item.LimitFaction || overCount - count <= 0) continue;
                     var faction = MySession.Static.Factions.TryGetFactionById(id);
                     if (faction == null) continue;
                     if (item.IgnoreNpcs && faction.IsEveryoneNpc()) continue;
                     foreach (var block in _blockCache.Where(x=>x.FatBlock.GetOwnerFactionTag()==faction.Tag))
                     {
-                        if (overCount - count <= 0) break;
+                        if (overCount - count <= 0)
+                        {
+                            break;
+                        }
                         if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
                         if (removeBlocks.ContainsKey(block)) continue;
                         count++;
                         removeBlocks.Add(block,item.Punishment);
                     }
                     if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                        item.FoundEntities.Remove(faction.FactionId);
+                        item.FoundEntities[id] = 0;
                 }
                 
             }

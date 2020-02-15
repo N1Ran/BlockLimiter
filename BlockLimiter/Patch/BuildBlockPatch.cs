@@ -25,9 +25,9 @@ using VRage.Scripting;
 using VRageRender;
 
 
-namespace BlockLimiter.Handlers
+namespace BlockLimiter.Patch
 {
-    public static class BuildBlockHandler
+    public static class BuildBlockPatch
     {
 
         private static Logger Log = LogManager.GetCurrentClassLogger();
@@ -37,14 +37,14 @@ namespace BlockLimiter.Handlers
         {
             var t = typeof(MyCubeGrid);
             var bBr = t.GetMethod("BuildBlocksRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            ctx.GetPattern(bBr).Prefixes.Add(typeof(BuildBlockHandler).GetMethod(nameof(BuildBlocksRequest),BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static));
+            ctx.GetPattern(bBr).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlocksRequest),BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static));
             
             foreach (var met in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
             {
 
                 if (met.Name.Contains("BuildBlockRequest"))
                 {
-                    ctx.GetPattern(met).Prefixes.Add(typeof(BuildBlockHandler).GetMethod(nameof(BuildBlockRequest),BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static));
+                    ctx.GetPattern(met).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlockRequest),BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static));
                 }
             }
 
@@ -71,7 +71,9 @@ namespace BlockLimiter.Handlers
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
             if (Utilities.AllowBlock(block, playerId, grid))
+            {
                 return true;
+            }
             
             var b = block.BlockPairName;
             if (BlockLimiterConfig.Instance.EnableLog)

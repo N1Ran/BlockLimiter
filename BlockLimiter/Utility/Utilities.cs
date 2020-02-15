@@ -222,11 +222,11 @@ namespace BlockLimiter.Utility
                 if (playerId != 0 && item.LimitPlayers)
                 {
                     var filteredBlocksCount = blockCache.Count(x=> x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
+                    var overCount = filteredBlocksCount - item.Limit;
+                    item.FoundEntities[playerId] = overCount;
                     if (filteredBlocksCount >= item.Limit)
                     {
                         nope = true;
-                        var overCount = filteredBlocksCount - item.Limit;
-                        item.FoundEntities[playerId] = overCount;
                         break;
                     }
                 }
@@ -236,11 +236,11 @@ namespace BlockLimiter.Utility
                     var subGrids = MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Physical);
 
                     var filteredBlocksCount = blockCache.Count(x=> x.CubeGrid == grid && x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
+                    var overCount = filteredBlocksCount - item.Limit;
+                    item.FoundEntities[grid.EntityId] = overCount;
                     if (filteredBlocksCount >= item.Limit)
                     {
                         nope = true;
-                        var overCount = filteredBlocksCount - item.Limit;
-                        item.FoundEntities[grid.EntityId] = overCount;
                         break;
                     }
 
@@ -249,11 +249,11 @@ namespace BlockLimiter.Utility
                         foreach (var subGrid in subGrids)
                         {
                             var subGridBlockCount = blockCache.Count(x=> x.CubeGrid == subGrid && x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
+                            var subOverCount = filteredBlocksCount - item.Limit;
+                            item.FoundEntities[subGrid.EntityId] = subOverCount;
                             if (subGridBlockCount >= item.Limit)
                             {
                                 nope = true;
-                                var overCount = filteredBlocksCount - item.Limit;
-                                item.FoundEntities[subGrid.EntityId] = overCount;
                                 break;
                             }
                         }
@@ -273,11 +273,11 @@ namespace BlockLimiter.Utility
                 {
                     var filteredBlocksCount = blockCache.Count(x =>
                         x.BlockDefinition == block &&  x.FatBlock.GetOwnerFactionTag() == faction.Tag);
+                    var overCount = filteredBlocksCount - item.Limit;
+                    item.FoundEntities[faction.FactionId] = overCount;
                     if (filteredBlocksCount >= item.Limit)
                     {
                         nope = true;
-                        var overCount = filteredBlocksCount - item.Limit;
-                        item.FoundEntities[faction.FactionId] = overCount;
                         break;
                     }
                 }
