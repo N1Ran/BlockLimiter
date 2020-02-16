@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Threading;
@@ -62,6 +63,7 @@ namespace BlockLimiter.Settings
         private int _maxBlocksSmallGrid = 0;
         private int _maxBlocksLargeGrid = 0;
         private bool _enableLog;
+        private bool _blockOwnershipTransfer;
         private MtObservableCollection<LimitItem> _limitItems;
 
 
@@ -84,6 +86,18 @@ namespace BlockLimiter.Settings
                 _enable = value; 
                 OnPropertyChanged();
                 Instance.Save(); 
+            }
+        }
+        
+        [Display(Name =  "Enable Ownership Blocking", Description = "Will block ownership if player exceeds limit of block being transferred to them")]
+        public bool BlockOwnershipTransfer
+        {
+            get => _blockOwnershipTransfer;
+            set
+            {
+                _blockOwnershipTransfer = value;
+                OnPropertyChanged();
+                Instance.Save();
             }
         }
 

@@ -30,9 +30,6 @@ namespace BlockLimiter.Utility
         [ReflectedStaticMethod(Type = typeof(MyCubeBuilder), Name = "SpawnGridReply", OverrideTypes = new []{typeof(bool), typeof(ulong)})]
         private static Action<bool, ulong> _spawnGridReply;
 
-       /* [ReflectedMethodInfo(typeof(MyMechanicalConnectionBlockBase), "NotifyTopPartFailed")]
-        private static Action<MySession.LimitResult> _attachGridReply;*/
-
         public static string GetPlayerNameFromSteamId(ulong steamId)
         {
             var pid = MySession.Static.Players.TryGetIdentityId(steamId);
