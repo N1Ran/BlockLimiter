@@ -91,7 +91,7 @@ namespace BlockLimiter.Punishment
                             {
                                 break;
                             }
-                            if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
+                            if (!Block.IsMatch(block.BlockDefinition,item))continue;
                             count++;
                             removeBlocks[block] = item.Punishment;
                         }
@@ -109,15 +109,15 @@ namespace BlockLimiter.Punishment
                         
                         foreach (var block in _blockCache)
                         {
-                            if (!Utilities.IsOwner(item.BlockOwnerState,block,player.IdentityId)) continue;
-                            if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
+                            if (!Block.IsOwner(item.BlockOwnerState,block,player.IdentityId)) continue;
+                            if (!Block.IsMatch(block.BlockDefinition,item))continue;
 
                             if (overCount - count <= 0)
                             {
                                 break;
                             }
-                            if (!Utilities.IsOwner(item.BlockOwnerState,block,player.IdentityId)) continue;
-                            if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
+                            if (!Block.IsOwner(item.BlockOwnerState,block,player.IdentityId)) continue;
+                            if (!Block.IsMatch(block.BlockDefinition,item))continue;
                             count++;
                             removeBlocks[block] = item.Punishment;
                         }
@@ -141,7 +141,7 @@ namespace BlockLimiter.Punishment
                         {
                             break;
                         }
-                        if (!Utilities.IsMatch(block.BlockDefinition,item))continue;
+                        if (!Block.IsMatch(block.BlockDefinition,item))continue;
                         if (removeBlocks.ContainsKey(block)) continue;
                         count++;
                         removeBlocks.Add(block,item.Punishment);

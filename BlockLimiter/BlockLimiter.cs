@@ -28,6 +28,7 @@ using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Game.VisualScripting;
 using VRage.Network;
+using Grid = BlockLimiter.Utility.Grid;
 
 namespace BlockLimiter
 {
@@ -43,7 +44,7 @@ namespace BlockLimiter
         public static BlockLimiter Instance { get; private set; }
         private TorchSessionManager _sessionManager;
         private List<ProcessHandlerBase> _limitHandlers;
-        public List<LimitItem> VanillaLimits = new List<LimitItem>();
+        public HashSet<LimitItem> VanillaLimits = new HashSet<LimitItem>();
         
         private int _updateCounter;
 
@@ -97,7 +98,7 @@ namespace BlockLimiter
                     throw new ArgumentOutOfRangeException();
             }
 
-            VanillaLimits = limits;
+            VanillaLimits.UnionWith(limits);
         }
 
 
@@ -159,7 +160,7 @@ namespace BlockLimiter
             _pm = torch.Managers.GetManager<PatchManager>();
             _context = _pm.AcquireContext();
             Instance = this;
-            //Patch(_context);
+            Patch(_context);
             BuildBlockPatch.Patch(_context);
             ProjectionPatch.Patch(_context);
             GridSpawnPatch.Patch(_context);
@@ -167,8 +168,8 @@ namespace BlockLimiter
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)
                 _sessionManager.SessionStateChanged += SessionChanged;
-            
         }
+
 
         public override void Update()
         {
@@ -238,8 +239,8 @@ namespace BlockLimiter
                 return false;
             }
 
-            return !grids.Any(Utilities.GridSizeViolation) && 
-                   !grids.Any(z=>z.CubeBlocks.Any(b=>Utilities.AllowBlock(MyDefinitionManager.Static.GetCubeBlockDefinition(b),0,z)));
+            return !grids.Any(Grid.GridSizeViolation) && 
+                   !grids.Any(z=>z.CubeBlocks.Any(b=>Block.AllowBlock(MyDefinitionManager.Static.GetCubeBlockDefinition(b),0,z)));
         }
 
        private static void Patch(PatchContext ctx)
@@ -256,7 +257,7 @@ namespace BlockLimiter
         {
 
             if (!BlockLimiterConfig.Instance.BlockOwnershipTransfer) return true;
-            if (Utilities.AllowBlock(__instance.BlockDefinition, newOwner,(MyObjectBuilder_CubeGrid) null))
+            if (Block.AllowBlock(__instance.BlockDefinition, newOwner,__instance.CubeGrid))
                 return false;
             SlimOwnerChanged?.Invoke(__instance, newOwner);
             return true; // false cancels.

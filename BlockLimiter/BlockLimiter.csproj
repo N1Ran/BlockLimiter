@@ -150,9 +150,12 @@
     <Compile Include="ProcessHandlers\Player.cs" />
     <Compile Include="Punishment\Annoy.cs" />
     <Compile Include="Punishment\Punish.cs" />
+    <Compile Include="Utility\Block.cs" />
+    <Compile Include="Utility\Grid.cs" />
     <Compile Include="Utility\GridCache.cs" />
     <Compile Include="Settings\LimitItem.cs" />
     <Compile Include="Utility\MTObservableCollection.cs" />
+    <Compile Include="Utility\Projector.cs" />
     <Compile Include="Utility\Utilities.cs" />
     <Compile Include="Patch\BuildBlockPatch.cs" />
     <Compile Include="Patch\GridSpawnPatch.cs" />

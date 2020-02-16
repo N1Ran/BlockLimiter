@@ -36,7 +36,6 @@ namespace BlockLimiter.Patch
         private static readonly FieldInfo OriginalGridFields = typeof(MyProjectorBase).GetField("m_originalGridBuilders", BindingFlags.NonPublic | BindingFlags.Instance);
         private static  readonly MethodInfo RemoveProjectionMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly MethodInfo NewBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.NonPublic | BindingFlags.Instance);
-        private  static List<MyObjectBuilder_CubeBlock> _blockList = new List<MyObjectBuilder_CubeBlock>();
 
         public static void Patch(PatchContext ctx)
         {
@@ -47,7 +46,7 @@ namespace BlockLimiter.Patch
         public static void PrefixNewBlueprint(MyProjectorBase __instance, ref List<MyObjectBuilder_CubeGrid> projectedGrids)
         {
 
-            if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.LimitItems.Any(l=>l.RestrictProjection))return;
+            if (!BlockLimiterConfig.Instance.EnableLimits)return;
             
             var proj = __instance;
             if (proj == null)
@@ -58,9 +57,9 @@ namespace BlockLimiter.Patch
 
             foreach (var projectedGrid in projectedGrids)
             {
-                _blockList.Clear();
                 var grid = projectedGrid;
                 var blocks = projectedGrid.CubeBlocks;
+                if (!blocks.Any()) continue;
                 var remoteUserId = MyEventContext.Current.Sender.Value;
                 var playerId = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).Identity.IdentityId;
                 var count = 0;
@@ -68,18 +67,14 @@ namespace BlockLimiter.Patch
                 {
                     var block = blocks[i];
                     var def = MyDefinitionManager.Static.GetCubeBlockDefinition(block);
-                    block.BuiltBy = __instance.BuiltBy;
-                    if (Utilities.AllowBlock(def, playerId, grid))
-                    {
-                        _blockList.Add(block);
-                        continue;
-                    }
+                    if (Block.ProjectBlock(def, playerId, grid)) continue;
                     blocks.RemoveAtFast(i);
                     count++;
                 }
+
                 if (count <= 0) continue;
                 MyMultiplayer.RaiseEvent(__instance, x => (Action)Delegate.CreateDelegate(typeof(Action), x, RemoveProjectionMethod), new EndpointId(remoteUserId));
-                var stopSpawn = Utilities.GridSizeViolation(grid);
+                var stopSpawn = Grid.GridSizeViolation(grid);
                 Task.Run(() =>
                 {
                     Thread.Sleep(100);
@@ -103,104 +98,6 @@ namespace BlockLimiter.Patch
 
         }
 
-        private static bool IsAllowed(MyObjectBuilder_CubeBlock block, ulong target)
-        {
-            
-            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
-
-            var limitItems = BlockLimiterConfig.Instance.AllLimits;
-
-            if (limitItems.Count < 1) return true;
-
-            var playerId = Utilities.GetPlayerIdFromSteamId(target);
-            var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
-            var blockDef = FindDefinition(block);
-            if (blockDef == null) return true;
-            var remove = false;
-            foreach (var item in limitItems)
-            {
-                if (item.BlockPairName.Count < 1) continue;
-                if (!Utilities.IsMatch(blockDef, item)) continue;
-
-                if (item.Exceptions.Any())
-                {
-                    var skip = false;
-                    foreach (var id in item.Exceptions)
-                    {
-                        if (long.TryParse(id, out var someId) && (someId == playerId || someId == playerFaction?.FactionId))
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                        if (ulong.TryParse(id, out var steamId) && steamId == target)
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                        if (Utilities.TryGetEntityByNameOrId(id, out var entity) && entity != null && ((MyCharacter) entity).ControlSteamId == target)
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                        if (id.Length > 4 && playerFaction == null) continue;
-                        if (id.Equals(playerFaction?.Tag,StringComparison.OrdinalIgnoreCase)) continue;
-                        skip = true;
-                        break;
-                    }
-                    
-                    if (skip)continue;
-                }
-                
-                if (item.Limit == 0)
-                {
-                    remove = true;
-                    break;
-                }
-
-                if (item.FoundEntities.TryGetValue(playerId, out var playerCount))
-                {
-                    if (playerCount >= 0)
-                    {
-                        remove = true;
-                        break;
-                    }
-                }
-
-
-                if (playerFaction==null)break;
-                if (!item.FoundEntities.TryGetValue(playerId, out var factionCount)|| factionCount >= 0)
-                {
-                    continue;
-                }
-
-                remove = true;
-                break;
-
-            }
-
-            return !remove;
-
-        }
-
-        
-        private static Dictionary<MyStringHash, MyDefinitionBase> _cache  = new Dictionary<MyStringHash, MyDefinitionBase>();
-        private static MyCubeBlockDefinition FindDefinition(MyObjectBuilder_CubeBlock block)
-        {
-            if (_cache.TryGetValue(block.SubtypeId, out var def))
-                return (MyCubeBlockDefinition)def;
-
-            foreach (var baseDef in MyDefinitionManager.Static.GetAllDefinitions().OfType<MyCubeBlockDefinition>().Where(baseDef => baseDef.Id.SubtypeId.Equals(block.SubtypeId)))
-            {
-                _cache[block.SubtypeId] = baseDef;
-                return baseDef;
-
-            }
-
-            _cache[block.SubtypeId] = null;
-            return null;
-        }
+       
     }
 }

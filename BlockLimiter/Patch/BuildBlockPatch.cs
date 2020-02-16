@@ -70,7 +70,7 @@ namespace BlockLimiter.Patch
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
-            if (Utilities.AllowBlock(block, playerId, grid))
+            if (Block.AllowBlock(block, playerId, grid))
             {
                 return true;
             }
@@ -106,7 +106,7 @@ namespace BlockLimiter.Patch
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
-            if (Utilities.AllowBlock(block, playerId, grid))
+            if (Block.AllowBlock(block, playerId, grid))
                 return true;
             
             var b = block.BlockPairName;

@@ -46,7 +46,7 @@ namespace BlockLimiter.Utility
                 if (e.Count > 0)
                 {
                     _gridCache.Clear();
-                    _gridCache.UnionWith(e.OfType<MyCubeGrid>().Where(x=>x.Flags != (EntityFlags)4));
+                    _gridCache.UnionWith(e.OfType<MyCubeGrid>().Where(x=>x.Projector == null));
                 }
             }
 
@@ -104,6 +104,7 @@ namespace BlockLimiter.Utility
             var builders = new Dictionary<long, int>();
             foreach (var block in grid.CubeBlocks)
             {
+                //if (grid.Projector != null) continue;
                 builders.TryGetValue(block.BuiltBy, out int c);
                 builders[block.BuiltBy] = c + 1;
             }

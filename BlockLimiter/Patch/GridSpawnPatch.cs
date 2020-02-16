@@ -48,7 +48,7 @@ namespace BlockLimiter.Patch
             var player = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId);
             var playerId = player.Identity.IdentityId;
             
-            if (Utilities.AllowBlock(block,playerId,(MyObjectBuilder_CubeGrid) null))
+            if (Block.AllowBlock(block,playerId,(MyObjectBuilder_CubeGrid) null))
                 return true;
 
             var b = block.BlockPairName;
