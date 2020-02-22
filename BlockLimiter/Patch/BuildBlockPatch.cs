@@ -27,6 +27,7 @@ using VRageRender;
 
 namespace BlockLimiter.Patch
 {
+    [PatchShim]
     public static class BuildBlockPatch
     {
 
@@ -44,13 +45,13 @@ namespace BlockLimiter.Patch
 
                 if (met.Name.Contains("BuildBlockRequest"))
                 {
-                    ctx.GetPattern(met).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlockRequest),BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static));
+                    ctx.GetPattern(met).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlockRequest),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
                 }
             }
 
         }
 
-        public static bool BuildBlockRequest(MyCubeGrid __instance, MyCubeGrid.MyBlockLocation location)
+        private static bool BuildBlockRequest(MyCubeGrid __instance, MyCubeGrid.MyBlockLocation location)
         {
             
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
@@ -60,6 +61,13 @@ namespace BlockLimiter.Patch
                 Log.Debug("Null grid in BuildBlockHandler");
                 return true;
             }
+            var remoteUserId = MyEventContext.Current.Sender.Value;
+            if (Grid.GridSizeViolation(grid))
+            {
+                Utilities.SendFailSound(remoteUserId);
+                Utilities.ValidationFailed();
+                return false;
+            }
             var block = MyDefinitionManager.Static.GetCubeBlockDefinition(location.BlockDefinition);
             
             if (block == null)
@@ -67,7 +75,6 @@ namespace BlockLimiter.Patch
                 Log.Debug("Null block in BuildBlockHandler");
                 return true;
             }
-            var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
             if (Block.AllowBlock(block, playerId, grid))

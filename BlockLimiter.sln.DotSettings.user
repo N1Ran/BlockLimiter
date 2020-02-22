@@ -4,6 +4,7 @@
   &lt;Assembly Path="C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6.1\System.Xml.dll" /&gt;&#xD;
   &lt;Assembly Path="D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\GameBinaries\netstandard.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
+	
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=blocklimit/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Builtby/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=mylimit/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>

@@ -23,6 +23,7 @@ using VRage.Network;
 
 namespace BlockLimiter.Patch
 {
+    [PatchShim]
     public static class GridSpawnPatch
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();

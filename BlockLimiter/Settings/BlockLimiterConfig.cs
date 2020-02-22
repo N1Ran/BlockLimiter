@@ -27,6 +27,8 @@ namespace BlockLimiter.Settings
         private static BlockLimiterConfig _instance;
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private XmlAttributeOverrides _overrides;
+        
+        [XmlIgnore]
         public HashSet<LimitItem> AllLimits = new HashSet<LimitItem>();
         public BlockLimiterConfig()
         {
@@ -53,11 +55,11 @@ namespace BlockLimiter.Settings
         private bool _loading;
         private bool _vanillaLimits;
         private bool _annoy;
-        private int _annoyInterval = 600;
+        private int _annoyInterval = 300000;
         private int _annoyDuration = 15000;
         private string _serverName = "BlockLimiter";
         private string _annoyMsg = "You're in violation of set limits.  Use [!blocklimit mylimit] to view which limits you've exceeded";
-        private int _punishInterval = 1000;
+        private int _punishInterval = 300000;
         private int _maxBlockSizeShips = 0;
         private int _maxBlockSizeStations = 0;
         private int _maxBlocksSmallGrid = 0;

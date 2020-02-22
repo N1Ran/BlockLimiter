@@ -16,12 +16,14 @@ using Torch.Managers;
 using Torch.Mod;
 using Torch.Mod.Messages;
 using Torch.Utils;
+using VRage.Collections;
 using VRage.Dedicated.Configurator;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Network;
+using VRage.Utils;
 
 namespace BlockLimiter.Utility
 {
@@ -82,6 +84,18 @@ namespace BlockLimiter.Utility
         public static void ValidationFailed()
         {
             ((MyMultiplayerServerBase)MyMultiplayer.Static).ValidationFailed(MyEventContext.Current.Sender.Value);
+        }
+        
+        private static MyConcurrentDictionary<MyStringHash, MyCubeBlockDefinition> _defCache = new MyConcurrentDictionary<MyStringHash, MyCubeBlockDefinition>();
+
+        public static MyCubeBlockDefinition GetDefinition(MyObjectBuilder_CubeBlock block)
+        {
+            if (_defCache.TryGetValue(block.SubtypeId, out var def))
+                return def;
+
+            var blockDefinition = MyDefinitionManager.Static.GetCubeBlockDefinition(block);
+            _defCache[block.SubtypeId] = blockDefinition;
+            return blockDefinition;
         }
 
 

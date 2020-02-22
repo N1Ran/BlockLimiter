@@ -161,9 +161,6 @@ namespace BlockLimiter
             _context = _pm.AcquireContext();
             Instance = this;
             Patch(_context);
-            BuildBlockPatch.Patch(_context);
-            ProjectionPatch.Patch(_context);
-            GridSpawnPatch.Patch(_context);
             Load();
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)

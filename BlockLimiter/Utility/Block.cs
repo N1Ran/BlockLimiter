@@ -228,19 +228,53 @@ namespace BlockLimiter.Utility
             
         }
         
-        public static bool ProjectBlock(MyCubeBlockDefinition block, long playerId, MyCubeGrid grid = null)
+
+        public static bool IsOwner(LimitItem.OwnerState state, MySlimBlock block, long playerId)
+        {
+            var correctOwner = false;
+            switch (state)
+            {
+                case LimitItem.OwnerState.BuiltbyId:
+                    correctOwner = block.BuiltBy == playerId;
+                    break;
+                case LimitItem.OwnerState.OwnerId:
+                    correctOwner = block.OwnerId == playerId;
+                    break;
+                case LimitItem.OwnerState.OwnerAndBuiltbyId:
+                    correctOwner = block.OwnerId == playerId && block.BuiltBy == playerId;
+                    break;
+                case LimitItem.OwnerState.OwnerOrBuiltbyId:
+                    correctOwner = block.OwnerId == playerId || block.BuiltBy == playerId;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(state), state, null);
+            }
+
+            return correctOwner;
+        }
+
+        public static bool IsMatch(MyCubeBlockDefinition block, LimitItem item)
+        {
+            var typeMatch = false;
+            
+            if (item.UseBlockType)
+                typeMatch = item.BlockPairName.Count > 0 && item.BlockPairName.Any(x =>
+                                x.Equals(block.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase));
+            return typeMatch || item.BlockPairName.Count> 0 && item.BlockPairName.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase));
+        }
+        
+        //Projector
+        public static bool ProjectBlock(MyObjectBuilder_CubeBlock block, long playerId, MyCubeGrid grid = null)
         {
             
-            var nope = false;
-            var blockCache = new HashSet<MySlimBlock>();
-            GridCache.GetBlocks(blockCache);
+            var project = true;
 
             var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
-
-            foreach (var item in BlockLimiterConfig.Instance.AllLimits)
+            var blockDef = Utilities.GetDefinition(block);
+            foreach (var item in BlockLimiterConfig.Instance.LimitItems)
             {
                 if (!item.RestrictProjection) continue;
-                if (!item.BlockPairName.Any() || !IsMatch(block, item)) continue;
+                if (!item.BlockPairName.Any() || !IsMatch(blockDef, item)) continue;
 
                 if (item.Exceptions.Any())
                 {
@@ -272,87 +306,70 @@ namespace BlockLimiter.Utility
                     }
                 }
                 
-                if (playerId != 0 && item.LimitPlayers)
+                if (playerId > 0 && item.LimitPlayers)
                 {
-                    var filteredBlocksCount = blockCache.Count(x=> x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
-                    var overCount = filteredBlocksCount - item.Limit;
-                    item.FoundEntities[playerId] = overCount;
-                    if (filteredBlocksCount >= item.Limit)
+                    if (item.FoundEntities.TryGetValue(playerId, out var count))
                     {
-                        nope = true;
-                        break;
+                        if (count > 0 || item.Limit == 0)
+                        {
+                            project = false;
+                            break;
+                        }
                     }
                 }
 
                 if (grid != null && item.LimitGrids)
                 {
-                    if (!Grid.IsGridType(grid, item)) continue;
-                    var subGrids = MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Physical);
-
-                    var filteredBlocksCount = blockCache.Count(x=> x.CubeGrid == grid && x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
-                    var overCount = filteredBlocksCount - item.Limit;
-                    item.FoundEntities[grid.EntityId] = overCount;
-                    if (filteredBlocksCount >= item.Limit)
+                    if (Grid.IsGridType(grid, item))
                     {
-                        nope = true;
-                        break;
-                    }
-
-                    if (subGrids.Any())
-                    {
-                        foreach (var subGrid in subGrids)
+                        if (item.Limit == 0)
                         {
-                            var subGridBlockCount = blockCache.Count(x=> x.CubeGrid == subGrid && x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
-                            var subOverCount = filteredBlocksCount - item.Limit;
-                            item.FoundEntities[subGrid.EntityId] = subOverCount;
-                            if (subGridBlockCount >= item.Limit)
-                            {
-                                nope = true;
-                                break;
-                            }
+                            project = false;
+                            break;
+                        }
+                        var filteredBlocksCount =
+                            grid.CubeBlocks.Count(x => x.BlockDefinition == blockDef);
+                        
+                        if (filteredBlocksCount >= item.Limit || item.Limit == 0)
+                        {
+                            item.FoundEntities[grid.EntityId] = filteredBlocksCount;
+                            project = false;
+                            break;
                         }
                     }
-                }
-
-                else
-                {
-                    if (item.Limit == 0)
-                    {
-                        nope = true;
-                        break;
-                    }
+                    
                 }
 
                 if (faction != null && item.LimitFaction)
                 {
-                    var filteredBlocksCount = blockCache.Count(x =>
-                        x.BlockDefinition == block &&  x.FatBlock.GetOwnerFactionTag() == faction.Tag);
-                    var overCount = filteredBlocksCount - item.Limit;
-                    item.FoundEntities[faction.FactionId] = overCount;
-                    if (filteredBlocksCount >= item.Limit)
+                    if (item.FoundEntities.TryGetValue(faction.FactionId, out var count))
                     {
-                        nope = true;
-                        break;
+                        if (count >= 0|| item.Limit == 0)
+                        {
+                            project = false;
+                            break;
+                        }
                     }
                 }
                 
             }
 
-            return !nope;
+            return project;
             
         }
 
-        public static bool ProjectBlock(MyCubeBlockDefinition block, long playerId, MyObjectBuilder_CubeGrid grid = null)
+        public static bool ProjectBlock(MyObjectBuilder_CubeBlock block, long playerId, MyObjectBuilder_CubeGrid grid)
         {
             
-            var nope = false;
+            var project = true;
 
             var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
+            var blockDef = Utilities.GetDefinition(block);
 
-            foreach (var item in BlockLimiterConfig.Instance.AllLimits)
+            foreach (var item in BlockLimiterConfig.Instance.LimitItems)
             {
                 if (!item.RestrictProjection) continue;
-                if (!item.BlockPairName.Any() || !IsMatch(block, item)) continue;
+                if (!item.BlockPairName.Any() || !IsMatch(blockDef, item)) continue;
 
                 if (item.Exceptions.Any())
                 {
@@ -388,84 +405,53 @@ namespace BlockLimiter.Utility
                 {
                     if (item.FoundEntities.TryGetValue(playerId, out var count))
                     {
-                        if (count <= 0) continue;
-                        nope = true;
-                        break;
+                        if (count > 0 || item.Limit == 0)
+                        {
+                            project = false;
+                            break;
+                        }
                     }
                 }
 
                 if (grid != null && item.LimitGrids)
                 {
-                    if (!Grid.IsGridType(grid, item)) continue;
-                    var filteredBlocksCount =
-                        grid.CubeBlocks.Count(x => MyDefinitionManager.Static.GetCubeBlockDefinition(x) == block);
-                    if (filteredBlocksCount >= item.Limit)
+                    if (Grid.IsGridType(grid, item))
                     {
-                        nope = true;
-                        break;
+                        if (item.Limit == 0)
+                        {
+                            project = false;
+                            break;
+                        }
+                        
+                        var filteredBlocksCount =
+                            grid.CubeBlocks.Count(x => x.SubtypeId == blockDef.Id.SubtypeId);
+                        if (filteredBlocksCount >= item.Limit)
+                        {
+                            project = false;
+                            break;
+                        }
                     }
                     
-                }
-
-                else
-                {
-                    if (item.Limit == 0)
-                    {
-                        nope = true;
-                        break;
-                    }
                 }
 
                 if (faction != null && item.LimitFaction)
                 {
                     if (item.FoundEntities.TryGetValue(faction.FactionId, out var count))
                     {
-                        if (count <= 0) continue;
-                        nope = true;
-                        break;
+                        if (count >= 0|| item.Limit == 0)
+                        {
+                            project = false;
+                            break;
+                        }
                     }
                 }
                 
-                
             }
 
-            return !nope;
+            return project;
             
         }
 
-        public static bool IsOwner(LimitItem.OwnerState state, MySlimBlock block, long playerId)
-        {
-            var correctOwner = false;
-            switch (state)
-            {
-                case LimitItem.OwnerState.BuiltbyId:
-                    correctOwner = block.BuiltBy == playerId;
-                    break;
-                case LimitItem.OwnerState.OwnerId:
-                    correctOwner = block.OwnerId == playerId;
-                    break;
-                case LimitItem.OwnerState.OwnerAndBuiltbyId:
-                    correctOwner = block.OwnerId == playerId && block.BuiltBy == playerId;
-                    break;
-                case LimitItem.OwnerState.OwnerOrBuiltbyId:
-                    correctOwner = block.OwnerId == playerId || block.BuiltBy == playerId;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(state), state, null);
-            }
-
-            return correctOwner;
-        }
-
-        public static bool IsMatch(MyCubeBlockDefinition block, LimitItem item)
-        {
-            var typeMatch = false;
-            
-            if (item.UseBlockType)
-                typeMatch = item.BlockPairName.Count > 0 && item.BlockPairName.Any(x =>
-                                x.Equals(block.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase));
-            return typeMatch || item.BlockPairName.Count> 0 && item.BlockPairName.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase));
-        }
 
     }
 }
