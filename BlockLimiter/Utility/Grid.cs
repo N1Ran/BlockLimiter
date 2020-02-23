@@ -81,6 +81,8 @@ namespace BlockLimiter.Utility
         {
             if (GridSizeViolation(grid)) return false;
 
+            if (grid.BlocksCount == 0) return true;
+
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
                 if (limit.GridTypeBlock != LimitItem.GridType.AllGrids)
@@ -93,7 +95,7 @@ namespace BlockLimiter.Utility
                     }
                 }
 
-                if (limit.Exceptions.Contains(grid.BigOwners[0].ToString())) continue;
+                if (grid.BigOwners.Count > 0 && limit.Exceptions.Contains(grid.BigOwners[0].ToString())) continue;
 
                 var count = grid.CubeBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
 
