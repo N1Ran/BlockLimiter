@@ -7,6 +7,7 @@ using Sandbox;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using VRage;
+using VRage.Collections;
 using VRage.Game.Entity;
 using VRage.ModAPI;
 
@@ -42,7 +43,7 @@ namespace BlockLimiter.Utility
             using(_entityLock.AcquireExclusiveUsing())
             {
                 var e = MyEntities.GetEntities();
-                //KEEN WHAT THE FUCK ARE YOU **DOING?!?!**
+                
                 if (e.Count > 0)
                 {
                     _gridCache.Clear();
@@ -104,7 +105,6 @@ namespace BlockLimiter.Utility
             var builders = new Dictionary<long, int>();
             foreach (var block in grid.CubeBlocks)
             {
-                //if (grid.Projector != null) continue;
                 builders.TryGetValue(block.BuiltBy, out int c);
                 builders[block.BuiltBy] = c + 1;
             }

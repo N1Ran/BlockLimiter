@@ -252,12 +252,10 @@ namespace BlockLimiter
         // ReSharper disable once InconsistentNaming
         private static bool OnTransfer(MySlimBlock __instance, long newOwner)
         {
-
-            if (!BlockLimiterConfig.Instance.BlockOwnershipTransfer) return true;
-            if (Block.AllowBlock(__instance.BlockDefinition, newOwner,__instance.CubeGrid))
-                return false;
+            if (BlockLimiterConfig.Instance.EnableLimits && BlockLimiterConfig.Instance.BlockOwnershipTransfer)
+                return Block.AllowBlock(__instance.BlockDefinition, newOwner, __instance.CubeGrid);
             SlimOwnerChanged?.Invoke(__instance, newOwner);
-            return true; // false cancels.
+            return true;
         }
         
     }

@@ -11,15 +11,6 @@ namespace BlockLimiter.Utility
 {
     public static class Grid
     {
-        public static bool BlockGridSpawn(MyObjectBuilder_CubeGrid grid)
-        {
-            if (GridSizeViolation(grid))
-                return true;
-            return grid.CubeBlocks.Any(x => Block.AllowBlock(MyDefinitionManager.Static.GetCubeBlockDefinition(x), 0,(MyObjectBuilder_CubeGrid) null));
-        }
-
-
-
         public static bool GridSizeViolation(MyObjectBuilder_CubeGrid grid)
         {
             var gridSize = grid.CubeBlocks.Count;
@@ -85,28 +76,27 @@ namespace BlockLimiter.Utility
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (limit.GridTypeBlock != LimitItem.GridType.AllGrids)
+                if (!limit.LimitGrids) continue;
+                switch (limit.GridTypeBlock)
                 {
-                    switch (limit.GridTypeBlock)
-                    {
-                        case LimitItem.GridType.ShipsOnly when !grid.IsStatic:
-                        case LimitItem.GridType.StationsOnly when grid.IsStatic:
-                            continue;
-                    }
+                    case LimitItem.GridType.ShipsOnly when !grid.IsStatic:
+                    case LimitItem.GridType.StationsOnly when grid.IsStatic:
+                    case LimitItem.GridType.AllGrids:
+                    case LimitItem.GridType.SmallGridsOnly:
+                    case LimitItem.GridType.LargeGridsOnly:
+                        continue;
                 }
 
                 if (grid.BigOwners.Count > 0 && limit.Exceptions.Contains(grid.BigOwners[0].ToString())) continue;
 
                 var count = grid.CubeBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
 
-                limit.FoundEntities[grid.EntityId] = 0;
+                limit.FoundEntities[grid.EntityId] = count;
 
                 if (count <= limit.Limit)
                 {
                     continue;
                 }
-                
-                limit.FoundEntities[grid.EntityId] = count;
 
                 return false;
 
@@ -115,38 +105,6 @@ namespace BlockLimiter.Utility
             return true;
         }
         
-        public static bool BuildOnGrid(MyObjectBuilder_CubeGrid grid, out int blockCount)
-        {
-            blockCount = grid.CubeBlocks.Count;
-            
-            var gridType = grid.GridSizeEnum;
-            var isStatic = grid.IsStatic;
-
-            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && blockCount >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
-            {
-                return  false;
-            }
-
-            if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && blockCount >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
-            {
-                return  false;
-            }
-
-            if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridType == MyCubeSize.Large && blockCount >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
-            {
-                return  false;
-            }
-
-            if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && gridType == MyCubeSize.Small && blockCount >= BlockLimiterConfig.Instance.MaxBlocksSmallGrid)
-            {
-                return  false;
-            }
-
-            return true;
-
-        }
-
-
         public static bool IsGridType(MyCubeGrid grid, LimitItem item)
         {
             switch (item.GridTypeBlock)
@@ -159,8 +117,10 @@ namespace BlockLimiter.Utility
                     return grid.IsStatic;
                 case LimitItem.GridType.ShipsOnly:
                     return !grid.IsStatic;
-                default:
+                case LimitItem.GridType.AllGrids:
                     return true;
+                default:
+                    return false;
             }
         }
 
@@ -179,7 +139,7 @@ namespace BlockLimiter.Utility
                 case LimitItem.GridType.ShipsOnly:
                     return !grid.IsStatic;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    return false;
             }
         }
 

@@ -310,7 +310,7 @@ namespace BlockLimiter.Utility
                 {
                     if (item.FoundEntities.TryGetValue(playerId, out var count))
                     {
-                        if (count > 0 || item.Limit == 0)
+                        if (count >= 0 || item.Limit == 0)
                         {
                             project = false;
                             break;
@@ -329,10 +329,10 @@ namespace BlockLimiter.Utility
                         }
                         var filteredBlocksCount =
                             grid.CubeBlocks.Count(x => x.BlockDefinition == blockDef);
-                        
+                        item.FoundEntities[grid.EntityId] = filteredBlocksCount;
+
                         if (filteredBlocksCount >= item.Limit || item.Limit == 0)
                         {
-                            item.FoundEntities[grid.EntityId] = filteredBlocksCount;
                             project = false;
                             break;
                         }
@@ -405,7 +405,7 @@ namespace BlockLimiter.Utility
                 {
                     if (item.FoundEntities.TryGetValue(playerId, out var count))
                     {
-                        if (count > 0 || item.Limit == 0)
+                        if (count >= 0 || item.Limit == 0)
                         {
                             project = false;
                             break;
@@ -425,7 +425,9 @@ namespace BlockLimiter.Utility
                         
                         var filteredBlocksCount =
                             grid.CubeBlocks.Count(x => x.SubtypeId == blockDef.Id.SubtypeId);
-                        if (filteredBlocksCount >= item.Limit)
+                        item.FoundEntities[grid.EntityId] = filteredBlocksCount;
+
+                        if (filteredBlocksCount >= item.Limit || item.Limit == 0)
                         {
                             project = false;
                             break;

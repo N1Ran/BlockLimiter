@@ -37,7 +37,7 @@ namespace BlockLimiter.Patch
         
         private static bool ToStatic (MyCubeGrid __instance)
         {
-            if (!BlockLimiterConfig.Instance.EnableLimits)
+            if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.EnableConvertBlock)
             {
                 return true;
             }

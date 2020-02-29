@@ -34,6 +34,7 @@ namespace BlockLimiter.Settings
         {
             _limitItems = new MtObservableCollection<LimitItem>();
             _limitItems.CollectionChanged += ItemsCollectionChanged;
+            _limitItems.CollectionChanged += ItemsCollectionChanged;
         }
 
 
@@ -65,6 +66,7 @@ namespace BlockLimiter.Settings
         private int _maxBlocksSmallGrid = 0;
         private int _maxBlocksLargeGrid = 0;
         private bool _enableLog;
+        private bool _gridConvertBlocking;
         private bool _blockOwnershipTransfer;
         private MtObservableCollection<LimitItem> _limitItems;
 
@@ -86,6 +88,19 @@ namespace BlockLimiter.Settings
             set
             {
                 _enable = value; 
+                OnPropertyChanged();
+                Instance.Save(); 
+            }
+        }
+        
+        
+        [Display(Name =  "Enable Grid Convert Blocking", Description = "Will block grid conversion if grid will violate limits upon conversion")]
+        public bool EnableConvertBlock
+        {
+            get => _gridConvertBlocking;
+            set
+            {
+                _gridConvertBlocking = value; 
                 OnPropertyChanged();
                 Instance.Save(); 
             }

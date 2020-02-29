@@ -32,22 +32,22 @@ namespace BlockLimiter.Patch
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static  readonly MethodInfo RemoveProjectionMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly MethodInfo NewBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo OriginalGridField = typeof(MyProjectorBase).GetField("m_originalGridBuilder", BindingFlags.NonPublic | BindingFlags.Instance);
         public static void Patch(PatchContext ctx)
         {
-            
-            ctx.GetPattern(NewBlueprintMethod).Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixNewBlueprint), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
+            ctx.GetPattern(typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess")).Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixNewBlueprint), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
 
         }
 
-        private static void PrefixNewBlueprint(MyProjectorBase __instance, ref List<MyObjectBuilder_CubeGrid> projectedGrids)
+        private static bool PrefixNewBlueprint(MyProjectorBase __instance, ref List<MyObjectBuilder_CubeGrid> projectedGrids)
         {
 
-            if (!BlockLimiterConfig.Instance.EnableLimits)return;
+            if (!BlockLimiterConfig.Instance.EnableLimits)return true;
             var proj = __instance;
             if (proj == null)
             {
                 Log.Debug("No projector?");
-                return;
+                return false;
             }
             
             var grid = projectedGrids[0];
@@ -55,7 +55,7 @@ namespace BlockLimiter.Patch
             if (grid == null)
             {
                 Log.Warn("Grid null in projectorPatch");
-                return;
+                return false;
             }
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
@@ -71,7 +71,7 @@ namespace BlockLimiter.Patch
                 NetworkManager.RaiseEvent(proj, RemoveProjectionMethod, target);
                 Utilities.SendFailSound(remoteUserId);
                 Utilities.ValidationFailed();
-                return;
+                return false;
             }
             
             var count = 0;
@@ -87,25 +87,27 @@ namespace BlockLimiter.Patch
             }
             
 
-            if (count < 1) return;
-            
-            
+            if (count < 1) return true;
+
             NetworkManager.RaiseEvent(proj, RemoveProjectionMethod, target);
-            
-            Thread.Sleep(100);
 
             try
             {
-                NetworkManager.RaiseEvent(proj, NewBlueprintMethod, new List<MyObjectBuilder_CubeGrid>{grid});
+                var projGrid = new List<MyObjectBuilder_CubeGrid>()
+                    {grid};
+                NetworkManager.RaiseEvent(proj, NewBlueprintMethod, proj, target);
             }
             catch (Exception e)
             {
-                //ignore
+                throw;
                 //Log.Warn(e);
             }
-            
+
+           
             ModCommunication.SendMessageTo(new NotificationMessage($"Blocklimiter removed {count} blocks blueprint!", 15000,
                         MyFontEnum.Red), remoteUserId);
+
+            return true;
 
 
         }

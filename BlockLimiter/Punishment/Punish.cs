@@ -107,11 +107,9 @@ namespace BlockLimiter.Punishment
                     {
                         if (item.Exceptions.Contains(player.DisplayName)) continue;
                         
-                        foreach (var block in _blockCache)
+                        foreach (var block in _blockCache.ToList())
                         {
-                            if (!Block.IsOwner(item.BlockOwnerState,block,player.IdentityId)) continue;
-                            if (!Block.IsMatch(block.BlockDefinition,item))continue;
-
+                            if (block == null) continue;
                             if (overCount - count <= 0)
                             {
                                 break;
@@ -144,7 +142,7 @@ namespace BlockLimiter.Punishment
                         if (!Block.IsMatch(block.BlockDefinition,item))continue;
                         if (removeBlocks.ContainsKey(block)) continue;
                         count++;
-                        removeBlocks.Add(block,item.Punishment);
+                        removeBlocks[block] = item.Punishment;
                     }
                     if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
                         item.FoundEntities[id] = 0;
@@ -176,20 +174,20 @@ namespace BlockLimiter.Punishment
                                         Log.Info(
                                         $"removed {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
                                     block.CubeGrid.RazeBlock(block.Position);
-                                    break;
+                                    continue;
                                 case LimitItem.PunishmentType.ShutOffBlock:
                                     if (!(block.FatBlock is MyFunctionalBlock funcBlock)) continue;
                                     if (BlockLimiterConfig.Instance.EnableLog)
                                         Log.Info(
                                         $"Turned off {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
                                     funcBlock.Enabled = false;
-                                    break;
+                                    continue;
                                 case LimitItem.PunishmentType.Explode:
                                     if (BlockLimiterConfig.Instance.EnableLog)
                                         Log.Info(
                                         $"Destroyed {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
                                     block.DoDamage(block.BlockDefinition.MaxIntegrity * 10, MyDamageType.Explosion);
-                                    break;
+                                    continue;
                                 default:
                                     throw new ArgumentOutOfRangeException();
                             }
