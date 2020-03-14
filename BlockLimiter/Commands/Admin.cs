@@ -90,7 +90,7 @@ namespace BlockLimiter.Commands
 
                 foreach (var (entity,count) in item.FoundEntities)
                 {
-                    if (count <= 0) continue;
+                    if (count <= item.Limit) continue;
                     
                     var faction = MySession.Static.Factions.TryGetFactionById(entity);
                     if (faction != null)

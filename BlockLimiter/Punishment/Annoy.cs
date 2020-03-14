@@ -47,26 +47,30 @@ namespace BlockLimiter.Punishment
                 
                 if (annoyList.Contains(steamId)) continue;
 
-                foreach (var (id,count) in limitItems.SelectMany(x=>x.FoundEntities))
+                foreach (var item in limitItems)
                 {
-                    if (id == player.Identity.IdentityId && count > 0)
+                    foreach (var (id,count) in item.FoundEntities)
                     {
-                        annoyList.Add(steamId);
-                        break;
-                    }
+                        if (id == player.Identity.IdentityId && count > item.Limit)
+                        {
+                            annoyList.Add(steamId);
+                            break;
+                        }
 
-                    if (player.Grids.Any(x => x == id))
-                    {
-                        annoyList.Add(steamId);
-                        break;
-                    }
+                        if (player.Grids.Any(x => x == id))
+                        {
+                            annoyList.Add(steamId);
+                            break;
+                        }
                         
 
-                    var playerFaction = MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId);
-                    if (playerFaction == null || id != playerFaction.FactionId) continue;
-                    annoyList.Add(steamId);
-                    break;
+                        var playerFaction = MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId);
+                        if (playerFaction == null || id != playerFaction.FactionId) continue;
+                        annoyList.Add(steamId);
+                        break;
+                    }
                 }
+
             }
 
             if (annoyList.Count < 1) return;

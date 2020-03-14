@@ -72,7 +72,7 @@ namespace BlockLimiter.Punishment
                         continue;
                     }
 
-                    if (overCount<= 0) continue;
+                    if (overCount <= item.Limit) continue;
                     
                     if (overCount - count <= 0)
                     {
