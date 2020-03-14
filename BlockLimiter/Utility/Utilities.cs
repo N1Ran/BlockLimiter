@@ -9,6 +9,7 @@ using Sandbox.Definitions;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Blocks;
+using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
@@ -96,6 +97,125 @@ namespace BlockLimiter.Utility
             var blockDefinition = MyDefinitionManager.Static.GetCubeBlockDefinition(block);
             _defCache[block.SubtypeId] = blockDefinition;
             return blockDefinition;
+        }
+
+        public static void AddFoundEntities(MyCubeBlockDefinition block, long id)
+        {
+            if (!TryGetEntityByNameOrId(id.ToString(), out var entity))
+            {
+                var faction = MySession.Static.Factions.TryGetFactionById(id);
+                if (!MySession.Static.Players.TryGetPlayerId(id, out var player) && faction == null)
+                    return;
+
+                foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(limit => Block.IsMatch(block, limit)))
+                {
+                    if (limit.LimitFaction && faction != null)
+                    {
+                        limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
+                    }
+
+                    if (limit.LimitPlayers && player.IsValid)
+                    {
+                        limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
+                        if (limit.LimitFaction)
+                        {
+                            var playerFaction = MySession.Static.Factions.GetPlayerFaction(id);
+                            if (playerFaction == null) continue;
+                            limit.FoundEntities.AddOrUpdate(playerFaction.FactionId, 1, (l, i) => i + 1);
+                        }
+                    }
+                }
+            }
+
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(limit => Block.IsMatch(block, limit)))
+            {
+                if (limit.LimitGrids && entity is MyCubeGrid grid)
+                {
+                    limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
+                }
+                
+                if (!(entity is MyCharacter)) continue;
+
+                var playerFaction = MySession.Static.Factions.GetPlayerFaction(id);
+
+                if (limit.LimitPlayers)
+                {
+                    limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
+                }
+
+                if (limit.LimitFaction && playerFaction != null)
+                {
+                    limit.FoundEntities.AddOrUpdate(playerFaction.FactionId, 1, (l, i) => i + 1);
+                }
+
+            }
+        }
+        public static void RemoveBlockFromEntity(MySlimBlock block)
+        {
+            var blockDef = block.BlockDefinition;
+            var blockOwner = block.OwnerId;
+            var blockBuilder = block.BuiltBy;
+            var blockGrid = block.CubeGrid.EntityId;
+            var faction = MySession.Static.Factions.TryGetFactionByTag(block.FatBlock.GetOwnerFactionTag())?.FactionId;
+
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(x => Block.IsMatch(blockDef, x)))
+            {
+                if (limit.LimitGrids)
+                {
+                    limit.FoundEntities.AddOrUpdate(blockGrid, 0, (l, i) => i - 1);
+                }
+
+                if (limit.LimitPlayers)
+                {
+                    if (Block.IsOwner(limit.BlockOwnerState,block, blockOwner))
+                        limit.FoundEntities.AddOrUpdate(blockOwner, 0, (l, i) => i - 1);
+                    if (Block.IsOwner(limit.BlockOwnerState,block, blockBuilder))
+                        limit.FoundEntities.AddOrUpdate(blockBuilder, 0, (l, i) => i - 1);
+                }
+
+                if (limit.LimitFaction && faction != null)
+                {
+                    limit.FoundEntities.AddOrUpdate((long)faction, 0, (l, i) => i - 1);
+                }
+            }
+
+
+        }
+
+        public static bool IsExcepted(object obj, List<string> exceptions)
+        {
+            var excepted = false;
+
+            switch (obj)
+            {
+                case long id:
+                    if (TryGetEntityByNameOrId(id.ToString(), out var xEntity))
+                    {
+                        if (exceptions.Contains(xEntity.EntityId.ToString()) ||
+                               exceptions.Contains(xEntity.DisplayName)) excepted = true;
+                    }
+
+                    var playerId = GetSteamIdFromPlayerId(id);
+                    if (playerId <= 0) return exceptions.Contains(id.ToString()) || excepted;
+                    if(exceptions.Contains(playerId.ToString()))
+                        excepted = true;
+                    return exceptions.Contains(id.ToString()) || excepted;
+                case MyPlayer player:
+                    break;
+                case MyFaction faction:
+                    excepted = exceptions.Contains(faction.Tag);
+                    break;
+                case MyCubeGrid grid:
+                    excepted = exceptions.Contains(grid.EntityId.ToString()) || exceptions.Contains(grid.DisplayName);
+                    break;
+                case string any:
+                    if (!TryGetEntityByNameOrId(any, out var entity)) return exceptions.Contains(any);
+                    if (exceptions.Contains(entity.EntityId.ToString()) ||
+                        exceptions.Contains(entity.DisplayName)) excepted = true;
+                    return excepted || exceptions.Contains(any);
+            }
+
+            return excepted;
         }
 
 

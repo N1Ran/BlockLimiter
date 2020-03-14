@@ -30,7 +30,6 @@ namespace BlockLimiter.Settings
         private List<string> _exceptions = new List<string>();
         private int _limit;
         private bool _restrictProjection;
-        private ConcurrentDictionary<long,int> _foundEntities = new ConcurrentDictionary<long, int>();
         private bool _ignoreNpc;
         private OwnerState _ownerState = OwnerState.BuiltbyId;
 
@@ -48,11 +47,10 @@ namespace BlockLimiter.Settings
 
         [XmlIgnore]
         [Display(Visible = false)]
-        public ConcurrentDictionary<long,int> FoundEntities => _foundEntities;
+        public ConcurrentDictionary<long,int> FoundEntities { get; } = new ConcurrentDictionary<long, int>();
 
 
-
-        [Display(Name = "Name", Description = "Name of the limit. This helps with some of the commands")]
+        [Display(Order = 1, Name = "Name", Description = "Name of the limit. This helps with some of the commands")]
         public string Name
         {
             get => _name;
@@ -214,9 +212,9 @@ namespace BlockLimiter.Settings
             }
         }
 
-        private  void BlockReset()
+        public void Reset()
         {
-            _foundEntities.Clear();
+            FoundEntities.Clear();
         }
         
         public override string ToString()
@@ -229,7 +227,7 @@ namespace BlockLimiter.Settings
 
         private void Save()
         {
-            BlockReset();
+            Reset();
             BlockLimiterConfig.Instance.Save();
         }
         

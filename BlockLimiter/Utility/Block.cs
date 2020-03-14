@@ -16,7 +16,6 @@ namespace BlockLimiter.Utility
     {
         public static bool AllowBlock(MyCubeBlockDefinition block, long playerId, MyCubeGrid grid = null)
         {
-            
             var nope = false;
             var blockCache = new HashSet<MySlimBlock>();
             GridCache.GetBlocks(blockCache);
@@ -31,37 +30,30 @@ namespace BlockLimiter.Utility
                 {
                     if (item.Exceptions.Contains(playerId.ToString()))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (faction != null && item.Exceptions.Contains(faction.Tag))
                     {
-                        item.FoundEntities.Remove(faction.FactionId);
                         continue;
                     }
                     var playerSteamId = MyAPIGateway.Multiplayer.Players.TryGetSteamId(playerId);
                     if (item.Exceptions.Contains(playerSteamId.ToString()))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (item.Exceptions.Contains(MySession.Static.Players.TryGetIdentityNameFromSteamId(playerSteamId)))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (grid != null && (item.Exceptions.Contains(grid.EntityId.ToString()) || item.Exceptions.Contains(grid.DisplayName)))
                     {
-                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
                 }
                 
                 if (playerId != 0 && item.LimitPlayers)
                 {
-                    var filteredBlocksCount = blockCache.Count(x=> x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
-                    var overCount = filteredBlocksCount - item.Limit;
-                    item.FoundEntities[playerId] = overCount;
+                    var filteredBlocksCount = blockCache.Count(x=> IsMatch(x.BlockDefinition,item) && IsOwner(item.BlockOwnerState, x, playerId));
                     if (filteredBlocksCount >= item.Limit)
                     {
                         nope = true;
@@ -74,9 +66,7 @@ namespace BlockLimiter.Utility
                     if (!Grid.IsGridType(grid, item)) continue;
                     var subGrids = MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Physical);
 
-                    var filteredBlocksCount = blockCache.Count(x=> x.CubeGrid == grid && x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
-                    var overCount = filteredBlocksCount - item.Limit;
-                    item.FoundEntities[grid.EntityId] = overCount;
+                    var filteredBlocksCount = blockCache.Count(x=> x.CubeGrid == grid && IsMatch(x.BlockDefinition,item) && IsOwner(item.BlockOwnerState, x, playerId));
                     if (filteredBlocksCount >= item.Limit)
                     {
                         nope = true;
@@ -87,9 +77,7 @@ namespace BlockLimiter.Utility
                     {
                         foreach (var subGrid in subGrids)
                         {
-                            var subGridBlockCount = blockCache.Count(x=> x.CubeGrid == subGrid && x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
-                            var subOverCount = filteredBlocksCount - item.Limit;
-                            item.FoundEntities[subGrid.EntityId] = subOverCount;
+                            var subGridBlockCount = blockCache.Count(x=> x.CubeGrid == subGrid && IsMatch(x.BlockDefinition,item) && IsOwner(item.BlockOwnerState, x, playerId));
                             if (subGridBlockCount >= item.Limit)
                             {
                                 nope = true;
@@ -111,9 +99,8 @@ namespace BlockLimiter.Utility
                 if (faction != null && item.LimitFaction)
                 {
                     var filteredBlocksCount = blockCache.Count(x =>
-                        x.BlockDefinition == block &&  x.FatBlock.GetOwnerFactionTag() == faction.Tag);
+                        IsMatch(x.BlockDefinition,item) &&  x.FatBlock.GetOwnerFactionTag() == faction.Tag);
                     var overCount = filteredBlocksCount - item.Limit;
-                    item.FoundEntities[faction.FactionId] = overCount;
                     if (filteredBlocksCount >= item.Limit)
                     {
                         nope = true;
@@ -144,37 +131,30 @@ namespace BlockLimiter.Utility
                 {
                     if (item.Exceptions.Contains(playerId.ToString()))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (faction != null && item.Exceptions.Contains(faction.Tag))
                     {
-                        item.FoundEntities.Remove(faction.FactionId);
                         continue;
                     }
                     var playerSteamId = MyAPIGateway.Multiplayer.Players.TryGetSteamId(playerId);
                     if (item.Exceptions.Contains(playerSteamId.ToString()))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (item.Exceptions.Contains(MySession.Static.Players.TryGetIdentityNameFromSteamId(playerSteamId)))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (grid != null && (item.Exceptions.Contains(grid.EntityId.ToString()) || item.Exceptions.Contains(grid.DisplayName)))
                     {
-                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
                 }
                 
                 if (playerId != 0 && item.LimitPlayers)
                 {
-                    var filteredBlocksCount = blockCache.Count(x=> x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
-                    var overCount = filteredBlocksCount - item.Limit;
-                    item.FoundEntities[playerId] = overCount;
+                    var filteredBlocksCount = blockCache.Count(x=> IsMatch(x.BlockDefinition,item) && IsOwner(item.BlockOwnerState, x, playerId));
 
                     if (filteredBlocksCount >= item.Limit)
                     {
@@ -186,9 +166,7 @@ namespace BlockLimiter.Utility
                 if (grid != null && item.LimitGrids)
                 {
                     if (!Grid.IsGridType(grid, item)) continue;
-                    var filteredBlocksCount = blockCache.Count(x=> x.CubeGrid.EntityId == grid.EntityId && x.BlockDefinition == block && IsOwner(item.BlockOwnerState, x, playerId));
-                    var overCount = filteredBlocksCount - item.Limit;
-                    item.FoundEntities[grid.EntityId] = overCount;
+                    var filteredBlocksCount = blockCache.Count(x=> x.CubeGrid.EntityId == grid.EntityId && IsMatch(x.BlockDefinition,item) && IsOwner(item.BlockOwnerState, x, playerId));
                     
                     if (filteredBlocksCount >= item.Limit)
                     {
@@ -210,9 +188,8 @@ namespace BlockLimiter.Utility
                 if (faction != null && item.LimitFaction)
                 {
                     var filteredBlocksCount = blockCache.Count(x =>
-                        x.BlockDefinition == block &&  x.FatBlock.GetOwnerFactionTag() == faction.Tag);
+                        IsMatch(x.BlockDefinition,item) &&  x.FatBlock.GetOwnerFactionTag() == faction.Tag);
                     var overCount = filteredBlocksCount - item.Limit;
-                    item.FoundEntities[faction.FactionId] = overCount;
 
                     if (filteredBlocksCount >= item.Limit)
                     {
@@ -227,6 +204,8 @@ namespace BlockLimiter.Utility
             return !nope;
             
         }
+        
+        
         
 
         public static bool IsOwner(LimitItem.OwnerState state, MySlimBlock block, long playerId)
@@ -280,28 +259,23 @@ namespace BlockLimiter.Utility
                 {
                     if (item.Exceptions.Contains(playerId.ToString()))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (faction != null && item.Exceptions.Contains(faction.Tag))
                     {
-                        item.FoundEntities.Remove(faction.FactionId);
                         continue;
                     }
                     var playerSteamId = MyAPIGateway.Multiplayer.Players.TryGetSteamId(playerId);
                     if (item.Exceptions.Contains(playerSteamId.ToString()))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (item.Exceptions.Contains(MySession.Static.Players.TryGetIdentityNameFromSteamId(playerSteamId)))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (grid != null && (item.Exceptions.Contains(grid.EntityId.ToString()) || item.Exceptions.Contains(grid.DisplayName)))
                     {
-                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
                 }
@@ -329,7 +303,6 @@ namespace BlockLimiter.Utility
                         }
                         var filteredBlocksCount =
                             grid.CubeBlocks.Count(x => x.BlockDefinition == blockDef);
-                        item.FoundEntities[grid.EntityId] = filteredBlocksCount;
 
                         if (filteredBlocksCount >= item.Limit || item.Limit == 0)
                         {
@@ -375,28 +348,23 @@ namespace BlockLimiter.Utility
                 {
                     if (item.Exceptions.Contains(playerId.ToString()))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (faction != null && item.Exceptions.Contains(faction.Tag))
                     {
-                        item.FoundEntities.Remove(faction.FactionId);
                         continue;
                     }
                     var playerSteamId = MyAPIGateway.Multiplayer.Players.TryGetSteamId(playerId);
                     if (item.Exceptions.Contains(playerSteamId.ToString()))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (item.Exceptions.Contains(MySession.Static.Players.TryGetIdentityNameFromSteamId(playerSteamId)))
                     {
-                        item.FoundEntities.Remove(playerId);
                         continue;
                     }
                     if (grid != null && (item.Exceptions.Contains(grid.EntityId.ToString()) || item.Exceptions.Contains(grid.DisplayName)))
                     {
-                        item.FoundEntities.Remove(grid.EntityId);
                         continue;
                     }
                 }
@@ -425,7 +393,6 @@ namespace BlockLimiter.Utility
                         
                         var filteredBlocksCount =
                             grid.CubeBlocks.Count(x => x.SubtypeId == blockDef.Id.SubtypeId);
-                        item.FoundEntities[grid.EntityId] = filteredBlocksCount;
 
                         if (filteredBlocksCount >= item.Limit || item.Limit == 0)
                         {
@@ -438,13 +405,11 @@ namespace BlockLimiter.Utility
 
                 if (faction != null && item.LimitFaction)
                 {
-                    if (item.FoundEntities.TryGetValue(faction.FactionId, out var count))
+                    if (!item.FoundEntities.TryGetValue(faction.FactionId, out var count)) continue;
+                    if (count >= 0|| item.Limit == 0)
                     {
-                        if (count >= 0|| item.Limit == 0)
-                        {
-                            project = false;
-                            break;
-                        }
+                        project = false;
+                        break;
                     }
                 }
                 

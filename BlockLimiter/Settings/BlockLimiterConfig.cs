@@ -71,17 +71,20 @@ namespace BlockLimiter.Settings
         private MtObservableCollection<LimitItem> _limitItems;
 
 
+        [Display(Order = 2, GroupName = "Main Settings", Name = "Server Name", Description = "")]
+
         public string ServerName
         {
             get => _serverName;
             set
             {
-                _serverName = value; 
+                _serverName = string.IsNullOrEmpty(value) ? "Blocklimiter" : value; 
                 OnPropertyChanged();
                 Instance.Save(); 
             }
         }
 
+        [Display(Order = 1, GroupName = "Main Settings", Name = "Enable")]
         public bool EnableLimits
         {
             get => _enable;
@@ -94,7 +97,7 @@ namespace BlockLimiter.Settings
         }
         
         
-        [Display(Name =  "Enable Grid Convert Blocking", Description = "Will block grid conversion if grid will violate limits upon conversion")]
+        [Display(Order = 3, GroupName = "Main Settings", Name =  "Enable Grid Convert Blocking", Description = "Will block grid conversion if grid will violate limits upon conversion")]
         public bool EnableConvertBlock
         {
             get => _gridConvertBlocking;
@@ -106,7 +109,7 @@ namespace BlockLimiter.Settings
             }
         }
         
-        [Display(Name =  "Enable Ownership Blocking", Description = "Will block ownership if player exceeds limit of block being transferred to them")]
+        [Display(Order =  4, GroupName = "Main Settings", Name =  "Enable Ownership Blocking", Description = "Will block ownership if player exceeds limit of block being transferred to them")]
         public bool BlockOwnershipTransfer
         {
             get => _blockOwnershipTransfer;
@@ -118,7 +121,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Ships", GroupName = "General BlockCount Limit", Description = "Max size for moving grids")]
+        [Display(Order = 7, Name = "Ships", GroupName = "General BlockCount Limit", Description = "Max size for moving grids")]
         public int MaxBlockSizeShips
         {
             get => _maxBlockSizeShips;
@@ -130,7 +133,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Stations", GroupName = "General BlockCount Limit", Description = "Max size for static grids")]
+        [Display(Order = 7, Name = "Stations", GroupName = "General BlockCount Limit", Description = "Max size for static grids")]
         public int MaxBlockSizeStations
         {
             get => _maxBlockSizeStations;
@@ -142,7 +145,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "LargeGrids", GroupName = "General BlockCount Limit", Description = "Max size for large grids")]
+        [Display(Order = 10, Name = "LargeGrids", GroupName = "General BlockCount Limit", Description = "Max size for large grids")]
         public int MaxBlocksLargeGrid
         {
             get => _maxBlocksLargeGrid;
@@ -154,7 +157,7 @@ namespace BlockLimiter.Settings
             }
         }
         
-        [Display(Name = "SmallGrids", GroupName = "General BlockCount Limit", Description = "Max size for small grids")]
+        [Display(Order = 11, Name = "SmallGrids", GroupName = "General BlockCount Limit", Description = "Max size for small grids")]
         public int MaxBlocksSmallGrid
         {
             get => _maxBlocksSmallGrid;
@@ -168,7 +171,7 @@ namespace BlockLimiter.Settings
 
         
         
-        [Display(Name = "Use Vanilla Limits", Description = "This will add vanilla block limits to limiter's checks")]
+        [Display(Order = 5, GroupName = "Main Settings", Name = "Use Vanilla Limits", Description = "This will add vanilla block limits to limiter's checks")]
         public bool UseVanillaLimits
         {
             get => _vanillaLimits;
@@ -181,7 +184,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Enable Logs", Description = "Logs are only advice to check for issues with the limiter")]
+        [Display(Order = 6, GroupName = "Main Settings", Name = "Enable Logs", Description = "Logs are only advice to check for issues with the limiter")]
         public bool EnableLog
         {
             get => _enableLog;
@@ -193,7 +196,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Enable Annoyance Message", GroupName = "Punishment")]
+        [Display(Order = 1, Name = "Enable Annoyance Message", GroupName = "Punishment")]
         public bool Annoy
         {
             get => _annoy;

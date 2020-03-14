@@ -91,7 +91,6 @@ namespace BlockLimiter.Utility
 
                 var count = grid.CubeBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
 
-                limit.FoundEntities[grid.EntityId] = count;
 
                 if (count <= limit.Limit)
                 {

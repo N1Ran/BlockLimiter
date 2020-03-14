@@ -24,7 +24,7 @@ namespace BlockLimiter.Patch
 
         private static  readonly MethodInfo ConvertToStationRequest = typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.OnConvertedToStationRequest), BindingFlags.Public | BindingFlags.Instance);
         private static readonly MethodInfo ConvertToShipRequest = typeof(MyCubeGrid).GetMethod("OnConvertedToShipRequest", BindingFlags.NonPublic | BindingFlags.Instance);
-        
+        public static event Action<MyCubeGrid> GridConverted;
 
 
         public static void Patch(PatchContext ctx)
@@ -51,6 +51,7 @@ namespace BlockLimiter.Patch
 
             if (Grid.AllowGridChange(grid))
             {
+                GridConverted?.Invoke(grid);
                 return true;
             }
             var remoteUserId = MyEventContext.Current.Sender.Value;
@@ -67,7 +68,10 @@ namespace BlockLimiter.Patch
 
         private static bool ToDynamic(MyCubeGrid __instance)
         {
-            if (!BlockLimiterConfig.Instance.EnableLimits ) return true;
+            if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.EnableConvertBlock)
+            {
+                return true;
+            }
             
             var grid = __instance;
             if (grid == null)

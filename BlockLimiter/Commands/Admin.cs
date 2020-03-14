@@ -24,6 +24,24 @@ namespace BlockLimiter.Commands
 {
     public partial class Player
     {
+        [Command("enable", "enables blocklimit plugin")]
+        [Permission((MyPromoteLevel.Admin))]
+        public void Enable()
+        {
+            BlockLimiterConfig.Instance.EnableLimits = true;
+            
+            Context.Respond("BlockLimiter Enabled");
+        }
+        
+        [Command("disable", "enables blocklimit plugin")]
+        [Permission((MyPromoteLevel.Admin))]
+        public void Disable()
+        {
+            BlockLimiterConfig.Instance.EnableLimits = false;
+            
+            Context.Respond("BlockLimiter Disabled");
+        }
+        
         [Command("violations", "gets the list of violations per limit")]
         [Permission(MyPromoteLevel.Moderator)]
         public void GetViolations()
@@ -77,19 +95,19 @@ namespace BlockLimiter.Commands
                     var faction = MySession.Static.Factions.TryGetFactionById(entity);
                     if (faction != null)
                     {
-                        sb.AppendLine($"FactionLimit for {faction.Tag} = {item.Limit + count}/{item.Limit}");
+                        sb.AppendLine($"FactionLimit for {faction.Tag} = {count}/{item.Limit}");
                         continue;
                     }
 
                     var player = MySession.Static.Players.TryGetIdentity(entity);
                     if (player != null)
                     {
-                        sb.AppendLine($"PlayerLimit for {player.DisplayName} = {item.Limit + count}/{item.Limit}");
+                        sb.AppendLine($"PlayerLimit for {player.DisplayName} = {count}/{item.Limit}");
                         continue;
                     }
                     
                     if(!GridCache.TryGetGridById(entity, out var grid))continue;
-                    sb.AppendLine($"GridLimit for {grid.DisplayName} =  {item.Limit + count}/{item.Limit}");
+                    sb.AppendLine($"GridLimit for {grid.DisplayName} =  {count}/{item.Limit}");
                 }
             }
 

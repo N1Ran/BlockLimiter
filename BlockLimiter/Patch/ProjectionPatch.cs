@@ -8,11 +8,14 @@ using Sandbox;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities.Blocks;
 using Sandbox.ModAPI;
+using Torch.API.Managers;
 using Torch.Managers.PatchManager;
 using Torch.Mod;
 using Torch.Mod.Messages;
 using Torch.Utils;
 using VRage.Game;
+using VRage.Network;
+using VRage.Library.Collections;
 using VRage.Network;
 using System.Linq;
 using System.Reflection.Emit;
@@ -20,6 +23,7 @@ using BlockLimiter.Utility;
 using NLog;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
+using Sandbox.Game;
 using Sandbox.Game.World;
 using Torch;
 using Torch.Managers;
@@ -32,13 +36,18 @@ namespace BlockLimiter.Patch
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static  readonly MethodInfo RemoveProjectionMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly MethodInfo NewBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo OriginalGridField = typeof(MyProjectorBase).GetField("m_originalGridBuilder", BindingFlags.NonPublic | BindingFlags.Instance);
         public static void Patch(PatchContext ctx)
         {
-            ctx.GetPattern(typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess")).Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixNewBlueprint), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
-
+            ctx.GetPattern(typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.Instance | BindingFlags.NonPublic)).
+                Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixNewBlueprint), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
         }
 
+        /// <summary>
+        /// Aim to block projections or remove blocks to match grid/player limits.
+        /// </summary>
+        /// <param name="__instance"></param>
+        /// <param name="projectedGrids"></param>
+        /// <returns></returns>
         private static bool PrefixNewBlueprint(MyProjectorBase __instance, ref List<MyObjectBuilder_CubeGrid> projectedGrids)
         {
 
@@ -46,7 +55,7 @@ namespace BlockLimiter.Patch
             var proj = __instance;
             if (proj == null)
             {
-                Log.Debug("No projector?");
+                Log.Warn("No projector?");
                 return false;
             }
             
@@ -63,20 +72,22 @@ namespace BlockLimiter.Patch
 
             var stopSpawn = Grid.GridSizeViolation(grid);
             var target = new EndpointId(remoteUserId);
-            
+            var playerId = player.Identity.IdentityId;
             
             if (stopSpawn)
             {
-                proj.SendRemoveProjection();
-                NetworkManager.RaiseEvent(proj, RemoveProjectionMethod, target);
+                //proj.SendRemoveProjection();
+                NetworkManager.RaiseEvent(__instance, RemoveProjectionMethod, target);
                 Utilities.SendFailSound(remoteUserId);
                 Utilities.ValidationFailed();
+                MyVisualScriptLogicProvider.SendChatMessage($"Projection block count violations",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+                if (BlockLimiterConfig.Instance.EnableLog)
+                    Log.Info($"Projection blocked from {player.DisplayName}");
                 return false;
             }
             
             var count = 0;
             var blocks = projectedGrids[0].CubeBlocks;
-            var playerId = player.Identity.IdentityId;
             for (var i = blocks.Count - 1; i >= 0; i--)
             {
                 var block = blocks[i];
@@ -88,18 +99,17 @@ namespace BlockLimiter.Patch
             
 
             if (count < 1) return true;
+            
 
-            NetworkManager.RaiseEvent(proj, RemoveProjectionMethod, target);
+            NetworkManager.RaiseEvent(__instance, RemoveProjectionMethod, target);
 
             try
             {
-                var projGrid = new List<MyObjectBuilder_CubeGrid>()
-                    {grid};
-                NetworkManager.RaiseEvent(proj, NewBlueprintMethod, proj, target);
+                NetworkManager.RaiseEvent(__instance, NewBlueprintMethod, new List<MyObjectBuilder_CubeGrid>{grid});
             }
             catch (Exception e)
             {
-                throw;
+                //NullException thrown here but seems to work for some reason.  Don't Touch any further
                 //Log.Warn(e);
             }
 

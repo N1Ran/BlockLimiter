@@ -48,9 +48,12 @@ namespace BlockLimiter.Patch
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var player = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId);
             var playerId = player.Identity.IdentityId;
-            
-            if (Block.AllowBlock(block,playerId,(MyObjectBuilder_CubeGrid) null))
+
+            if (Block.AllowBlock(block, playerId, (MyObjectBuilder_CubeGrid) null))
+            {
+                Utilities.AddFoundEntities(block,playerId);
                 return true;
+            }
 
             var b = block.BlockPairName;
             var p = player.DisplayName;

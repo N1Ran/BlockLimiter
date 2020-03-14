@@ -12,6 +12,7 @@ using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
 using Sandbox.Definitions;
+using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
@@ -28,6 +29,7 @@ using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Game.VisualScripting;
 using VRage.Network;
+using VRage.Profiler;
 using Grid = BlockLimiter.Utility.Grid;
 
 namespace BlockLimiter
@@ -60,7 +62,16 @@ namespace BlockLimiter
             _processThreads = new List<Thread>();
             _processThread = new Thread(PluginProcessing);
             _processThread.Start();
+            
+            MyCubeGrids.BlockDestroyed += MyCubeGridsOnBlockDestroyed;
+            
         }
+
+        private void MyCubeGridsOnBlockDestroyed(MyCubeGrid arg1, MySlimBlock arg2)
+        {
+            Utilities.RemoveBlockFromEntity(arg2);
+        }
+
 
         private void GetVanillaLimits()
         {
@@ -165,7 +176,9 @@ namespace BlockLimiter
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)
                 _sessionManager.SessionStateChanged += SessionChanged;
+            
         }
+
 
 
         public override void Update()
@@ -191,6 +204,7 @@ namespace BlockLimiter
                     EnableControl();
                     GetVanillaLimits();
                     Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits, out BlockLimiterConfig.Instance.AllLimits);
+                    StartUp();
                     break;
                 case TorchSessionState.Unloading:
                     Dispose();
@@ -227,6 +241,83 @@ namespace BlockLimiter
             _processThread.Abort();
         }
 
+        private static void StartUp()
+        {
+            var entities = MyEntities.GetEntities();
+
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            {
+                limit.FoundEntities.Clear();
+                foreach (var entity in entities)
+                {
+                    if (!(entity is MyCubeGrid grid)) continue;
+                    var matchBlocks = grid.CubeBlocks.Where(x => Block.IsMatch(x.BlockDefinition, limit)).ToList();
+                    if (matchBlocks.Any())
+                    {
+                        if (limit.LimitGrids)
+                            limit.FoundEntities[grid.EntityId] = matchBlocks.Count;
+                            
+                        if (!limit.LimitFaction && !limit.LimitPlayers ) continue;
+
+                        foreach (var block in matchBlocks)
+                        {
+                            if (block.OwnerId < 1 && block.BuiltBy < 1) continue;
+                            var ownerIDs = new List<long>();
+                            MyFaction faction;
+                            switch (limit.BlockOwnerState)
+                            {
+                                case LimitItem.OwnerState.BuiltbyId:
+                                    if(limit.LimitPlayers)
+                                        ownerIDs.Add(block.BuiltBy);
+                                    faction = MySession.Static.Factions.GetPlayerFaction(block.BuiltBy);
+                                    if (limit.LimitFaction && faction != null)
+                                        ownerIDs.Add(faction.FactionId);
+                                    break;
+                                case LimitItem.OwnerState.OwnerId:
+                                    if(limit.LimitPlayers)
+                                        ownerIDs.Add(block.OwnerId);
+                                    faction = MySession.Static.Factions.GetPlayerFaction(block.OwnerId);
+                                    if (limit.LimitFaction && faction != null)
+                                        ownerIDs.Add(faction.FactionId);
+                                    break;
+                                case LimitItem.OwnerState.OwnerOrBuiltbyId:
+                                    if (limit.LimitPlayers)
+                                    {
+                                        ownerIDs.Add(block.BuiltBy);
+                                        ownerIDs.Add(block.OwnerId);
+                                    }
+                                    if (limit.LimitFaction)
+                                    {
+                                        faction = MySession.Static.Factions.GetPlayerFaction(block.BuiltBy);
+                                        if (faction != null)ownerIDs.Add(faction.FactionId);
+                                        faction = MySession.Static.Factions.GetPlayerFaction(block.OwnerId);
+                                        if (faction != null)ownerIDs.Add(faction.FactionId);
+                                    }
+                                    break;
+                                case LimitItem.OwnerState.OwnerAndBuiltbyId:
+                                    if (block.OwnerId != block.BuiltBy) break;
+                                    if(limit.LimitPlayers)
+                                        ownerIDs.Add(block.BuiltBy);
+                                    faction = MySession.Static.Factions.GetPlayerFaction(block.BuiltBy);
+                                    if (limit.LimitFaction && faction != null)
+                                        ownerIDs.Add(faction.FactionId);
+                                    break;
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+
+                            foreach (var id in ownerIDs)
+                            {
+                                limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
+                            }
+                        }
+
+                    }
+                }
+            }
+
+        }
+
         
         public static bool CheckLimits_future(MyObjectBuilder_CubeGrid[] grids)
         {
@@ -252,8 +343,19 @@ namespace BlockLimiter
         // ReSharper disable once InconsistentNaming
         private static bool OnTransfer(MySlimBlock __instance, long newOwner)
         {
-            if (BlockLimiterConfig.Instance.EnableLimits && BlockLimiterConfig.Instance.BlockOwnershipTransfer)
-                return Block.AllowBlock(__instance.BlockDefinition, newOwner, __instance.CubeGrid);
+            if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.BlockOwnershipTransfer)
+            {
+                SlimOwnerChanged?.Invoke(__instance, newOwner);
+                return true;
+            }
+            
+            if (!Block.AllowBlock(__instance.BlockDefinition, newOwner, __instance.CubeGrid))
+            {
+                Utilities.ValidationFailed();
+                return false;
+            }
+            
+            Utilities.AddFoundEntities(__instance.BlockDefinition,newOwner);
             SlimOwnerChanged?.Invoke(__instance, newOwner);
             return true;
         }

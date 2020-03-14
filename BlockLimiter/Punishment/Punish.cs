@@ -66,14 +66,18 @@ namespace BlockLimiter.Punishment
                 
                 foreach (var (id,overCount) in item.FoundEntities)
                 {
-                    if (id == 0 || item.Exceptions.Contains(id.ToString())) continue;
+                    if (id == 0 || Utilities.IsExcepted(id, item.Exceptions))
+                    {
+                        item.FoundEntities.Remove(id);
+                        continue;
+                    }
 
                     if (overCount<= 0) continue;
                     
                     if (overCount - count <= 0)
                     {
                         if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                            item.FoundEntities[id] = 0;
+                            item.FoundEntities.AddOrUpdate(id, 0, (l, i) => Math.Max(0,i - count));
                         break;
                     }
                     
@@ -96,7 +100,7 @@ namespace BlockLimiter.Punishment
                             removeBlocks[block] = item.Punishment;
                         }
                         if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                            item.FoundEntities[id] = 0;
+                            item.FoundEntities.AddOrUpdate(id, 0, (l, i) => Math.Max(0,i - count));
                         continue;
 
                     }
@@ -105,7 +109,7 @@ namespace BlockLimiter.Punishment
                     
                     if (player != null && item.LimitPlayers)
                     {
-                        if (item.Exceptions.Contains(player.DisplayName)) continue;
+                        if (Utilities.IsExcepted(player.IdentityId,item.Exceptions)) continue;
                         
                         foreach (var block in _blockCache.ToList())
                         {
@@ -121,7 +125,7 @@ namespace BlockLimiter.Punishment
                         }
                         
                         if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                            item.FoundEntities[id] = 0;
+                            item.FoundEntities.AddOrUpdate(id, 0, (l, i) =>Math.Max(0,i - count));
                         continue;
 
                     }
@@ -137,6 +141,7 @@ namespace BlockLimiter.Punishment
                     {
                         if (overCount - count <= 0)
                         {
+                            
                             break;
                         }
                         if (!Block.IsMatch(block.BlockDefinition,item))continue;
@@ -144,8 +149,10 @@ namespace BlockLimiter.Punishment
                         count++;
                         removeBlocks[block] = item.Punishment;
                     }
-                    if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                        item.FoundEntities[id] = 0;
+
+                    if (item.Punishment == LimitItem.PunishmentType.Explode ||
+                        item.Punishment == LimitItem.PunishmentType.DeleteBlock)
+                        item.FoundEntities.AddOrUpdate(id, 0, (l, i) => Math.Max(0,i - count));
                 }
                 
             }
