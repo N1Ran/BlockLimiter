@@ -24,28 +24,34 @@ namespace BlockLimiter.Commands
 {
     public partial class Player
     {
-        [Command("enable", "enables blocklimit plugin")]
+        [Command("enable", "enable/disable blocklimit plugin")]
         [Permission((MyPromoteLevel.Admin))]
-        public void Enable()
+        public void Enable(bool enable = true)
         {
-            BlockLimiterConfig.Instance.EnableLimits = true;
-            
-            Context.Respond("BlockLimiter Enabled");
+            BlockLimiterConfig.Instance.EnableLimits = enable;
+
+            Context.Respond(enable ? "BlockLimiter Enabled" : "BlockLimiter Disabled");
         }
         
-        [Command("disable", "enables blocklimit plugin")]
+        [Command("log", "enable/disable blocklimit log")]
         [Permission((MyPromoteLevel.Admin))]
-        public void Disable()
+        public void EnableLog(bool enable = true)
         {
-            BlockLimiterConfig.Instance.EnableLimits = false;
-            
-            Context.Respond("BlockLimiter Disabled");
+            BlockLimiterConfig.Instance.EnableLog = enable;
+
+            Context.Respond(enable ? "Logging Enabled" : "Logging Disabled");
         }
         
         [Command("violations", "gets the list of violations per limit")]
         [Permission(MyPromoteLevel.Moderator)]
         public void GetViolations()
         {
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                Context.Respond("Plugin disabled");
+                return;
+            }
+
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
 
             if (!limitItems.Any(x=>x.FoundEntities.Any()))
@@ -53,7 +59,7 @@ namespace BlockLimiter.Commands
                 Context.Respond("No violations found");
                 return;
             }
-
+            var sb = new StringBuilder();
             foreach (var arg in Context.Args)
             {
                 if (arg.StartsWith("--gps="))
@@ -78,7 +84,6 @@ namespace BlockLimiter.Commands
                 
             }
             
-            var sb = new StringBuilder();
             
             foreach (var item in limitItems)
             {
@@ -109,6 +114,8 @@ namespace BlockLimiter.Commands
                     if(!GridCache.TryGetGridById(entity, out var grid))continue;
                     sb.AppendLine($"GridLimit for {grid.DisplayName} =  {count}/{item.Limit}");
                 }
+
+                sb.AppendLine();
             }
 
             sb.AppendLine();
@@ -127,6 +134,12 @@ namespace BlockLimiter.Commands
         [Command("playerlimit", "gets the current limits of targeted player")]
         public void GetPlayerLimit(string id)
         {
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                Context.Respond("Plugin disabled");
+                return;
+            }
+
             var sb = new StringBuilder();
             
             if (long.TryParse(id, out var identityId))
@@ -136,14 +149,16 @@ namespace BlockLimiter.Commands
 
             else
             {
-                var player = MySession.Static.Players.GetPlayerByName(id);
+                var player = MySession.Static.Players.GetAllIdentities()
+                    .FirstOrDefault(x => x.DisplayName.Equals(id, StringComparison.OrdinalIgnoreCase));
+                //var player = MySession.Static.Players.GetPlayerByName(id);
 
                 if (player == null)
                 {
                     Context.Respond("Player not found");
                     return;
                 }
-                var playerId = player.Identity.IdentityId;
+                var playerId = player.IdentityId;
                 
                 if (playerId == 0)
                 {
@@ -163,9 +178,78 @@ namespace BlockLimiter.Commands
               
         }
 
-        [Command("factionlimit", "gets the current limits of targeted faction")]
+        [Command("gridlimit", "gets the current limits of specified grid")]
+        public void GridLimit(string id)
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                Context.Respond("Plugin disabled");
+                return;
+            }
+            
+            if (string.IsNullOrEmpty(id))
+            {
+                Context.Respond("Grid name/Id is needed for this command");
+                return;
+            }
+
+            if (!Utilities.TryGetEntityByNameOrId(id, out var entity) || !(entity is MyCubeGrid grid))
+            {
+                Context.Respond("Grid not found");
+                return;
+            }
+            
+            var sb = new StringBuilder();
+            
+            var limitItems = new List<LimitItem>();
+            
+            limitItems.AddRange(BlockLimiterConfig.Instance.AllLimits);
+
+            if (!limitItems.Any())
+            {
+                Context.Respond("No limit found");
+                return;
+            }
+
+            sb.AppendLine($"Grid Limits for {grid.DisplayName}");
+
+            foreach (var item in limitItems.Where(x=>x.LimitGrids))
+            {
+                {
+                    if (!item.FoundEntities.TryGetValue(grid.EntityId, out var gCount))continue;
+
+                    var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
+                        
+                    sb.AppendLine($"-->{itemName} = {gCount }/{item.Limit}");
+                }
+            }
+            
+            
+            if (Context.Player == null || Context.Player.IdentityId == 0)
+            {
+                Context.Respond(sb.ToString());
+                return;
+            }
+
+            ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"Faction Limits",sb.ToString()),Context.Player.SteamUserId);
+
+            
+            
+            
+
+            
+
+        }
+
+        [Command("factionlimit", "gets the current limits of specified faction")]
         public void ListFactionLimit(string factionTag)
         {
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                Context.Respond("Plugin disabled");
+                return;
+            }
+
             if (string.IsNullOrEmpty(factionTag))
             {
                 Context.Respond("Faction tag is needed for this command");
@@ -200,7 +284,7 @@ namespace BlockLimiter.Commands
 
                     var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
                         
-                    sb.AppendLine($"-->{itemName} = {fCount + item.Limit}/{item.Limit}");
+                    sb.AppendLine($"-->{itemName} = {fCount}/{item.Limit}");
                 }
             }
             
@@ -214,68 +298,6 @@ namespace BlockLimiter.Commands
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"Faction Limits",sb.ToString()),Context.Player.SteamUserId);
         }
 
-        
-
-        
-        
-        [Command("pairnames", "gets the list of all pairnames possible. BlockType is case sensitive")]
-        public void ListPairNames(string blockType=null)
-        {
-            var sb = new StringBuilder();
-
-            var allDef = MyDefinitionManager.Static.GetAllDefinitions();
-
-            var def = new List<MyDefinitionBase>();
-
-            if (!string.IsNullOrEmpty(blockType))
-            {
-                foreach (var defBase in allDef)
-                {
-                    if (!defBase.Id.TypeId.ToString().Substring(16).Equals(blockType,StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    def.Add(defBase);
-                }
-
-                if (!def.Any())
-                {
-                    Context.Respond($"Can't find any definition for {blockType}");
-                    return;
-                }
-
-            }
-
-            else
-            {
-                def.AddRange(allDef);
-            }
-
-            if (!def.Any())
-            {
-                Context.Respond("Na Bruh!");
-                return;
-            }
-
-            sb.AppendLine($"Total of {def.Count} definitions found on server");
-            foreach (var myDefinitionId in def)
-            {
-                var modId = "0";
-                var modName = "Vanilla";
-                if (myDefinitionId.Context?.IsBaseGame == false)
-                {
-                    modId = myDefinitionId.Context?.ModId;
-                    modName = myDefinitionId.Context?.ModName;
-                }
-                if (!MyDefinitionManager.Static.TryGetCubeBlockDefinition(myDefinitionId.Id, out var x))continue;
-                sb.AppendLine($"{x.BlockPairName} [{modName} - {modId}]");
-            }
-            if (Context.Player == null || Context.Player.IdentityId == 0)
-            {
-                Context.Respond(sb.ToString());
-                return;
-            }
-
-            ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of Limits",sb.ToString()),Context.Player.SteamUserId);
-        }
 
 
     }

@@ -66,11 +66,22 @@ namespace BlockLimiter.Utility
             }
         }
 
-        public static void GetGrids(HashSet<MyEntity> entities)
+        public static void RemoveGrid(long entityId)
+        {
+            
+            using(_entityLock.AcquireSharedUsing())
+            {
+                var entity = _gridCache.FirstOrDefault(e => e.EntityId == entityId);
+
+                _gridCache.Remove(entity);
+            }
+        }
+
+        public static void GetGrids(HashSet<MyCubeGrid> grids)
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_gridCache);
+                grids.UnionWith(_gridCache);
             }
         }
         

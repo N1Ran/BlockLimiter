@@ -56,7 +56,7 @@ namespace BlockLimiter.Settings
             get => _name;
             set
             {
-                _name = value;
+                _name = string.IsNullOrEmpty(value) ? _blockPairName.FirstOrDefault():value;
                 OnPropertyChanged();
                 Save();
             }

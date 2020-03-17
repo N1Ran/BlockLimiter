@@ -70,7 +70,7 @@ namespace BlockLimiter.Patch
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var player = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId);
 
-            var stopSpawn = Grid.GridSizeViolation(grid);
+            var stopSpawn = Grid.IsSizeViolation(grid);
             var target = new EndpointId(remoteUserId);
             var playerId = player.Identity.IdentityId;
             

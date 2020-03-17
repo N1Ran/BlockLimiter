@@ -16,6 +16,7 @@ using Torch;
 using Torch.Views;
 using NLog;
 using VRage.Collections;
+using VRage.Game;
 
 namespace BlockLimiter.Settings
 {
@@ -91,7 +92,8 @@ namespace BlockLimiter.Settings
             set
             {
                 _enable = value; 
-                OnPropertyChanged();
+                if (value) BlockLimiter.ResetLimits();
+                    OnPropertyChanged();
                 Instance.Save(); 
             }
         }

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using BlockLimiter.Patch;
 using BlockLimiter.ProcessHandlers;
@@ -11,6 +12,7 @@ using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
+using Sandbox;
 using Sandbox.Definitions;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
@@ -64,12 +66,44 @@ namespace BlockLimiter
             _processThread.Start();
             
             MyCubeGrids.BlockDestroyed += MyCubeGridsOnBlockDestroyed;
+            MyCubeGrid.OnSplitGridCreated += MyCubeGridOnOnSplitGridCreated;
             
+            MyMultiplayer.Static.ClientJoined += StaticOnClientJoined;
+            
+        }
+
+        private void MyCubeGridOnOnSplitGridCreated(MyCubeGrid obj)
+        {
+            if (obj == null) return;
+            Grid.UpdateLimit(obj);
+        }
+
+        private void StaticOnClientJoined(ulong obj)
+        {
+            var player = MySession.Static.Players.TryGetPlayerBySteamId(obj);
+            if (player == null)return;
+            Block.UpdatePlayerLimits(player);
         }
 
         private void MyCubeGridsOnBlockDestroyed(MyCubeGrid arg1, MySlimBlock arg2)
         {
-            Utilities.RemoveBlockFromEntity(arg2);
+            if (!BlockLimiterConfig.Instance.EnableLimits)return;
+            Grid.UpdateLimit(arg1);
+            foreach (var owner in arg1.BigOwners)
+            {
+                if (!MySession.Static.Players.TryGetPlayerId(owner, out var playerId)) continue;
+                var player = MySession.Static.Players.GetPlayerById(playerId);
+                if (player == null) continue;
+                Task.Run(() =>
+                {
+                    Thread.Sleep(100);
+                    MySandboxGame.Static.Invoke(() =>
+                    {
+                        Grid.UpdateLimit(arg1);
+                    }, "BlockLimiter");
+                });
+
+            }
         }
 
 
@@ -204,7 +238,7 @@ namespace BlockLimiter
                     EnableControl();
                     GetVanillaLimits();
                     Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits, out BlockLimiterConfig.Instance.AllLimits);
-                    StartUp();
+                    ResetLimits();
                     break;
                 case TorchSessionState.Unloading:
                     Dispose();
@@ -241,80 +275,53 @@ namespace BlockLimiter
             _processThread.Abort();
         }
 
-        private static void StartUp()
+        public static void ResetLimits()
         {
-            var entities = MyEntities.GetEntities();
+            var grids = new HashSet<MyCubeGrid>();
+           GridCache.GetGrids(grids);
+           
+           Task.Run(() =>
+           {
+               Thread.Sleep(300);
+               MySandboxGame.Static.Invoke(() =>
+               {
+                   foreach (var grid in grids)
+                   {
+                       if (grid == null) continue;
+                       Grid.UpdateLimit(grid);
+                   }
+               }, "BlockLimiter");
+           });
+           
+           Task.Run(() =>
+           {
+               Thread.Sleep(100);
+               MySandboxGame.Static.Invoke(() =>
+               {
+                   foreach (var playerId in MySession.Static.Players.GetAllPlayers())
+                   {
+                       if (!playerId.IsValid) continue;
+                       var player = MySession.Static.Players.GetPlayerById(playerId);
+                       if (player == null) continue;
+                       Block.UpdatePlayerLimits(player);
+                   }
+               }, "BlockLimiter");
+           });
+           
+           Task.Run(() =>
+           {
+               Thread.Sleep(500);
+               MySandboxGame.Static.Invoke(() =>
+               {
 
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
-            {
-                limit.FoundEntities.Clear();
-                foreach (var entity in entities)
-                {
-                    if (!(entity is MyCubeGrid grid)) continue;
-                    var matchBlocks = grid.CubeBlocks.Where(x => Block.IsMatch(x.BlockDefinition, limit)).ToList();
-                    if (matchBlocks.Any())
-                    {
-                        if (limit.LimitGrids)
-                            limit.FoundEntities[grid.EntityId] = matchBlocks.Count;
-                            
-                        if (!limit.LimitFaction && !limit.LimitPlayers ) continue;
+                   foreach (var id in MySession.Static.Factions.Factions.Keys)
+                   {
+                       Block.UpdateFactionLimits(id);
+                       
+                   }
+               }, "BlockLimiter");
+           });
 
-                        foreach (var block in matchBlocks)
-                        {
-                            if (block.OwnerId < 1 && block.BuiltBy < 1) continue;
-                            var ownerIDs = new List<long>();
-                            MyFaction faction;
-                            switch (limit.BlockOwnerState)
-                            {
-                                case LimitItem.OwnerState.BuiltbyId:
-                                    if(limit.LimitPlayers)
-                                        ownerIDs.Add(block.BuiltBy);
-                                    faction = MySession.Static.Factions.GetPlayerFaction(block.BuiltBy);
-                                    if (limit.LimitFaction && faction != null)
-                                        ownerIDs.Add(faction.FactionId);
-                                    break;
-                                case LimitItem.OwnerState.OwnerId:
-                                    if(limit.LimitPlayers)
-                                        ownerIDs.Add(block.OwnerId);
-                                    faction = MySession.Static.Factions.GetPlayerFaction(block.OwnerId);
-                                    if (limit.LimitFaction && faction != null)
-                                        ownerIDs.Add(faction.FactionId);
-                                    break;
-                                case LimitItem.OwnerState.OwnerOrBuiltbyId:
-                                    if (limit.LimitPlayers)
-                                    {
-                                        ownerIDs.Add(block.BuiltBy);
-                                        ownerIDs.Add(block.OwnerId);
-                                    }
-                                    if (limit.LimitFaction)
-                                    {
-                                        faction = MySession.Static.Factions.GetPlayerFaction(block.BuiltBy);
-                                        if (faction != null)ownerIDs.Add(faction.FactionId);
-                                        faction = MySession.Static.Factions.GetPlayerFaction(block.OwnerId);
-                                        if (faction != null)ownerIDs.Add(faction.FactionId);
-                                    }
-                                    break;
-                                case LimitItem.OwnerState.OwnerAndBuiltbyId:
-                                    if (block.OwnerId != block.BuiltBy) break;
-                                    if(limit.LimitPlayers)
-                                        ownerIDs.Add(block.BuiltBy);
-                                    faction = MySession.Static.Factions.GetPlayerFaction(block.BuiltBy);
-                                    if (limit.LimitFaction && faction != null)
-                                        ownerIDs.Add(faction.FactionId);
-                                    break;
-                                default:
-                                    throw new ArgumentOutOfRangeException();
-                            }
-
-                            foreach (var id in ownerIDs)
-                            {
-                                limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
-                            }
-                        }
-
-                    }
-                }
-            }
 
         }
 
@@ -327,7 +334,7 @@ namespace BlockLimiter
                 return false;
             }
 
-            return !grids.Any(Grid.GridSizeViolation) && 
+            return !grids.Any(Grid.IsSizeViolation) && 
                    !grids.Any(z=>z.CubeBlocks.Any(b=>Block.AllowBlock(MyDefinitionManager.Static.GetCubeBlockDefinition(b),0,z)));
         }
 
@@ -355,7 +362,7 @@ namespace BlockLimiter
                 return false;
             }
             
-            Utilities.AddFoundEntities(__instance.BlockDefinition,newOwner);
+            Block.Add(__instance.BlockDefinition,newOwner);
             SlimOwnerChanged?.Invoke(__instance, newOwner);
             return true;
         }

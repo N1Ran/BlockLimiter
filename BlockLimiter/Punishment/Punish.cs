@@ -57,14 +57,14 @@ namespace BlockLimiter.Punishment
             
             var removeBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
 
+            var punishCount = 0;
+
             foreach (var item in limitItems)
             {
                 if (!item.FoundEntities.Any() ||
                     item.Punishment == LimitItem.PunishmentType.None) continue;
                 
-                var count = 0;
-                
-                foreach (var (id,overCount) in item.FoundEntities)
+                foreach (var (id,count) in item.FoundEntities)
                 {
                     if (id == 0 || Utilities.IsExcepted(id, item.Exceptions))
                     {
@@ -72,14 +72,8 @@ namespace BlockLimiter.Punishment
                         continue;
                     }
 
-                    if (overCount <= item.Limit) continue;
+                    if (count <= item.Limit) continue;
                     
-                    if (overCount - count <= 0)
-                    {
-                        if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                            item.FoundEntities.AddOrUpdate(id, 0, (l, i) => Math.Max(0,i - count));
-                        break;
-                    }
                     
                     if (item.LimitGrids && GridCache.TryGetGridById(id, out var grid))
                     {
@@ -91,16 +85,14 @@ namespace BlockLimiter.Punishment
                             
                         foreach (var block in grid.CubeBlocks)
                         {
-                            if (overCount - count <= 0)
+                            if (Math.Abs(punishCount - count) <= item.Limit)
                             {
                                 break;
                             }
                             if (!Block.IsMatch(block.BlockDefinition,item))continue;
-                            count++;
+                            punishCount++;
                             removeBlocks[block] = item.Punishment;
                         }
-                        if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                            item.FoundEntities.AddOrUpdate(id, 0, (l, i) => Math.Max(0,i - count));
                         continue;
 
                     }
@@ -114,18 +106,16 @@ namespace BlockLimiter.Punishment
                         foreach (var block in _blockCache.ToList())
                         {
                             if (block == null) continue;
-                            if (overCount - count <= 0)
+                            if (Math.Abs(punishCount - count) <= item.Limit)
                             {
                                 break;
                             }
                             if (!Block.IsOwner(item.BlockOwnerState,block,player.IdentityId)) continue;
                             if (!Block.IsMatch(block.BlockDefinition,item))continue;
-                            count++;
+                            punishCount++;
                             removeBlocks[block] = item.Punishment;
                         }
                         
-                        if(item.Punishment == LimitItem.PunishmentType.Explode || item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                            item.FoundEntities.AddOrUpdate(id, 0, (l, i) =>Math.Max(0,i - count));
                         continue;
 
                     }
@@ -139,20 +129,16 @@ namespace BlockLimiter.Punishment
                     if (item.IgnoreNpcs && faction.IsEveryoneNpc()) continue;
                     foreach (var block in _blockCache.Where(x=>x.FatBlock.GetOwnerFactionTag()==faction.Tag))
                     {
-                        if (overCount - count <= 0)
+                        if (Math.Abs(punishCount - count) <= item.Limit)
                         {
-                            
                             break;
                         }
                         if (!Block.IsMatch(block.BlockDefinition,item))continue;
                         if (removeBlocks.ContainsKey(block)) continue;
-                        count++;
+                        punishCount++;
                         removeBlocks[block] = item.Punishment;
                     }
 
-                    if (item.Punishment == LimitItem.PunishmentType.Explode ||
-                        item.Punishment == LimitItem.PunishmentType.DeleteBlock)
-                        item.FoundEntities.AddOrUpdate(id, 0, (l, i) => Math.Max(0,i - count));
                 }
                 
             }
@@ -202,7 +188,7 @@ namespace BlockLimiter.Punishment
                         }
                         catch (Exception e)
                         {
-                            Log.Error(e);
+                            if(BlockLimiterConfig.Instance.EnableLog)Log.Error(e);
                         }
                     }
                 }, "BlockLimiter");

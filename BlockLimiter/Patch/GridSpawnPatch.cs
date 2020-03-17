@@ -36,6 +36,11 @@ namespace BlockLimiter.Patch
 
         }
 
+        /// <summary>
+        /// Decides if a block about to be spawned is permitted by the player
+        /// </summary>
+        /// <param name="definition"></param>
+        /// <returns></returns>
         private static bool Prefix(DefinitionIdBlit definition)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
@@ -51,7 +56,7 @@ namespace BlockLimiter.Patch
 
             if (Block.AllowBlock(block, playerId, (MyObjectBuilder_CubeGrid) null))
             {
-                Utilities.AddFoundEntities(block,playerId);
+                Block.Add(block,playerId);
                 return true;
             }
 

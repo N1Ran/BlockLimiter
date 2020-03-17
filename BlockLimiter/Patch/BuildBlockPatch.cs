@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using BlockLimiter.ProcessHandlers;
 using Sandbox.Game.Entities;
 using BlockLimiter.Utility;
@@ -12,10 +14,12 @@ using BlockLimiter.Settings;
 using Torch;
 using VRage.Network;
 using NLog;
+using Sandbox;
 using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Character;
+using Sandbox.Game.Entities.Cube;
 using Sandbox.ModAPI;
 using Torch.Mod;
 using Torch.Mod.Messages;
@@ -32,7 +36,8 @@ namespace BlockLimiter.Patch
     {
 
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        public static event Action<MyCubeGrid, MyCubeBlockDefinition, long> BlockAdded;
+        public static event Action<MySlimBlock> OnBlockAdded;
+
         
         public static void Patch(PatchContext ctx)
         {
@@ -45,6 +50,8 @@ namespace BlockLimiter.Patch
 
         private static bool BuildBlocksArea(MyCubeGrid __instance, MyCubeGrid.MyBlockBuildArea area)
         {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+
             var def = MyDefinitionManager.Static.GetCubeBlockDefinition(area.DefinitionId);
             var grid = __instance;
             if (grid == null)
@@ -56,7 +63,22 @@ namespace BlockLimiter.Patch
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
-            if (Block.AllowBlock(def, playerId, grid)) return true;
+            if (Block.AllowBlock(def, playerId, grid))
+            {
+                Task.Run(() =>
+                {
+                    Thread.Sleep(100);
+                    MySandboxGame.Static.Invoke(() =>
+                    {
+                        Grid.UpdateLimit(grid);
+                        if (MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId) != null) 
+                            Block.UpdatePlayerLimits(MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId));
+                    }, "BlockLimiter");
+                });
+
+                return true;
+            }
+            
             
             if (BlockLimiterConfig.Instance.EnableLog)
                 Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {area.DefinitionId.SubtypeId} due to limits");
@@ -110,13 +132,21 @@ namespace BlockLimiter.Patch
 
             foreach (var block  in def)
             {
-                BlockAdded?.Invoke(grid,block,playerId);
-                Utilities.AddFoundEntities(block,playerId);
-                Utilities.AddFoundEntities(block,grid.EntityId);
+                Block.Add(block,playerId);
             }
+
+            Task.Run(() =>
+            {
+                Thread.Sleep(100);
+                MySandboxGame.Static.Invoke(() =>
+                {
+                    Grid.UpdateLimit(grid);
+                }, "BlockLimiter");
+            });
+
             return true;
+            }
             
-        }
 
     }
 }

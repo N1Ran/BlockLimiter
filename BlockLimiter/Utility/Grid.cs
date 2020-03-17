@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using BlockLimiter.Settings;
@@ -11,7 +12,7 @@ namespace BlockLimiter.Utility
 {
     public static class Grid
     {
-        public static bool GridSizeViolation(MyObjectBuilder_CubeGrid grid)
+        public static bool IsSizeViolation(MyObjectBuilder_CubeGrid grid)
         {
             var gridSize = grid.CubeBlocks.Count;
             var gridType = grid.GridSizeEnum;
@@ -39,7 +40,7 @@ namespace BlockLimiter.Utility
 
             return false;
         }
-        public static bool GridSizeViolation(MyCubeGrid grid)
+        public static bool IsSizeViolation(MyCubeGrid grid)
         {
             var gridSize = grid.CubeBlocks.Count;
             var gridType = grid.GridSizeEnum;
@@ -68,9 +69,9 @@ namespace BlockLimiter.Utility
             return false;
         }
 
-        public static bool AllowGridChange(MyCubeGrid grid)
+        public static bool AllowConversion(MyCubeGrid grid)
         {
-            if (GridSizeViolation(grid)) return false;
+            if (IsSizeViolation(grid)) return false;
 
             if (grid.BlocksCount == 0) return true;
 
@@ -139,6 +140,24 @@ namespace BlockLimiter.Utility
                     return !grid.IsStatic;
                 default:
                     return false;
+            }
+        }
+
+        public static void UpdateLimit(MyCubeGrid grid)
+        {
+            var blocks = grid.CubeBlocks;
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            {
+                if (!limit.LimitGrids)
+                {
+                    limit.FoundEntities.Remove(grid.EntityId);
+                    continue;
+                }
+
+                var limitedBlocks = blocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
+                
+                if (limitedBlocks < 1)continue;
+                limit.FoundEntities[grid.EntityId] = limitedBlocks;
             }
         }
 
