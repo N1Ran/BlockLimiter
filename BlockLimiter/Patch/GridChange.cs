@@ -49,7 +49,7 @@ namespace BlockLimiter.Patch
             if (!GridCache.TryGetGridById(entityId, out var grid))
             {
                 Log.Debug("Null closure");
-                return false;
+                return true;
             }
             
             GridCache.RemoveGrid(entityId);
