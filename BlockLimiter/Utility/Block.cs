@@ -474,7 +474,6 @@ namespace BlockLimiter.Utility
 
         public static void RemoveBlock(MySlimBlock block)
         {
-            return;
             if (block == null) return;
             var blockDef = block.BlockDefinition;
             var blockOwner = block.OwnerId;
@@ -484,16 +483,16 @@ namespace BlockLimiter.Utility
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(x => Block.IsMatch(blockDef, x)))
             {
-                if (limit.LimitGrids)
+                if (limit.LimitGrids && blockGrid > 0)
                 {
                     limit.FoundEntities.AddOrUpdate(blockGrid, 0, (l, i) => Math.Max(0,i - 1));
                 }
 
                 if (limit.LimitPlayers)
                 {
-                    if (IsOwner(limit.BlockOwnerState,block, blockOwner))
+                    if (blockOwner > 0 && IsOwner(limit.BlockOwnerState,block, blockOwner))
                         limit.FoundEntities.AddOrUpdate(blockOwner, 0, (l, i) => Math.Max(0,i - 1));
-                    if (IsOwner(limit.BlockOwnerState,block, blockBuilder))
+                    if (blockBuilder > 0 && IsOwner(limit.BlockOwnerState,block, blockBuilder))
                         limit.FoundEntities.AddOrUpdate(blockBuilder, 0, (l, i) => Math.Max(0,i - 1));
                 }
 

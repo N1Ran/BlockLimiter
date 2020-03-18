@@ -88,22 +88,17 @@ namespace BlockLimiter
         private void MyCubeGridsOnBlockDestroyed(MyCubeGrid arg1, MySlimBlock arg2)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
-            Grid.UpdateLimit(arg1);
-            foreach (var owner in arg1.BigOwners)
+            //Grid.UpdateLimit(arg1);
+            
+            Task.Run(() =>
             {
-                if (!MySession.Static.Players.TryGetPlayerId(owner, out var playerId)) continue;
-                var player = MySession.Static.Players.GetPlayerById(playerId);
-                if (player == null) continue;
-                Task.Run(() =>
+                Thread.Sleep(100);
+                MySandboxGame.Static.Invoke(() =>
                 {
-                    Thread.Sleep(100);
-                    MySandboxGame.Static.Invoke(() =>
-                    {
-                        Grid.UpdateLimit(arg1);
-                    }, "BlockLimiter");
-                });
+                    Block.RemoveBlock(arg2);
+                }, "BlockLimiter");
+            });
 
-            }
         }
 
 
