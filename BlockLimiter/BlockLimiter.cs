@@ -41,7 +41,7 @@ namespace BlockLimiter
         private PatchManager _pm;
         private PatchContext _context;
 
-        private readonly Logger _log = LogManager.GetLogger("BlockLimiter");
+        public readonly Logger Log = LogManager.GetLogger("BlockLimiter");
         private Thread _processThread;
         private List<Thread> _processThreads;
         private static bool _running;
@@ -88,17 +88,7 @@ namespace BlockLimiter
         private void MyCubeGridsOnBlockDestroyed(MyCubeGrid arg1, MySlimBlock arg2)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
-            //Grid.UpdateLimit(arg1);
-            
-            Task.Run(() =>
-            {
-                Thread.Sleep(100);
-                MySandboxGame.Static.Invoke(() =>
-                {
-                    Block.RemoveBlock(arg2);
-                }, "BlockLimiter");
-            });
-
+            Block.RemoveBlock(arg2);
         }
 
 
@@ -119,7 +109,7 @@ namespace BlockLimiter
                         LimitPlayers = false,
                         LimitGrids = false,
                         Limit = item.Value,
-                        BlockPairName = new List<string>{item.Key}
+                        BlockList = new List<string>{item.Key}
                     }));
 
                     break;
@@ -130,7 +120,7 @@ namespace BlockLimiter
                         LimitPlayers = true,
                         LimitGrids = false,
                         Limit = item.Value,
-                        BlockPairName = new List<string>{item.Key}
+                        BlockList = new List<string>{item.Key}
                     }));
 
                     break;
@@ -163,7 +153,7 @@ namespace BlockLimiter
                                 catch (Exception ex)
                                 {
                                     if (BlockLimiterConfig.Instance.EnableLog)
-                                        _log.Warn("Handler Problems: {0} - {1}", currentHandler.GetUpdateResolution(),
+                                        Log.Warn("Handler Problems: {0} - {1}", currentHandler.GetUpdateResolution(),
                                             ex);
                                 }
 
@@ -185,12 +175,12 @@ namespace BlockLimiter
             catch (ThreadAbortException ex)
             {
                 if (BlockLimiterConfig.Instance.EnableLog) 
-                    _log.Trace(ex);
+                    Log.Trace(ex);
             }
             catch (Exception ex)
             {
                 if (BlockLimiterConfig.Instance.EnableLog) 
-                    _log.Error(ex);
+                    Log.Error(ex);
             }
         }
 
@@ -232,6 +222,7 @@ namespace BlockLimiter
                     DoInit();
                     EnableControl();
                     GetVanillaLimits();
+                    GridCache.Update();
                     Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits, out BlockLimiterConfig.Instance.AllLimits);
                     ResetLimits();
                     break;
@@ -293,12 +284,11 @@ namespace BlockLimiter
                Thread.Sleep(100);
                MySandboxGame.Static.Invoke(() =>
                {
-                   foreach (var playerId in MySession.Static.Players.GetAllPlayers())
+                   foreach (var player in MySession.Static.Players.GetAllPlayers())
                    {
-                       if (!playerId.IsValid) continue;
-                       var player = MySession.Static.Players.GetPlayerById(playerId);
-                       if (player == null) continue;
-                       Block.UpdatePlayerLimits(player);
+                       var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
+                       if (identity < 1) continue;
+                       Block.UpdatePlayerLimits(identity);
                    }
                }, "BlockLimiter");
            });
@@ -312,7 +302,6 @@ namespace BlockLimiter
                    foreach (var id in MySession.Static.Factions.Factions.Keys)
                    {
                        Block.UpdateFactionLimits(id);
-                       
                    }
                }, "BlockLimiter");
            });
@@ -332,6 +321,8 @@ namespace BlockLimiter
             return !grids.Any(Grid.IsSizeViolation) && 
                    !grids.Any(z=>z.CubeBlocks.Any(b=>Block.AllowBlock(MyDefinitionManager.Static.GetCubeBlockDefinition(b),0,z)));
         }
+        
+        
 
        private static void Patch(PatchContext ctx)
         {
@@ -357,7 +348,17 @@ namespace BlockLimiter
                 return false;
             }
             
-            Block.Add(__instance.BlockDefinition,newOwner);
+            if (!Block.TryAdd(__instance.BlockDefinition,newOwner))
+            {
+                Task.Run(() =>
+                {
+                    Thread.Sleep(100);
+                    MySandboxGame.Static.Invoke(() =>
+                    {
+                        Block.UpdatePlayerLimits(newOwner);
+                    }, "BlockLimiter");
+                });
+            }
             SlimOwnerChanged?.Invoke(__instance, newOwner);
             return true;
         }

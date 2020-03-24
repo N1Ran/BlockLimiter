@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BlockLimiter;
 using BlockLimiter.ProcessHandlers;
 using Sandbox.Game.Entities;
 using BlockLimiter.Utility;
@@ -34,8 +35,6 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class BuildBlockPatch
     {
-
-        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         public static event Action<MySlimBlock> OnBlockAdded;
 
         
@@ -56,7 +55,7 @@ namespace BlockLimiter.Patch
             var grid = __instance;
             if (grid == null)
             {
-                Log.Debug("Null grid in BuildBlockHandler");
+                BlockLimiter.Instance.Log.Debug("Null grid in BuildBlockHandler");
                 return true;
             }
 
@@ -81,7 +80,7 @@ namespace BlockLimiter.Patch
             
             
             if (BlockLimiterConfig.Instance.EnableLog)
-                Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {area.DefinitionId.SubtypeId} due to limits");
+                BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {area.DefinitionId.SubtypeId} due to limits");
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
             MyVisualScriptLogicProvider.SendChatMessage($"Limit reached",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             Utilities.SendFailSound(remoteUserId);
@@ -100,7 +99,7 @@ namespace BlockLimiter.Patch
             var grid = __instance;
             if (grid == null)
             {
-                Log.Debug("Null grid in BuildBlockHandler");
+                BlockLimiter.Instance.Log.Debug("Null grid in BuildBlockHandler");
                 return true;
             }
 
@@ -122,7 +121,7 @@ namespace BlockLimiter.Patch
                 var b = def.Count;
                 var x = locations.FirstOrDefault().BlockDefinition.SubtypeId.String;
                 if (BlockLimiterConfig.Instance.EnableLog)
-                    Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {x} blocks due to limits");
+                    BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {x} blocks due to limits");
                 //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
                 MyVisualScriptLogicProvider.SendChatMessage($"Limit reached",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
                 Utilities.SendFailSound(remoteUserId);
@@ -132,7 +131,7 @@ namespace BlockLimiter.Patch
 
             foreach (var block  in def)
             {
-                Block.Add(block,playerId);
+                Block.TryAdd(block,playerId);
             }
 
             Task.Run(() =>

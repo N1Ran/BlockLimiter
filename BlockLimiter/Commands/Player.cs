@@ -74,13 +74,13 @@ namespace BlockLimiter.Commands
                 return;
             }
 
-            sb.AppendLine($"Found {limiterLimits.Where(x=>x.BlockPairName.Any()).ToList().Count()} items");
-            foreach (var item in limiterLimits.Where(x=>x.BlockPairName.Any()))
+            sb.AppendLine($"Found {limiterLimits.Where(x=>x.BlockList.Any()).ToList().Count()} items");
+            foreach (var item in limiterLimits.Where(x=>x.BlockList.Any()))
             {
                 var name = string.IsNullOrEmpty(item.Name) ? "No Name" : item.Name;
                 sb.AppendLine();
                 sb.AppendLine(name);
-                item.BlockPairName.ForEach(x=>sb.Append($"[{x}] "));
+                item.BlockList.ForEach(x=>sb.Append($"[{x}] "));
                 sb.AppendLine();
                 sb.AppendLine($"Limits:       {item.Limit}");
                 sb.AppendLine($"PlayerLimit:  {item.LimitPlayers}");

@@ -21,8 +21,6 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class GridChange
     {
-        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
         private static  readonly MethodInfo ConvertToStationRequest = typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.OnConvertedToStationRequest), BindingFlags.Public | BindingFlags.Instance);
         private static readonly MethodInfo ConvertToShipRequest = typeof(MyCubeGrid).GetMethod("OnConvertedToShipRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 

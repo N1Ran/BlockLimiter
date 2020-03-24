@@ -26,8 +26,6 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class GridSpawnPatch
     {
-        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
         public static void Patch(PatchContext ctx)
         {
             var t = typeof(MyCubeBuilder);
@@ -56,14 +54,14 @@ namespace BlockLimiter.Patch
 
             if (Block.AllowBlock(block, playerId, (MyObjectBuilder_CubeGrid) null))
             {
-                Block.Add(block,playerId);
+                Block.TryAdd(block,playerId);
                 return true;
             }
 
             var b = block.BlockPairName;
             var p = player.DisplayName;
             if (BlockLimiterConfig.Instance.EnableLog)
-                Log.Info($"Blocked {p} from placing a {b}");
+                BlockLimiter.Instance.Log.Info($"Blocked {p} from placing a {b}");
             
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
             MyVisualScriptLogicProvider.SendChatMessage($"Limit reached", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);

@@ -33,7 +33,7 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class ProjectionPatch
     {
-        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger Log = BlockLimiter.Instance.Log;
         private static  readonly MethodInfo RemoveProjectionMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly MethodInfo NewBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.NonPublic | BindingFlags.Instance);
         public static void Patch(PatchContext ctx)
@@ -76,7 +76,6 @@ namespace BlockLimiter.Patch
             
             if (stopSpawn)
             {
-                //proj.SendRemoveProjection();
                 NetworkManager.RaiseEvent(__instance, RemoveProjectionMethod, target);
                 Utilities.SendFailSound(remoteUserId);
                 Utilities.ValidationFailed();
@@ -88,6 +87,39 @@ namespace BlockLimiter.Patch
             
             var count = 0;
             var blocks = projectedGrids[0].CubeBlocks;
+
+            var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
+
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            {
+                if (!limit.RestrictProjection || Utilities.IsExcepted(grid.EntityId, limit.Exceptions) ||
+                    Utilities.IsExcepted(player.Identity.IdentityId, limit.Exceptions)) continue;
+
+                var pBlocks = blocks.Where(x => Block.IsMatch(Utilities.GetDefinition(x), limit)).ToList();
+                
+                if (pBlocks.Count < 1) continue;
+
+                var removalCount = 0;
+                var fCount = 0;
+                limit.FoundEntities.TryGetValue(grid.EntityId, out var gCount);
+                limit.FoundEntities.TryGetValue(playerId, out var oCount);
+                if (playerFaction != null)
+                    limit.FoundEntities.TryGetValue(playerFaction.FactionId, out fCount);
+
+                for (int i = 0; i < pBlocks.Count; i++)
+                {
+                    if (Math.Abs(pBlocks.Count - removalCount) <= limit.Limit || Math.Abs(fCount+pBlocks.Count-removalCount)<=limit.Limit && (Math.Abs((oCount + pBlocks.Count) - removalCount) <= limit.Limit && Math.Abs((gCount + pBlocks.Count) - removalCount) <= limit.Limit))
+                        break;
+                    
+                    removalCount++;
+                    count++;
+                    blocks.Remove(pBlocks[i]);
+
+                }
+
+            }
+            
+            /*
             for (var i = blocks.Count - 1; i >= 0; i--)
             {
                 var block = blocks[i];
@@ -96,9 +128,9 @@ namespace BlockLimiter.Patch
                 blocks.RemoveAtFast(i);
                 count++;
             }
-            
+            */
 
-            if (count < 1) return true;
+            if ( count < 1) return true;
             
 
             NetworkManager.RaiseEvent(__instance, RemoveProjectionMethod, target);

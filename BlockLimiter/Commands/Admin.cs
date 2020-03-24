@@ -42,6 +42,15 @@ namespace BlockLimiter.Commands
             Context.Respond(enable ? "Logging Enabled" : "Logging Disabled");
         }
         
+        [Command("update", "updates limits")]
+        [Permission((MyPromoteLevel.Admin))]
+        public void UpdateLimits()
+        {
+            BlockLimiter.ResetLimits();
+            
+            Context.Respond("Limits updated");
+        }
+        
         [Command("violations", "gets the list of violations per limit")]
         [Permission(MyPromoteLevel.Moderator)]
         public void GetViolations()
@@ -87,9 +96,9 @@ namespace BlockLimiter.Commands
             
             foreach (var item in limitItems)
             {
-                if (!item.BlockPairName.Any() || !item.FoundEntities.Any(x => x.Value > 0)) continue;
+                if (!item.BlockList.Any() || !item.FoundEntities.Any(x => x.Value > 0)) continue;
                 
-                var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
+                var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockList.FirstOrDefault() : item.Name;
 
                 sb.AppendLine($"{itemName} Violators");
 
@@ -218,7 +227,7 @@ namespace BlockLimiter.Commands
                 {
                     if (!item.FoundEntities.TryGetValue(grid.EntityId, out var gCount))continue;
 
-                    var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
+                    var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockList.FirstOrDefault() : item.Name;
                         
                     sb.AppendLine($"-->{itemName} = {gCount }/{item.Limit}");
                 }
@@ -282,7 +291,7 @@ namespace BlockLimiter.Commands
                 {
                     if (!item.FoundEntities.TryGetValue(faction.FactionId, out var fCount))continue;
 
-                    var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
+                    var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockList.FirstOrDefault() : item.Name;
                         
                     sb.AppendLine($"-->{itemName} = {fCount}/{item.Limit}");
                 }

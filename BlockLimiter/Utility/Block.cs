@@ -26,7 +26,7 @@ namespace BlockLimiter.Utility
 
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (!item.BlockPairName.Any() || !IsMatch(block, item)) continue;
+                if (!item.BlockList.Any() || !IsMatch(block, item)) continue;
 
                 if (item.Exceptions.Any())
                 {
@@ -53,7 +53,7 @@ namespace BlockLimiter.Utility
                     }
                 }
                 
-                if (playerId != 0 && item.LimitPlayers)
+                if (playerId > 0 && item.LimitPlayers)
                 {
                     var filteredBlocksCount = blockCache.Count(x=> IsMatch(x.BlockDefinition,item) && IsOwner(item.BlockOwnerState, x, playerId));
                     if (filteredBlocksCount >= item.Limit)
@@ -127,32 +127,11 @@ namespace BlockLimiter.Utility
 
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (!item.BlockPairName.Any() || !IsMatch(block, item)) continue;
+                if (!item.BlockList.Any() || !IsMatch(block, item)) continue;
+                
+                if (grid != null && (faction != null && (Utilities.IsExcepted(playerId,item.Exceptions) || Utilities.IsExcepted(faction.FactionId,item.Exceptions) || Utilities.IsExcepted(grid.EntityId,item.Exceptions))))
+                    continue;
 
-                if (item.Exceptions.Any())
-                {
-                    if (item.Exceptions.Contains(playerId.ToString()))
-                    {
-                        continue;
-                    }
-                    if (faction != null && item.Exceptions.Contains(faction.Tag))
-                    {
-                        continue;
-                    }
-                    var playerSteamId = MyAPIGateway.Multiplayer.Players.TryGetSteamId(playerId);
-                    if (item.Exceptions.Contains(playerSteamId.ToString()))
-                    {
-                        continue;
-                    }
-                    if (item.Exceptions.Contains(MySession.Static.Players.TryGetIdentityNameFromSteamId(playerSteamId)))
-                    {
-                        continue;
-                    }
-                    if (grid != null && (item.Exceptions.Contains(grid.EntityId.ToString()) || item.Exceptions.Contains(grid.DisplayName)))
-                    {
-                        continue;
-                    }
-                }
                 
                 if (playerId != 0 && item.LimitPlayers)
                 {
@@ -210,7 +189,7 @@ namespace BlockLimiter.Utility
 
         public static bool IsOwner(LimitItem.OwnerState state, MySlimBlock block, long playerId)
         {
-            var correctOwner = false;
+            bool correctOwner;
             switch (state)
             {
                 case LimitItem.OwnerState.BuiltbyId:
@@ -226,7 +205,8 @@ namespace BlockLimiter.Utility
                     correctOwner = block.OwnerId == playerId || block.BuiltBy == playerId;
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(state), state, null);
+                    correctOwner = false;
+                    break;
             }
 
             return correctOwner;
@@ -234,254 +214,77 @@ namespace BlockLimiter.Utility
 
         public static bool IsMatch(MyCubeBlockDefinition block, LimitItem item)
         {
-            var typeMatch = false;
-            
-            if (item.UseBlockType)
-                typeMatch = item.BlockPairName.Count > 0 && item.BlockPairName.Any(x =>
-                                x.Equals(block.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase));
-            return typeMatch || item.BlockPairName.Count> 0 && item.BlockPairName.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase));
+            if (!item.BlockList.Any()) return false;
+            return item.BlockList.Any(x => x.Equals(block.Id.SubtypeId.ToString(), StringComparison.OrdinalIgnoreCase)) || item.BlockList.Any(x =>
+                x.Equals(block.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase)) || 
+                   item.BlockList.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase));
         }
         
-        //Projector
-        public static bool ProjectBlock(MyObjectBuilder_CubeBlock block, long playerId, MyCubeGrid grid = null)
-        {
-            
-            var project = true;
-
-            var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
-            var blockDef = Utilities.GetDefinition(block);
-            foreach (var item in BlockLimiterConfig.Instance.LimitItems)
-            {
-                if (!item.RestrictProjection) continue;
-                if (!item.BlockPairName.Any() || !IsMatch(blockDef, item)) continue;
-
-                if (item.Exceptions.Any())
-                {
-                    if (item.Exceptions.Contains(playerId.ToString()))
-                    {
-                        continue;
-                    }
-                    if (faction != null && item.Exceptions.Contains(faction.Tag))
-                    {
-                        continue;
-                    }
-                    var playerSteamId = MyAPIGateway.Multiplayer.Players.TryGetSteamId(playerId);
-                    if (item.Exceptions.Contains(playerSteamId.ToString()))
-                    {
-                        continue;
-                    }
-                    if (item.Exceptions.Contains(MySession.Static.Players.TryGetIdentityNameFromSteamId(playerSteamId)))
-                    {
-                        continue;
-                    }
-                    if (grid != null && (item.Exceptions.Contains(grid.EntityId.ToString()) || item.Exceptions.Contains(grid.DisplayName)))
-                    {
-                        continue;
-                    }
-                }
-                
-                if (playerId > 0 && item.LimitPlayers)
-                {
-                    if (item.FoundEntities.TryGetValue(playerId, out var count))
-                    {
-                        if (count >= 0 || item.Limit == 0)
-                        {
-                            project = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (grid != null && item.LimitGrids)
-                {
-                    if (Grid.IsGridType(grid, item))
-                    {
-                        if (item.Limit == 0)
-                        {
-                            project = false;
-                            break;
-                        }
-                        var filteredBlocksCount =
-                            grid.CubeBlocks.Count(x => x.BlockDefinition == blockDef);
-
-                        if (filteredBlocksCount >= item.Limit || item.Limit == 0)
-                        {
-                            project = false;
-                            break;
-                        }
-                    }
-                    
-                }
-
-                if (faction != null && item.LimitFaction)
-                {
-                    if (item.FoundEntities.TryGetValue(faction.FactionId, out var count))
-                    {
-                        if (count >= 0|| item.Limit == 0)
-                        {
-                            project = false;
-                            break;
-                        }
-                    }
-                }
-                
-            }
-
-            return project;
-            
-        }
-
-        public static bool ProjectBlock(MyObjectBuilder_CubeBlock block, long playerId, MyObjectBuilder_CubeGrid grid)
-        {
-            
-            var project = true;
-
-            var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
-            var blockDef = Utilities.GetDefinition(block);
-
-            foreach (var item in BlockLimiterConfig.Instance.LimitItems)
-            {
-                if (!item.RestrictProjection) continue;
-                if (!item.BlockPairName.Any() || !IsMatch(blockDef, item)) continue;
-
-                if (item.Exceptions.Any())
-                {
-                    if (item.Exceptions.Contains(playerId.ToString()))
-                    {
-                        continue;
-                    }
-                    if (faction != null && item.Exceptions.Contains(faction.Tag))
-                    {
-                        continue;
-                    }
-                    var playerSteamId = MyAPIGateway.Multiplayer.Players.TryGetSteamId(playerId);
-                    if (item.Exceptions.Contains(playerSteamId.ToString()))
-                    {
-                        continue;
-                    }
-                    if (item.Exceptions.Contains(MySession.Static.Players.TryGetIdentityNameFromSteamId(playerSteamId)))
-                    {
-                        continue;
-                    }
-                    if (grid != null && (item.Exceptions.Contains(grid.EntityId.ToString()) || item.Exceptions.Contains(grid.DisplayName)))
-                    {
-                        continue;
-                    }
-                }
-                
-                if (playerId != 0 && item.LimitPlayers)
-                {
-                    if (item.FoundEntities.TryGetValue(playerId, out var count))
-                    {
-                        if (count >= 0 || item.Limit == 0)
-                        {
-                            project = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (grid != null && item.LimitGrids)
-                {
-                    if (Grid.IsGridType(grid, item))
-                    {
-                        if (item.Limit == 0)
-                        {
-                            project = false;
-                            break;
-                        }
-                        
-                        var filteredBlocksCount =
-                            grid.CubeBlocks.Count(x => x.SubtypeId == blockDef.Id.SubtypeId);
-
-                        if (filteredBlocksCount >= item.Limit || item.Limit == 0)
-                        {
-                            project = false;
-                            break;
-                        }
-                    }
-                    
-                }
-
-                if (faction != null && item.LimitFaction)
-                {
-                    if (!item.FoundEntities.TryGetValue(faction.FactionId, out var count)) continue;
-                    if (count >= 0|| item.Limit == 0)
-                    {
-                        project = false;
-                        break;
-                    }
-                }
-                
-            }
-
-            return project;
-            
-        }
         
-        public static void Add(MyCubeBlockDefinition block, long id)
+        public static bool TryAdd(MyCubeBlockDefinition block, long id)
         {
-            if (!Utilities.TryGetEntityByNameOrId(id.ToString(), out var entity))
-            {
-                var faction = MySession.Static.Factions.TryGetFactionById(id);
-                if (!MySession.Static.Players.TryGetPlayerId(id, out var player) && faction == null)
-                    return;
 
-                foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(limit => Block.IsMatch(block, limit)))
+            if (!GridCache.TryGetGridById(id, out var grid))
+            {
+                var identity = MySession.Static.Players.TryGetIdentity(id);
+
+                if (identity == null) return false;
+                
+                var faction = MySession.Static.Factions.GetPlayerFaction(id);
+
+                foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(limit => IsMatch(block, limit)))
                 {
                     if (limit.LimitFaction && faction != null)
                     {
                         limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
                     }
 
-                    if (limit.LimitPlayers && player.IsValid)
+                    if (limit.LimitPlayers)
                     {
                         limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
-                        if (limit.LimitFaction)
-                        {
-                            var playerFaction = MySession.Static.Factions.GetPlayerFaction(id);
-                            if (playerFaction == null) continue;
-                            limit.FoundEntities.AddOrUpdate(playerFaction.FactionId, 1, (l, i) => i + 1);
-                        }
                     }
                 }
+
+                return true;
             }
 
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(limit => Block.IsMatch(block, limit)))
+
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(limit => IsMatch(block, limit)))
             {
-                if (limit.LimitGrids && entity is MyCubeGrid grid)
-                {
-                    limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
-                    continue;
-                }
+                if (!limit.LimitGrids) continue;
                 
-                if (!(entity is MyCharacter)) continue;
-
-                var playerFaction = MySession.Static.Factions.GetPlayerFaction(id);
-
-                if (limit.LimitPlayers)
-                {
-                    limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
-                }
-
-                if (limit.LimitFaction && playerFaction != null)
-                {
-                    limit.FoundEntities.AddOrUpdate(playerFaction.FactionId, 1, (l, i) => i + 1);
-                }
-
+                limit.FoundEntities.AddOrUpdate(id, 1, (l, i) => i + 1);
             }
+
+            return true;
+
+
+        }
+
+        public static bool TryAddBlock(MyCubeBlockDefinition definition, long id, int amount = 1)
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return false;
+            
+            for (int i = 0; i < amount; i++)
+            {
+                TryAdd(definition, id);
+            }
+
+            return true;
         }
 
         public static void RemoveBlock(MySlimBlock block)
         {
-            if (block == null) return;
-            var blockDef = block.BlockDefinition;
+            var blockDef = block?.FatBlock?.BlockDefinition;
+            
+            if (blockDef == null) return;
+            
             var blockOwner = block.OwnerId;
             var blockBuilder = block.BuiltBy;
             var blockGrid = block.CubeGrid.EntityId;
             var faction = MySession.Static.Factions.TryGetFactionByTag(block.FatBlock.GetOwnerFactionTag())?.FactionId;
 
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(x => Block.IsMatch(blockDef, x)))
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(x => IsMatch(blockDef, x)))
             {
                 if (limit.LimitGrids && blockGrid > 0)
                 {
@@ -521,38 +324,48 @@ namespace BlockLimiter.Utility
                     x.FatBlock.GetOwnerFactionTag() == faction.Tag && Block.IsMatch(x.BlockDefinition, limit));
                 limit.FoundEntities[id] = factionBlockCount;
             }
-
-
         }
 
-        public static void UpdatePlayerLimits(MyPlayer player)
+        public static void UpdatePlayerLimits(long id)
         {
-            var playerGrids = player.Grids;
+            if (id == 0) return;
+            BlockLimiter.Instance.Log.Info($"Checking {id}");
+            var blockCache = new HashSet<MySlimBlock>();
             var playerBlocks = new HashSet<MySlimBlock>();
-            if (playerGrids.Count < 1) return;
             
-            foreach (var id in playerGrids)
-            {
-               if (!GridCache.TryGetGridById(id, out var grid))continue;
-               Grid.UpdateLimit(grid);
-               var blocks = grid.CubeBlocks;
-               playerBlocks.UnionWith(blocks);
-            }
-
+            var faction = MySession.Static.Factions.GetPlayerFaction(id);
+            
+            GridCache.GetBlocks(blockCache);
+            if (blockCache.Count < 1)
+                return;
+            playerBlocks.UnionWith(blockCache.Where(x=>x.OwnerId == id || x.BuiltBy == id));
+            
+            if (playerBlocks.Count == 0) return;
+            
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (!limit.LimitPlayers) continue;
+                if (!limit.LimitPlayers 
+                    || Utilities.IsExcepted(id, limit.Exceptions) 
+                    || faction != null && Utilities.IsExcepted(faction.FactionId, limit.Exceptions)) continue;
 
                 var limitedBlocks = playerBlocks.Count(x =>
                     IsMatch(x.BlockDefinition, limit) &&
-                    IsOwner(limit.BlockOwnerState, x, player.Identity.IdentityId));
-                if (limitedBlocks <1) continue;
-                limit.FoundEntities[player.Identity.IdentityId] = limitedBlocks;
+                    IsOwner(limit.BlockOwnerState, x, id));
+                if (limitedBlocks < 1) continue;
+                limit.FoundEntities[id] = limitedBlocks;
                 
             }
         }
 
-
+        public static void UpdatePlayerLimits(MyPlayer player)
+        {
+            if (player?.Identity?.IdentityId == null)
+            {
+                BlockLimiter.Instance.Log.Warn("Attempt to update null player");
+                return;
+            }
+            if (player.Identity != null) UpdatePlayerLimits(player.Identity.IdentityId);
+        }
 
     }
 }

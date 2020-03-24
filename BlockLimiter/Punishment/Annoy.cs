@@ -18,7 +18,7 @@ namespace BlockLimiter.Punishment
 {
     public class Annoy : ProcessHandlerBase
     {
-        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger Log = BlockLimiter.Instance.Log;
         
         public override int GetUpdateResolution()
         {

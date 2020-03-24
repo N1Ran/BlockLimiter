@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Timers;
+using BlockLimiter.Patch;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
 using Sandbox.Engine.Multiplayer;
@@ -17,6 +18,7 @@ using Torch.Managers;
 using Torch.Mod;
 using Torch.Mod.Messages;
 using Torch.Utils;
+using VRage;
 using VRage.Collections;
 using VRage.Dedicated.Configurator;
 using VRage.Game;
@@ -70,9 +72,10 @@ namespace BlockLimiter.Utility
                     return true;
                 }
             }
-
+            
             entity = null;
             return false;
+            
         }
 
         public static long NextInt64(Random rnd)
@@ -100,38 +103,32 @@ namespace BlockLimiter.Utility
         }
 
 
-        public static bool IsExcepted(object obj, List<string> exceptions)
+        public static bool IsExcepted(long obj, List<string> exceptions)
         {
             var excepted = false;
-
-            switch (obj)
+            if (exceptions.Contains(obj.ToString()))
             {
-                case long id:
-                    if (TryGetEntityByNameOrId(id.ToString(), out var xEntity))
-                    {
-                        if (exceptions.Contains(xEntity.EntityId.ToString()) ||
-                               exceptions.Contains(xEntity.DisplayName)) excepted = true;
-                    }
-
-                    var playerId = GetSteamIdFromPlayerId(id);
-                    if (playerId <= 0) return exceptions.Contains(id.ToString()) || excepted;
-                    if(exceptions.Contains(playerId.ToString()))
-                        excepted = true;
-                    return exceptions.Contains(id.ToString()) || excepted;
-                case MyPlayer player:
-                    break;
-                case MyFaction faction:
-                    excepted = exceptions.Contains(faction.Tag);
-                    break;
-                case MyCubeGrid grid:
-                    excepted = exceptions.Contains(grid.EntityId.ToString()) || exceptions.Contains(grid.DisplayName);
-                    break;
-                case string any:
-                    if (!TryGetEntityByNameOrId(any, out var entity)) return exceptions.Contains(any);
-                    if (exceptions.Contains(entity.EntityId.ToString()) ||
-                        exceptions.Contains(entity.DisplayName)) excepted = true;
-                    return excepted || exceptions.Contains(any);
+                return true;
             }
+
+            var faction = MySession.Static.Factions.TryGetFactionById(obj);
+
+            if (faction != null)
+            {
+                return exceptions.Contains(faction.Tag);
+            }
+
+            if (MySession.Static.Players.TryGetPlayerId(obj, out var playerId))
+            {
+                var player = MySession.Static.Players.GetPlayerById(playerId);
+                return (player != null && exceptions.Contains(player.DisplayName)) ||
+                       exceptions.Contains(playerId.SteamId.ToString());
+            }
+            
+
+            if (!GridCache.TryGetGridById(obj, out var grid)) return false;
+            if (exceptions.Contains(grid.DisplayName)) excepted = true;
+            if (grid.BigOwners.Any(x => exceptions.Contains(x.ToString()))) return true;
 
             return excepted;
         }
@@ -176,10 +173,10 @@ namespace BlockLimiter.Utility
             
             foreach (var item in limitItems)
             {
-                if (item.BlockPairName.Count == 0 || item.FoundEntities.Count == 0) continue;
+                if (item.BlockList.Count == 0 || item.FoundEntities.Count == 0) continue;
                 
                 sb.AppendLine();
-                var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockPairName.FirstOrDefault() : item.Name;
+                var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockList.FirstOrDefault() : item.Name;
 
                 sb.AppendLine($"----->{itemName}<-----");
 

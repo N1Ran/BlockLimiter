@@ -22,11 +22,10 @@ namespace BlockLimiter.Settings
         private bool _limitFaction;
         private bool _limitGrids;
         private bool _limitPlayer;
-        private bool _useBlockType;
         private PunishmentType _punishType = PunishmentType.None;
         private GridType _gridType = GridType.AllGrids;
         private string _name;
-        private List<string> _blockPairName = new List<string>();
+        private List<string> _blockList = new List<string>();
         private List<string> _exceptions = new List<string>();
         private int _limit;
         private bool _restrictProjection;
@@ -56,36 +55,22 @@ namespace BlockLimiter.Settings
             get => _name;
             set
             {
-                _name = string.IsNullOrEmpty(value) ? _blockPairName.FirstOrDefault():value;
+                _name = string.IsNullOrEmpty(value) ? _blockList.FirstOrDefault():value;
                 OnPropertyChanged();
-                Save();
             }
         }
 
-        [Display(Name = "BlockPairName", Description = "BlockPairName from cubeblocks.sbc goes here")]
-        public List<string> BlockPairName
+        [Display(Name = "Blocks", Description = "Block typeid, subtypeId and/or pair names from cubeblocks.sbc can be use here")]
+        public List<string> BlockList
         {
-            get => _blockPairName;
+            get => _blockList;
             set
             {
-                _blockPairName = value;
+                _blockList = value;
                 OnPropertyChanged();
-                Save();
             }
         }
         
-        [Display(Name = "Use BlockType", Description = "Sets the limit to use blocktypes")]
-        public bool UseBlockType
-        {
-            get => _useBlockType;
-            set
-            {
-                _useBlockType = value;
-                OnPropertyChanged();
-                Save();
-            }
-        }
-
         [Display(Name = "Exceptions", Description = "List of player or grid exception. You can also use entityId.")]
         public List<string> Exceptions
         {
@@ -94,7 +79,6 @@ namespace BlockLimiter.Settings
             {
                 _exceptions = value;
                 OnPropertyChanged();
-                Save();
             }
         }
 
@@ -106,7 +90,6 @@ namespace BlockLimiter.Settings
             {
                 _limit = value;
                 OnPropertyChanged();
-                Save();
             }
         }
 
@@ -118,7 +101,6 @@ namespace BlockLimiter.Settings
             {
                 _limitFaction = value;
                 OnPropertyChanged();
-                Save();
             }
         }
 
@@ -131,7 +113,6 @@ namespace BlockLimiter.Settings
             {
                 _gridType = value;
                 OnPropertyChanged();
-                Save();
             }
         }
         
@@ -143,7 +124,6 @@ namespace BlockLimiter.Settings
             {
                 _limitGrids = value;
                 OnPropertyChanged();
-                Save();
             }
         }
         [Display(Name = "Limit Players", GroupName = "Limits", Description = "Applies Limit to Players")]
@@ -154,7 +134,6 @@ namespace BlockLimiter.Settings
             {
                 _limitPlayer = value;
                 OnPropertyChanged();
-                Save();
             }
         }
 
@@ -166,7 +145,6 @@ namespace BlockLimiter.Settings
             {
                 _ownerState = value;
                 OnPropertyChanged();
-                Save();
             }
         }
         
@@ -193,7 +171,6 @@ namespace BlockLimiter.Settings
             {
                 _ignoreNpc = value;
                 OnPropertyChanged();
-                Save();
             }
         }
         
@@ -208,7 +185,6 @@ namespace BlockLimiter.Settings
             {
                 _restrictProjection = value;
                 OnPropertyChanged();
-                Save();
             }
         }
 
@@ -219,8 +195,8 @@ namespace BlockLimiter.Settings
         
         public override string ToString()
         {
-            var useName = string.IsNullOrEmpty(Name) ? BlockPairName.FirstOrDefault() : Name;
-            return $"{useName} - [{BlockPairName.Count} : {Limit}]";
+            var useName = string.IsNullOrEmpty(Name) ? BlockList.FirstOrDefault() : Name;
+            return $"{useName} - [{BlockList.Count} : {Limit}]";
         }
         
 
