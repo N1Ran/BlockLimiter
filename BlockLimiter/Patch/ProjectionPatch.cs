@@ -106,15 +106,14 @@ namespace BlockLimiter.Patch
                 if (playerFaction != null)
                     limit.FoundEntities.TryGetValue(playerFaction.FactionId, out fCount);
 
-                for (int i = 0; i < pBlocks.Count; i++)
+                foreach (var block in pBlocks)
                 {
                     if (Math.Abs(pBlocks.Count - removalCount) <= limit.Limit || Math.Abs(fCount+pBlocks.Count-removalCount)<=limit.Limit && (Math.Abs((oCount + pBlocks.Count) - removalCount) <= limit.Limit && Math.Abs((gCount + pBlocks.Count) - removalCount) <= limit.Limit))
                         break;
                     
                     removalCount++;
                     count++;
-                    blocks.Remove(pBlocks[i]);
-
+                    blocks.Remove(block);
                 }
 
             }
