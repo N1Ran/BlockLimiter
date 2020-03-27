@@ -192,6 +192,7 @@ namespace BlockLimiter
             Instance = this;
             Patch(_context);
             Load();
+            CopyOver();
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)
                 _sessionManager.SessionStateChanged += SessionChanged;
@@ -250,6 +251,22 @@ namespace BlockLimiter
                 Control.IsEnabled = enable;
                 Control.DataContext = BlockLimiterConfig.Instance;
             });
+
+        }
+        
+        /// <summary>
+        /// TO Do Remove on next update
+        /// </summary>
+        private void CopyOver()
+        {
+            foreach (var limit in BlockLimiterConfig.Instance.LimitItems)
+            {
+                if (limit.BlockPairName.Count == 0) continue;
+                limit.BlockList.AddRange(limit.BlockPairName);
+                limit.BlockPairName.Clear();
+            }
+            BlockLimiterConfig.Instance.Save();
+
         }
 
         public override void Dispose()

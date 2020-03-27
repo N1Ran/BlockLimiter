@@ -117,17 +117,6 @@ namespace BlockLimiter.Patch
                 }
 
             }
-            
-            /*
-            for (var i = blocks.Count - 1; i >= 0; i--)
-            {
-                var block = blocks[i];
-                if (Block.ProjectBlock(block, playerId, grid) &&
-                    Block.ProjectBlock(block,playerId,proj.CubeGrid)) continue;
-                blocks.RemoveAtFast(i);
-                count++;
-            }
-            */
 
             if ( count < 1) return true;
             
@@ -141,7 +130,6 @@ namespace BlockLimiter.Patch
             catch (Exception e)
             {
                 //NullException thrown here but seems to work for some reason.  Don't Touch any further
-                //Log.Warn(e);
             }
 
            

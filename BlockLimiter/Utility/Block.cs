@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using BlockLimiter.Patch;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
@@ -310,18 +311,27 @@ namespace BlockLimiter.Utility
 
         public static void UpdateFactionLimits(long id)
         {
-            var faction = MySession.Static.Factions.TryGetFactionById(id);
+            if (id == 0) return;
+            var blockCache = new HashSet<MySlimBlock>();
+            var factionBlocks = new HashSet<MySlimBlock>();
+            
+            var faction = MySession.Static.Factions.GetPlayerFaction(id);
+            
             if (faction == null) return;
             
-            var blocks = new HashSet<MySlimBlock>();
-            GridCache.GetBlocks(blocks);
-            if (!blocks.Any()) return;
+            GridCache.GetBlocks(blockCache);
+            if (blockCache.Count < 1)
+                return;
+            
+            factionBlocks.UnionWith(blockCache.Where(x => x.FatBlock.GetOwnerFactionTag() == faction.Tag));
+            
+            if (factionBlocks.Count == 0) return;
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (!limit.LimitFaction) continue;
-                var factionBlockCount = blocks.Count(x =>
-                    x.FatBlock.GetOwnerFactionTag() == faction.Tag && Block.IsMatch(x.BlockDefinition, limit));
+                if (!limit.LimitFaction || Utilities.IsExcepted(faction.FactionId, limit.Exceptions)) continue;
+                var factionBlockCount = blockCache.Count(x =>
+                    x.FatBlock.GetOwnerFactionTag() == faction.Tag && IsMatch(x.BlockDefinition, limit));
                 limit.FoundEntities[id] = factionBlockCount;
             }
         }
@@ -329,7 +339,6 @@ namespace BlockLimiter.Utility
         public static void UpdatePlayerLimits(long id)
         {
             if (id == 0) return;
-            BlockLimiter.Instance.Log.Info($"Checking {id}");
             var blockCache = new HashSet<MySlimBlock>();
             var playerBlocks = new HashSet<MySlimBlock>();
             

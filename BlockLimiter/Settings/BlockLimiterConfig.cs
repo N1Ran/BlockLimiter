@@ -73,7 +73,6 @@ namespace BlockLimiter.Settings
 
 
         [Display(Order = 2, GroupName = "Main Settings", Name = "Server Name", Description = "")]
-
         public string ServerName
         {
             get => _serverName;
@@ -91,10 +90,8 @@ namespace BlockLimiter.Settings
             get => _enable;
             set
             {
-                _enable = value; 
-                if (value) BlockLimiter.ResetLimits();
-                    OnPropertyChanged();
-                Instance.Save(); 
+                _enable = value;
+                Changed(value);
             }
         }
         
@@ -106,8 +103,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _gridConvertBlocking = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
         
@@ -118,8 +114,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _blockOwnershipTransfer = value;
-                OnPropertyChanged();
-                Instance.Save();
+                Changed();
             }
         }
 
@@ -130,8 +125,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _maxBlockSizeShips = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 
@@ -142,8 +136,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _maxBlockSizeStations = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 
@@ -154,8 +147,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _maxBlocksLargeGrid = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
         
@@ -166,8 +158,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _maxBlocksSmallGrid = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 
@@ -181,8 +172,7 @@ namespace BlockLimiter.Settings
             {
                 _vanillaLimits = value;
                 Utilities.UpdateLimits(_vanillaLimits, out AllLimits);
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 
@@ -193,8 +183,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _enableLog = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 
@@ -205,8 +194,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _annoy = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 
@@ -217,8 +205,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _punishInterval = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 
@@ -229,8 +216,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _annoyMsg = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 
@@ -241,8 +227,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _annoyInterval = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 
@@ -253,9 +238,15 @@ namespace BlockLimiter.Settings
             set
             {
                 _annoyDuration = value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
+        }
+
+        private void Changed(bool updated = true)
+        {
+            if (updated) BlockLimiter.ResetLimits();
+            OnPropertyChanged();
+            Instance.Save(); 
         }
 
 

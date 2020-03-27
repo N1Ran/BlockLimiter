@@ -52,6 +52,12 @@ namespace BlockLimiter.Commands
 
             var sb = Utilities.GetLimit(playerId);
 
+            if (sb.Length == 0)
+            {
+                Context.Respond("You have no block within set limit");
+                return;
+            }
+
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"PlayerLimit",sb.ToString()),Context.Player.SteamUserId);
 
         }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Windows;
 using Torch;
 using Torch.Views;
 using System.Xml.Serialization;
@@ -26,6 +27,7 @@ namespace BlockLimiter.Settings
         private GridType _gridType = GridType.AllGrids;
         private string _name;
         private List<string> _blockList = new List<string>();
+        private List<string> _blockPairName = new List<string>();
         private List<string> _exceptions = new List<string>();
         private int _limit;
         private bool _restrictProjection;
@@ -40,6 +42,8 @@ namespace BlockLimiter.Settings
 
         private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            OnPropertyChanged();
+            BlockLimiter.ResetLimits();
             Save();
         }
 
@@ -66,11 +70,24 @@ namespace BlockLimiter.Settings
             get => _blockList;
             set
             {
-                _blockList = value;
+                _blockList =value;
                 OnPropertyChanged();
             }
         }
+
         
+        [Display(Visible = false)]
+        public List<string> BlockPairName
+        {
+            get => _blockPairName;
+            set
+            {
+                _blockPairName = value;
+                OnPropertyChanged();
+            }
+
+        }
+
         [Display(Name = "Exceptions", Description = "List of player or grid exception. You can also use entityId.")]
         public List<string> Exceptions
         {
