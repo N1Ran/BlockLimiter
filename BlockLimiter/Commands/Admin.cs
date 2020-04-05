@@ -50,7 +50,18 @@ namespace BlockLimiter.Commands
             
             Context.Respond("Limits updated");
         }
-        
+
+        [Command("updatefaction")]
+        public void UpdateFaction(string factionTag)
+        {
+            var faction = MySession.Static.Factions.TryGetFactionByTag(factionTag);
+            if (faction == null)
+            {
+                Context.Respond("Not a faction");
+                return;
+            }
+            Block.UpdateFactionLimits(faction.FactionId);
+        }
         [Command("violations", "gets the list of violations per limit")]
         [Permission(MyPromoteLevel.Moderator)]
         public void GetViolations()

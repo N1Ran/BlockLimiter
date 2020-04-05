@@ -175,9 +175,8 @@ namespace BlockLimiter.Utility
             {
                 if (item.BlockList.Count == 0 || item.FoundEntities.Count == 0) continue;
                 
-                sb.AppendLine();
                 var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockList.FirstOrDefault() : item.Name;
-
+                sb.AppendLine();
                 sb.AppendLine($"----->{itemName}<-----");
 
                 if (item.LimitPlayers && item.FoundEntities.TryGetValue(playerId, out var pCount))
@@ -204,9 +203,6 @@ namespace BlockLimiter.Utility
                     if (gCount < 1) continue;
                     sb.AppendLine($"->{grid.DisplayName} = {gCount} / {item.Limit}");
                 }
-                sb.AppendLine();
-
-
             }
             
 

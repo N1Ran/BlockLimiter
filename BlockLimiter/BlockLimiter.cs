@@ -70,7 +70,9 @@ namespace BlockLimiter
             MyMultiplayer.Static.ClientJoined += StaticOnClientJoined;
             MyCubeGrids.BlockBuilt += MyCubeGridsOnBlockBuilt;
             MySession.Static.Factions.FactionStateChanged += FactionsOnFactionStateChanged;
+           // MySession.Static.Factions.FactionEdited += FactionsOnFactionEdited;
         }
+
 
         private void FactionsOnFactionStateChanged(MyFactionStateChange factionState, long fromFaction, long toFaction, long playerId, long senderId)
         {
@@ -84,7 +86,6 @@ namespace BlockLimiter
 
                 return;
             }
-            if (factionState != MyFactionStateChange.FactionMemberAcceptJoin && factionState != MyFactionStateChange.FactionMemberLeave && factionState != MyFactionStateChange.FactionMemberKick) return;
 
             Block.UpdateFactionLimits(fromFaction);
             Block.UpdateFactionLimits(toFaction);

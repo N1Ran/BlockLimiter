@@ -308,23 +308,22 @@ namespace BlockLimiter.Utility
             var blockCache = new HashSet<MySlimBlock>();
             var factionBlocks = new HashSet<MySlimBlock>();
             
-            var faction = MySession.Static.Factions.GetPlayerFaction(id);
+            var faction = MySession.Static.Factions.TryGetFactionById(id);
             
             if (faction == null) return;
             
             GridCache.GetBlocks(blockCache);
-            if (blockCache.Count < 1)
+            if (blockCache.Count == 0)
                 return;
             
-            factionBlocks.UnionWith(blockCache.Where(x => x.FatBlock.GetOwnerFactionTag() == faction.Tag));
+            factionBlocks.UnionWith(blockCache.Where(x => x.FatBlock?.GetOwnerFactionTag() == faction.Tag));
             
             if (factionBlocks.Count == 0) return;
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
                 if (!limit.LimitFaction || Utilities.IsExcepted(faction.FactionId, limit.Exceptions)) continue;
-                var factionBlockCount = blockCache.Count(x =>
-                    x.FatBlock.GetOwnerFactionTag() == faction.Tag && IsMatch(x.BlockDefinition, limit));
+                var factionBlockCount = factionBlocks.Count(x => IsMatch(x.BlockDefinition, limit));
                 limit.FoundEntities[id] = factionBlockCount;
             }
         }
@@ -351,9 +350,8 @@ namespace BlockLimiter.Utility
                     || faction != null && Utilities.IsExcepted(faction.FactionId, limit.Exceptions)) continue;
 
                 var limitedBlocks = playerBlocks.Count(x =>
-                    IsMatch(x.BlockDefinition, limit) &&
-                    IsOwner(x, id));
-                if (limitedBlocks < 1) continue;
+                    IsMatch(x.BlockDefinition, limit));
+                if (limitedBlocks == 0) continue;
                 limit.FoundEntities[id] = limitedBlocks;
                 
             }
