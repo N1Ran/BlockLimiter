@@ -110,7 +110,7 @@ namespace BlockLimiter.Punishment
                             {
                                 break;
                             }
-                            if (!Block.IsOwner(item.BlockOwnerState,block,player.IdentityId)) continue;
+                            if (!Block.IsOwner(block,player.IdentityId)) continue;
                             if (!Block.IsMatch(block.BlockDefinition,item))continue;
                             punishCount++;
                             removeBlocks[block] = item.Punishment;

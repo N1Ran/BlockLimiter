@@ -35,7 +35,7 @@ namespace BlockLimiter.Patch
         /// <summary>
         /// Triggers when a grid is removed from the world and removes the grid and block from player/faction count
         /// </summary>
-        /// <param name="__instance"></param>
+        /// <param name="entityId"></param>
         /// <returns></returns>
         private static bool OnGridClosed(ref long entityId)
         {
@@ -46,7 +46,7 @@ namespace BlockLimiter.Patch
 
             if (!GridCache.TryGetGridById(entityId, out var grid))
             {
-                Log.Debug("Null closure");
+                BlockLimiter.Instance.Log.Debug("Null closure");
                 return true;
             }
             
@@ -76,14 +76,14 @@ namespace BlockLimiter.Patch
 
             if (grid == null)
             {
-                if (BlockLimiterConfig.Instance.EnableLog) Log.Warn("Null grid in GridChange handler");
+                if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Warn("Null grid in GridChange handler");
                 return true;
             }
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             if (remoteUserId==0 ||playerId == 0) return false;
             MyVisualScriptLogicProvider.SendChatMessage($"Grid conversion blocked due to violation",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
-            if (BlockLimiterConfig.Instance.EnableLog) Log.Info(
+            if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to violation");
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
@@ -101,7 +101,7 @@ namespace BlockLimiter.Patch
             var grid = __instance;
             if (grid == null)
             {
-                if (BlockLimiterConfig.Instance.EnableLog) Log.Warn("Null grid in GridChange handler");
+                if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Warn("Null grid in GridChange handler");
                 return true;
             }
             if (Grid.AllowConversion(grid)) return true;
@@ -109,7 +109,7 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             if (remoteUserId==0 ||playerId == 0) return false;
             MyVisualScriptLogicProvider.SendChatMessage($"Grid conversion blocked due to violation",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
-            if (BlockLimiterConfig.Instance.EnableLog)Log.Info(
+            if (BlockLimiterConfig.Instance.EnableLog)BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to violation");
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();

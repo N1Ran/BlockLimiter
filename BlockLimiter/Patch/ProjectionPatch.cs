@@ -24,6 +24,7 @@ using NLog;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
 using Sandbox.Game;
+using Sandbox.Game.Entities.Character;
 using Sandbox.Game.World;
 using Torch;
 using Torch.Managers;
@@ -50,7 +51,6 @@ namespace BlockLimiter.Patch
         /// <returns></returns>
         private static bool PrefixNewBlueprint(MyProjectorBase __instance, ref List<MyObjectBuilder_CubeGrid> projectedGrids)
         {
-
             if (!BlockLimiterConfig.Instance.EnableLimits)return true;
             var proj = __instance;
             if (proj == null)

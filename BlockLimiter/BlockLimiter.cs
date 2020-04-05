@@ -48,7 +48,7 @@ namespace BlockLimiter
         public static BlockLimiter Instance { get; private set; }
         private TorchSessionManager _sessionManager;
         private List<ProcessHandlerBase> _limitHandlers;
-        public HashSet<LimitItem> VanillaLimits = new HashSet<LimitItem>();
+        public readonly HashSet<LimitItem> VanillaLimits = new HashSet<LimitItem>();
         
         private int _updateCounter;
 
@@ -67,9 +67,34 @@ namespace BlockLimiter
             
             MyCubeGrids.BlockDestroyed += MyCubeGridsOnBlockDestroyed;
             MyCubeGrid.OnSplitGridCreated += MyCubeGridOnOnSplitGridCreated;
-            
             MyMultiplayer.Static.ClientJoined += StaticOnClientJoined;
-            
+            MyCubeGrids.BlockBuilt += MyCubeGridsOnBlockBuilt;
+            MySession.Static.Factions.FactionStateChanged += FactionsOnFactionStateChanged;
+        }
+
+        private void FactionsOnFactionStateChanged(MyFactionStateChange factionState, long fromFaction, long toFaction, long playerId, long senderId)
+        {
+            if (factionState == MyFactionStateChange.RemoveFaction)
+            {
+                foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+                {
+                    limit.Exceptions.Remove(fromFaction.ToString());
+                    limit.FoundEntities.Remove(fromFaction);
+                }
+
+                return;
+            }
+            if (factionState != MyFactionStateChange.FactionMemberAcceptJoin && factionState != MyFactionStateChange.FactionMemberLeave && factionState != MyFactionStateChange.FactionMemberKick) return;
+
+            Block.UpdateFactionLimits(fromFaction);
+            Block.UpdateFactionLimits(toFaction);
+            Block.UpdatePlayerLimits(playerId);
+
+        }
+
+        private void MyCubeGridsOnBlockBuilt(MyCubeGrid grid, MySlimBlock block)
+        {
+            Block.TryAdd(block, grid);
         }
 
         private void MyCubeGridOnOnSplitGridCreated(MyCubeGrid obj)
@@ -190,7 +215,6 @@ namespace BlockLimiter
             _pm = torch.Managers.GetManager<PatchManager>();
             _context = _pm.AcquireContext();
             Instance = this;
-            Patch(_context);
             Load();
             CopyOver();
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
@@ -341,44 +365,6 @@ namespace BlockLimiter
         
         
 
-       private static void Patch(PatchContext ctx)
-        {
-            ctx.GetPattern(typeof(MySlimBlock).GetMethod(nameof(MySlimBlock.TransferAuthorship))).Prefixes.
-                Add(typeof(BlockLimiter).GetMethod(nameof(OnTransfer), BindingFlags.Static | BindingFlags.NonPublic));
-            
-        }
-
-        public static event Action<MySlimBlock, long> SlimOwnerChanged;
-
-        // ReSharper disable once InconsistentNaming
-        private static bool OnTransfer(MySlimBlock __instance, long newOwner)
-        {
-            if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.BlockOwnershipTransfer)
-            {
-                SlimOwnerChanged?.Invoke(__instance, newOwner);
-                return true;
-            }
-            
-            if (!Block.AllowBlock(__instance.BlockDefinition, newOwner, __instance.CubeGrid))
-            {
-                Utilities.ValidationFailed();
-                return false;
-            }
-            
-            if (!Block.TryAdd(__instance.BlockDefinition,newOwner))
-            {
-                Task.Run(() =>
-                {
-                    Thread.Sleep(100);
-                    MySandboxGame.Static.Invoke(() =>
-                    {
-                        Block.UpdatePlayerLimits(newOwner);
-                    }, "BlockLimiter");
-                });
-            }
-            SlimOwnerChanged?.Invoke(__instance, newOwner);
-            return true;
-        }
         
     }
 

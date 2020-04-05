@@ -184,7 +184,6 @@ namespace BlockLimiter.Utility
                 {
                     if (pCount < 1) continue;
                     sb.AppendLine($"Player Limit = {pCount}/{item.Limit}");
-                    sb.AppendLine();
                 }
 
                 if (item.LimitFaction && playerFaction != null &&
@@ -192,13 +191,12 @@ namespace BlockLimiter.Utility
                 {
                     if (fCount < 1) continue;
                     sb.AppendLine($"Faction Limit = {fCount}/{item.Limit} ");
-                    sb.AppendLine();
                 }
 
                 if (!item.LimitGrids || !item.FoundEntities.Any(x =>
                     GridCache.TryGetGridById(x.Key, out var grid) && grid.BigOwners.Contains(playerId))) continue;
 
-                sb.AppendLine("Grid Limits");
+                sb.AppendLine("Grid Limits:");
 
                 foreach (var (id,gCount) in item.FoundEntities)
                 {

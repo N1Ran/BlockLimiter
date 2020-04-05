@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BlockLimiter.Patch;
 using Sandbox;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
@@ -27,7 +28,7 @@ namespace BlockLimiter.Utility
 
        static GridCache()
         {
-            BlockLimiter.SlimOwnerChanged += SlimOwnerChanged;
+            BlockOwnershipTransfer.SlimOwnerChanged += SlimOwnerChanged;
         }
 
         private static void SlimOwnerChanged(MySlimBlock arg1, long arg2)

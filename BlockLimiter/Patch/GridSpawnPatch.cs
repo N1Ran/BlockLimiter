@@ -42,7 +42,9 @@ namespace BlockLimiter.Patch
         private static bool Prefix(DefinitionIdBlit definition)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+            
             var block = MyDefinitionManager.Static.GetCubeBlockDefinition(definition);
+            
             if (block == null)
             {
                 return true;
@@ -54,7 +56,6 @@ namespace BlockLimiter.Patch
 
             if (Block.AllowBlock(block, playerId, (MyObjectBuilder_CubeGrid) null))
             {
-                Block.TryAdd(block,playerId);
                 return true;
             }
 

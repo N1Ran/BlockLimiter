@@ -143,6 +143,7 @@
     <Compile Include="BlockLimiter.cs" />
     <Compile Include="Commands\Admin.cs" />
     <Compile Include="Commands\Player.cs" />
+    <Compile Include="Patch\BlockOwnershipTransfer.cs" />
     <Compile Include="Patch\GridChange.cs" />
     <Compile Include="Patch\ProjectionPatch.cs" />
     <Compile Include="ProcessHandlers\ProcessHandlerBase.cs" />

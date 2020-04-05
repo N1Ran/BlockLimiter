@@ -32,7 +32,6 @@ namespace BlockLimiter.Settings
         private int _limit;
         private bool _restrictProjection;
         private bool _ignoreNpc;
-        private OwnerState _ownerState = OwnerState.BuiltbyId;
 
 
         public LimitItem()
@@ -154,19 +153,6 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Use Builtby", Description = "Sets the limiter to use block builder (whoever placed the block)")]
-        public OwnerState BlockOwnerState
-        {
-            get => _ownerState;
-            set
-            {
-                _ownerState = value;
-                OnPropertyChanged();
-            }
-        }
-        
-       
-      
         
         [Display(Name = "PunishmentType", GroupName = "Restrictions", Description = "Set's what to do to extra blocks in violation of the limit")]
         public PunishmentType Punishment
@@ -230,14 +216,6 @@ namespace BlockLimiter.Settings
             DeleteBlock,
             ShutOffBlock,
             Explode
-        }
-        
-        public enum OwnerState
-        {
-            BuiltbyId,
-            OwnerId,
-            OwnerOrBuiltbyId,
-            OwnerAndBuiltbyId
         }
         
         public enum GridType
