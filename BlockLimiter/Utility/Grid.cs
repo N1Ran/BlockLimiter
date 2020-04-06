@@ -148,7 +148,7 @@ namespace BlockLimiter.Utility
             var blocks = grid.CubeBlocks;
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (!limit.LimitGrids)
+                if (!limit.LimitGrids || !IsGridType(grid,limit))
                 {
                     limit.FoundEntities.Remove(grid.EntityId);
                     continue;

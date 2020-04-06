@@ -6,6 +6,7 @@ using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using Sandbox;
 using Sandbox.Game.Entities.Cube;
+using Sandbox.Game.World;
 using Torch.Managers.PatchManager;
 
 namespace BlockLimiter.Patch
@@ -16,19 +17,12 @@ namespace BlockLimiter.Patch
         private static void Patch(PatchContext ctx)
         {
             var t = typeof(MySlimBlock);
-
-            //ctx.GetPattern(typeof(MySlimBlock).GetMethod(nameof(MySlimBlock.TransferAuthorship))).Prefixes.
-              //  Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(OnTransfer), BindingFlags.Static | BindingFlags.NonPublic));
-            
             var m = t.GetMethod(nameof(MySlimBlock.TransferAuthorship), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             ctx.GetPattern(m).Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(OnTransfer),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
-
-            
         }
 
         public static event Action<MySlimBlock, long> SlimOwnerChanged;
 
-        // ReSharper disable once InconsistentNaming
         private static bool OnTransfer(MySlimBlock __instance, long newOwner)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.BlockOwnershipTransfer)
@@ -53,9 +47,11 @@ namespace BlockLimiter.Patch
                     MySandboxGame.Static.Invoke(() =>
                     {
                         Block.UpdatePlayerLimits(newOwner);
+                        Grid.UpdateLimit(__instance.CubeGrid);
                     }, "BlockLimiter");
                 });
             }
+            
             
             SlimOwnerChanged?.Invoke(__instance, newOwner);
             return true;

@@ -70,7 +70,6 @@ namespace BlockLimiter
             MyMultiplayer.Static.ClientJoined += StaticOnClientJoined;
             MyCubeGrids.BlockBuilt += MyCubeGridsOnBlockBuilt;
             MySession.Static.Factions.FactionStateChanged += FactionsOnFactionStateChanged;
-           // MySession.Static.Factions.FactionEdited += FactionsOnFactionEdited;
         }
 
 

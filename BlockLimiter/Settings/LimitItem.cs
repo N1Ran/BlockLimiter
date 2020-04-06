@@ -8,6 +8,8 @@ using System.Windows;
 using Torch;
 using Torch.Views;
 using System.Xml.Serialization;
+using Sandbox.Game.World;
+using Sandbox.ModAPI;
 using VRage;
 using VRage.Collections;
 using VRage.Dedicated.Configurator;
@@ -42,7 +44,8 @@ namespace BlockLimiter.Settings
         private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             OnPropertyChanged();
-            BlockLimiter.ResetLimits();
+            //BlockLimiter.ResetLimits();
+            if (MyAPIGateway.Session != null)Reset();
             Save();
         }
 

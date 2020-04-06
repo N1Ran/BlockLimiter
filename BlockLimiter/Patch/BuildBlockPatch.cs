@@ -108,19 +108,7 @@ namespace BlockLimiter.Patch
 
             if (def == null) return true;
             
-            /*
-            
-            if (!locations.Any()) return false;
-            
-            var def = new HashSet<MyCubeBlockDefinition>();
-            
-
-            foreach (var item in locations)
-            {
-                def.Add(MyDefinitionManager.Static.GetCubeBlockDefinition(item.BlockDefinition));
-            }
-            */
-            
+           
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
@@ -135,26 +123,6 @@ namespace BlockLimiter.Patch
                 return false;
             }
             
-            /*
-            if (def.Any(x=>!Block.AllowBlock(x,playerId,grid)))
-            {
-                var b = def.Count;
-                var x = locations.FirstOrDefault().BlockDefinition.SubtypeId.String;
-                if (BlockLimiterConfig.Instance.EnableLog)
-                    BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {x} blocks due to limits");
-                //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-                MyVisualScriptLogicProvider.SendChatMessage($"Limit reached",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
-                Utilities.SendFailSound(remoteUserId);
-                Utilities.ValidationFailed();
-                return false;
-            }
-
-            foreach (var block  in def)
-            {
-                Block.TryAdd(block,playerId);
-            }
-            */
-
             return true;
             }
             

@@ -81,7 +81,11 @@ namespace BlockLimiter.Patch
             }
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
-            if (remoteUserId==0 ||playerId == 0) return false;
+            if (Grid.AllowConversion(grid) || remoteUserId == 0 || playerId == 0)
+            {
+                Grid.UpdateLimit(grid);
+                return true;
+            }
             MyVisualScriptLogicProvider.SendChatMessage($"Grid conversion blocked due to violation",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to violation");
@@ -104,10 +108,13 @@ namespace BlockLimiter.Patch
                 if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Warn("Null grid in GridChange handler");
                 return true;
             }
-            if (Grid.AllowConversion(grid)) return true;
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
-            if (remoteUserId==0 ||playerId == 0) return false;
+            if (Grid.AllowConversion(grid) || remoteUserId == 0 || playerId == 0)
+            {
+                Grid.UpdateLimit(grid);
+                return true;
+            }
             MyVisualScriptLogicProvider.SendChatMessage($"Grid conversion blocked due to violation",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             if (BlockLimiterConfig.Instance.EnableLog)BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to violation");
