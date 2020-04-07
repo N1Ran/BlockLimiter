@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
@@ -24,8 +26,11 @@ namespace BlockLimiter.Commands
 {
     public partial class Player
     {
+        private static DateTime _lastRun = DateTime.MinValue;
+        private static bool _doCheck = false;
+        
         [Command("enable", "enable/disable blocklimit plugin")]
-        [Permission((MyPromoteLevel.Admin))]
+        [Permission(MyPromoteLevel.Admin)]
         public void Enable(bool enable = true)
         {
             BlockLimiterConfig.Instance.EnableLimits = enable;
@@ -34,7 +39,7 @@ namespace BlockLimiter.Commands
         }
         
         [Command("log", "enable/disable blocklimit log")]
-        [Permission((MyPromoteLevel.Admin))]
+        [Permission(MyPromoteLevel.Admin)]
         public void EnableLog(bool enable = true)
         {
             BlockLimiterConfig.Instance.EnableLog = enable;
@@ -43,14 +48,35 @@ namespace BlockLimiter.Commands
         }
         
         [Command("update", "updates limits")]
-        [Permission((MyPromoteLevel.Admin))]
+        [Permission(MyPromoteLevel.Admin)]
         public void UpdateLimits()
         {
+            var time = DateTime.Now - _lastRun;
+            if (time.TotalMinutes < 1)
+            {
+                var timeRemaining = TimeSpan.FromMinutes(1) - time;
+                Context.Respond($"Cooldown in effect.  Try again in {timeRemaining.TotalSeconds:N0} seconds");
+                return;
+            }
+            if (!_doCheck)
+            {
+                Context.Respond("Warning: This command will drop sim speed for few seconds/minutes while recalculating limits.  Run command again to proceed");
+                _doCheck = true;
+                Task.Run(() =>
+                {
+                    Thread.Sleep(30000);
+                   _doCheck = false;
+                });
+                return;
+            }
+            _doCheck = false;
             BlockLimiter.ResetLimits();
+            _lastRun = DateTime.Now;
             
             Context.Respond("Limits updated");
         }
 
+#if DEBUG
         [Command("updatefaction")]
         public void UpdateFaction(string factionTag)
         {
@@ -62,6 +88,8 @@ namespace BlockLimiter.Commands
             }
             Block.UpdateFactionLimits(faction.FactionId);
         }
+#endif
+        
         [Command("violations", "gets the list of violations per limit")]
         [Permission(MyPromoteLevel.Moderator)]
         public void GetViolations()
