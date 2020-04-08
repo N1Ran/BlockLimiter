@@ -234,9 +234,7 @@ namespace BlockLimiter.Utility
 
         public static bool TryAdd(MySlimBlock block, MyCubeGrid grid)
         {
-            if (block == null) return false;
-            var ownerId = block.BuiltBy;
-            return TryAdd(block.BlockDefinition, ownerId, grid.EntityId);
+            return block != null && TryAdd(block.BlockDefinition, block.BuiltBy, grid.EntityId);
         }
 
 
@@ -301,13 +299,13 @@ namespace BlockLimiter.Utility
                 if (limit.LimitPlayers)
                 {
                     if (blockOwner == blockBuilder && IsOwner(block, blockOwner))
-                        limit.FoundEntities.AddOrUpdate(blockOwner, 0, (l, i) => Math.Max(0,i - 1));
+                        limit.FoundEntities.AddOrUpdate(blockBuilder, 0, (l, i) => Math.Max(0,i - 1));
                     else
                     {
                         if (IsOwner(block, blockOwner))
                             limit.FoundEntities.AddOrUpdate(blockOwner, 0, (l, i) => Math.Max(0,i - 1));
                         if (IsOwner(block, blockBuilder))
-                            limit.FoundEntities.AddOrUpdate(blockOwner, 0, (l, i) => Math.Max(0,i - 1));
+                            limit.FoundEntities.AddOrUpdate(blockBuilder, 0, (l, i) => Math.Max(0,i - 1));
                     }
                 }
 

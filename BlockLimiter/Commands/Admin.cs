@@ -48,7 +48,7 @@ namespace BlockLimiter.Commands
         }
         
         [Command("update", "updates limits")]
-        [Permission(MyPromoteLevel.Admin)]
+        [Permission(MyPromoteLevel.Moderator)]
         public void UpdateLimits()
         {
             var time = DateTime.Now - _lastRun;
@@ -70,6 +70,7 @@ namespace BlockLimiter.Commands
                 return;
             }
             _doCheck = false;
+            BlockLimiterConfig.Instance.Save();
             BlockLimiter.ResetLimits();
             _lastRun = DateTime.Now;
             

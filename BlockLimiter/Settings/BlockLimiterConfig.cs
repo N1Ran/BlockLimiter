@@ -198,7 +198,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Punishment Interval (ms)", GroupName = "Punishment", Description = "How often the punishment is triggered.")]
+        [Display(Name = "Punishment Interval (s)", GroupName = "Punishment", Description = "How often the punishment is triggered.")]
         public int PunishInterval
         {
             get => _punishInterval;
@@ -244,7 +244,6 @@ namespace BlockLimiter.Settings
 
         private void Changed(bool updated = true)
         {
-            if (updated) BlockLimiter.ResetLimits();
             OnPropertyChanged();
             Instance.Save(); 
         }

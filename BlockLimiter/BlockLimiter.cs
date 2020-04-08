@@ -94,6 +94,7 @@ namespace BlockLimiter
 
         private void MyCubeGridsOnBlockBuilt(MyCubeGrid grid, MySlimBlock block)
         {
+            if (!GridCache.TryGetGridById(grid.EntityId, out _))GridCache.AddGrid(grid.EntityId);
             Block.TryAdd(block, grid);
         }
 
@@ -346,7 +347,6 @@ namespace BlockLimiter
                    }
                }, "BlockLimiter");
            });
-
 
         }
 

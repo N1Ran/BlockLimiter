@@ -7,6 +7,7 @@ using BlockLimiter.Patch;
 using Sandbox;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
+using Sandbox.Game.World;
 using VRage;
 using VRage.Collections;
 using VRage.Game.Entity;
@@ -75,6 +76,17 @@ namespace BlockLimiter.Utility
                 var entity = _gridCache.FirstOrDefault(e => e.EntityId == entityId);
 
                 _gridCache.Remove(entity);
+            }
+        }
+
+        public static void AddGrid(long entityId)
+        {
+            using(_entityLock.AcquireSharedUsing())
+            {
+                var entity = MyEntities.GetEntityById(entityId);
+                if (!(entity is MyCubeGrid grid) || _gridCache.Contains(grid)) return;
+
+                _gridCache.Add(grid);
             }
         }
 
