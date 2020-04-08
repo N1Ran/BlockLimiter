@@ -57,11 +57,11 @@ namespace BlockLimiter.Settings
         private bool _loading;
         private bool _vanillaLimits;
         private bool _annoy;
-        private int _annoyInterval = 300000;
+        private int _annoyInterval = 3600;
         private int _annoyDuration = 15000;
         private string _serverName = "BlockLimiter";
         private string _annoyMsg = "You're in violation of set limits.  Use [!blocklimit mylimit] to view which limits you've exceeded";
-        private int _punishInterval = 300000;
+        private int _punishInterval = 3600;
         private int _maxBlockSizeShips = 0;
         private int _maxBlockSizeStations = 0;
         private int _maxBlocksSmallGrid = 0;
@@ -245,7 +245,7 @@ namespace BlockLimiter.Settings
         private void Changed(bool updated = true)
         {
             OnPropertyChanged();
-            Instance.Save(); 
+            if (updated)Instance.Save(); 
         }
 
 
