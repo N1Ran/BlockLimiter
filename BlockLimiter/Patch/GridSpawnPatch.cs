@@ -65,7 +65,7 @@ namespace BlockLimiter.Patch
                 BlockLimiter.Instance.Log.Info($"Blocked {p} from placing a {b}");
             
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-            MyVisualScriptLogicProvider.SendChatMessage($"Limit reached", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
+            MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
 
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();

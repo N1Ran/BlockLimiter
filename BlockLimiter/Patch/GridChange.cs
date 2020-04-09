@@ -86,7 +86,7 @@ namespace BlockLimiter.Patch
                 Grid.UpdateLimit(grid);
                 return true;
             }
-            MyVisualScriptLogicProvider.SendChatMessage($"Grid conversion blocked due to violation",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+            MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to violation");
             Utilities.SendFailSound(remoteUserId);
@@ -115,7 +115,7 @@ namespace BlockLimiter.Patch
                 Grid.UpdateLimit(grid);
                 return true;
             }
-            MyVisualScriptLogicProvider.SendChatMessage($"Grid conversion blocked due to violation",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+            MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             if (BlockLimiterConfig.Instance.EnableLog)BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to violation");
             Utilities.SendFailSound(remoteUserId);

@@ -79,7 +79,7 @@ namespace BlockLimiter.Patch
                 NetworkManager.RaiseEvent(__instance, RemoveProjectionMethod, target);
                 Utilities.SendFailSound(remoteUserId);
                 Utilities.ValidationFailed();
-                MyVisualScriptLogicProvider.SendChatMessage($"Projection block count violations",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+                MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
                 if (BlockLimiterConfig.Instance.EnableLog)
                     Log.Info($"Projection blocked from {player.DisplayName}");
                 return false;
@@ -133,7 +133,7 @@ namespace BlockLimiter.Patch
             }
 
            
-            ModCommunication.SendMessageTo(new NotificationMessage($"Blocklimiter removed {count} blocks blueprint!", 15000,
+            ModCommunication.SendMessageTo(new NotificationMessage($"{BlockLimiterConfig.Instance.ProjectionDenyMessage}", 15000,
                         MyFontEnum.Red), remoteUserId);
 
             return true;

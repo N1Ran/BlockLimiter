@@ -70,6 +70,8 @@ namespace BlockLimiter.Settings
         private bool _gridConvertBlocking;
         private bool _blockOwnershipTransfer;
         private MtObservableCollection<LimitItem> _limitItems;
+        private string _denyMessage = "Limit reached";
+        private string _projectionDenyMessage = "Blocks removed from projection due for going over limit";
 
 
         [Display(Order = 2, GroupName = "Main Settings", Name = "Server Name", Description = "")]
@@ -184,6 +186,28 @@ namespace BlockLimiter.Settings
             set
             {
                 _enableLog = value; 
+                Changed();
+            }
+        }
+        
+        [Display(Order = 7, GroupName = "Main Settings", Name = "Deny Message", Description = "Message posted when limit is reached")]
+        public string DenyMessage
+        {
+            get => _denyMessage;
+            set
+            {
+                _denyMessage = value; 
+                Changed();
+            }
+        }
+        
+        [Display(Order = 7, GroupName = "Main Settings", Name = "Projection Deny Message", Description = "Message posted when blocks are removed from projection")]
+        public string ProjectionDenyMessage
+        {
+            get => _projectionDenyMessage;
+            set
+            {
+                _projectionDenyMessage = value; 
                 Changed();
             }
         }
