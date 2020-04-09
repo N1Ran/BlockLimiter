@@ -14,6 +14,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using Torch.API.Plugins;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using Torch.Mod;
@@ -75,6 +76,40 @@ namespace BlockLimiter.Commands
             _lastRun = DateTime.Now;
             
             Context.Respond("Limits updated");
+        }
+
+        [Command("reload", "Reloads current BlockLimiter.cfg and apply any changes to current session")]
+        public void Reload()
+        {
+            var time = DateTime.Now - _lastRun;
+            if (time.TotalMinutes < 1)
+            {
+                var timeRemaining = TimeSpan.FromMinutes(1) - time;
+                Context.Respond($"Cooldown in effect.  Try again in {timeRemaining.TotalSeconds:N0} seconds");
+                return;
+            }
+            
+            if (!_doCheck)
+            {
+                Context.Respond("Warning: This command will drop sim speed for few seconds/minutes while recalculating limits.  Run command again to proceed");
+                _doCheck = true;
+                Task.Run(() =>
+                {
+                    Thread.Sleep(30000);
+                    _doCheck = false;
+                });
+                return;
+            }
+            
+            _doCheck = false;
+            
+            BlockLimiterConfig.Instance.Load();
+            BlockLimiterConfig.Instance.Save();
+            BlockLimiter.ResetLimits();
+            
+            _lastRun = DateTime.Now;
+            
+            Context.Respond("Limits reloaded from config file");
         }
 
 #if DEBUG

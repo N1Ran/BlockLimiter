@@ -266,6 +266,27 @@ namespace BlockLimiter.Utility
 
         }
 
+        public static bool CanAdd(List<MySlimBlock> blocks, long id, out List<MySlimBlock> nonAllowedBlocks)
+        {
+            var newList = new List<MySlimBlock>();
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                nonAllowedBlocks = newList;
+                return true;
+            }
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            {
+                limit.FoundEntities.TryGetValue(id, out var currentCount);
+                if(Utilities.IsExcepted(id, limit.Exceptions)) continue;
+                var affectedBlocks = blocks.Where(x => IsMatch(x.BlockDefinition, limit)).ToList();
+                if (affectedBlocks.Count < limit.Limit - currentCount ) continue;
+                newList.AddRange(affectedBlocks.Where(x=>!newList.Contains(x)));
+            }
+
+            nonAllowedBlocks = newList;
+            return newList.Count == 0;
+        }
+
         public static bool TryAddBlock(MyCubeBlockDefinition definition, long playerId, long gridId =0,  int amount = 1)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return false;

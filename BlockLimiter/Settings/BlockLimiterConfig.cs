@@ -91,7 +91,8 @@ namespace BlockLimiter.Settings
             set
             {
                 _enable = value;
-                Changed(value);
+                Changed();
+                if (value) BlockLimiter.ResetLimits();
             }
         }
         

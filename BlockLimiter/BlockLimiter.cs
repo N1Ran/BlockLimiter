@@ -92,26 +92,26 @@ namespace BlockLimiter
 
         }
 
-        private void MyCubeGridsOnBlockBuilt(MyCubeGrid grid, MySlimBlock block)
+        private static void MyCubeGridsOnBlockBuilt(MyCubeGrid grid, MySlimBlock block)
         {
             if (!GridCache.TryGetGridById(grid.EntityId, out _))GridCache.AddGrid(grid.EntityId);
             Block.TryAdd(block, grid);
         }
 
-        private void MyCubeGridOnOnSplitGridCreated(MyCubeGrid obj)
+        private static void MyCubeGridOnOnSplitGridCreated(MyCubeGrid grid)
         {
-            if (obj == null) return;
-            Grid.UpdateLimit(obj);
+            if (grid == null) return;
+            Grid.UpdateLimit(grid);
         }
 
-        private void StaticOnClientJoined(ulong obj)
+        private static void StaticOnClientJoined(ulong obj)
         {
             var player = MySession.Static.Players.TryGetPlayerBySteamId(obj);
             if (player == null)return;
             Block.UpdatePlayerLimits(player);
         }
 
-        private void MyCubeGridsOnBlockDestroyed(MyCubeGrid arg1, MySlimBlock arg2)
+        private static void MyCubeGridsOnBlockDestroyed(MyCubeGrid arg1, MySlimBlock arg2)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
             Block.RemoveBlock(arg2);
@@ -231,7 +231,7 @@ namespace BlockLimiter
             base.Update();
             if (MyAPIGateway.Session == null|| !BlockLimiterConfig.Instance.EnableLimits)
                 return;
-            if (++_updateCounter % 100 == 0)
+            if (++_updateCounter % 1000 == 0)
             {
                 GridCache.Update();
             }
@@ -303,50 +303,87 @@ namespace BlockLimiter
             _processThread.Abort();
         }
 
-        public static void ResetLimits()
+        public static void ResetLimits(bool updateGrids = true, bool updatePlayers = true, bool updateFactions = true)
         {
-            var grids = new HashSet<MyCubeGrid>();
-           GridCache.GetGrids(grids);
-           
-           Task.Run(() =>
-           {
-               Thread.Sleep(300);
-               MySandboxGame.Static.Invoke(() =>
-               {
-                   foreach (var grid in grids)
-                   {
-                       if (grid == null) continue;
-                       Grid.UpdateLimit(grid);
-                   }
-               }, "BlockLimiter");
-           });
-           
-           Task.Run(() =>
-           {
-               Thread.Sleep(100);
-               MySandboxGame.Static.Invoke(() =>
-               {
-                   foreach (var player in MySession.Static.Players.GetAllPlayers())
-                   {
-                       var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
-                       if (identity < 1) continue;
-                       Block.UpdatePlayerLimits(identity);
-                   }
-               }, "BlockLimiter");
-           });
-           
-           Task.Run(() =>
-           {
-               Thread.Sleep(500);
-               MySandboxGame.Static.Invoke(() =>
-               {
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+                {
+                    limit.FoundEntities.Clear();
+                }
+                return;
+            }
+            if (updateGrids)
+            {
+                var grids = new HashSet<MyCubeGrid>();
+                GridCache.GetGrids(grids);
+                Task.Run(() =>
+                {
+                    foreach (var grid in grids)
+                    {
+                        if (grid == null) continue;
+                        Parallel.Invoke(() => Grid.UpdateLimit(grid));
+                    }
+                });
+            }
 
-                   foreach (var id in MySession.Static.Factions.Factions.Keys)
-                   {
-                       Block.UpdateFactionLimits(id);
-                   }
-               }, "BlockLimiter");
-           });
+            if (updatePlayers)
+            {
+                Task.Run(() =>
+                {
+                    foreach (var player in MySession.Static.Players.GetAllPlayers())
+                    {
+                        if (player.SteamId == 0) continue;
+                        var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
+                        if (identity == 0) continue;
+                        Parallel.Invoke(() => Block.UpdatePlayerLimits(identity));
+                    }
+                });
+            }
+
+            if (updateFactions)
+            {
+                Task.Run(() =>
+                {
+                    foreach (var player in MySession.Static.Players.GetAllPlayers())
+                    {
+                        if (player.SteamId == 0) continue;
+                        var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
+                        if (identity == 0) continue;
+                        Parallel.Invoke(() => Block.UpdatePlayerLimits(identity));
+                    }
+                });
+            }
+           
+            /*
+            Task.Run(() =>
+            {
+                Thread.Sleep(100);
+                MySandboxGame.Static.Invoke(() =>
+                {
+                    foreach (var player in MySession.Static.Players.GetAllPlayers())
+                    {
+                        if (player.SteamId == 0) continue;
+                        var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
+                        if (identity < 1) continue;
+                        Block.UpdatePlayerLimits(identity);
+                    }
+                }, "BlockLimiter");
+            });
+            
+            Task.Run(() =>
+            {
+                Thread.Sleep(500);
+                MySandboxGame.Static.Invoke(() =>
+                {
+ 
+                    foreach (var id in MySession.Static.Factions.Factions.Keys)
+                    {
+                        Block.UpdateFactionLimits(id);
+                    }
+                }, "BlockLimiter");
+            });
+            */
 
         }
 
@@ -362,7 +399,11 @@ namespace BlockLimiter
             return !grids.Any(Grid.IsSizeViolation) && 
                    !grids.Any(z=>z.CubeBlocks.Any(b=>Block.AllowBlock(MyDefinitionManager.Static.GetCubeBlockDefinition(b),0,z)));
         }
-        
+
+        public static bool CanAdd(List<MySlimBlock> blocks, long id, out List<MySlimBlock> nonAllowedBlocks)
+        {
+            return Block.CanAdd(blocks, id, out nonAllowedBlocks);
+        }
         
 
         
