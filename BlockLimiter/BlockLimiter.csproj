@@ -154,6 +154,7 @@
     <Compile Include="Utility\GridCache.cs" />
     <Compile Include="Settings\LimitItem.cs" />
     <Compile Include="Utility\MTObservableCollection.cs" />
+    <Compile Include="Utility\UpdateLimits.cs" />
     <Compile Include="Utility\Utilities.cs" />
     <Compile Include="Patch\BuildBlockPatch.cs" />
     <Compile Include="Patch\GridSpawnPatch.cs" />

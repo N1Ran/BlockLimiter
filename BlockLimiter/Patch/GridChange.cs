@@ -83,7 +83,7 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             if (Grid.AllowConversion(grid) || remoteUserId == 0 || playerId == 0)
             {
-                Grid.UpdateLimit(grid);
+                UpdateLimits.GridLimit(grid);
                 return true;
             }
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
@@ -112,7 +112,7 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             if (Grid.AllowConversion(grid) || remoteUserId == 0 || playerId == 0)
             {
-                Grid.UpdateLimit(grid);
+                UpdateLimits.GridLimit(grid);
                 return true;
             }
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);

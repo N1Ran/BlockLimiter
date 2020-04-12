@@ -144,6 +144,9 @@ namespace BlockLimiter.Commands
                 return;
             }
             var sb = new StringBuilder();
+            
+            //Todo: Add conditions
+            /*
             foreach (var arg in Context.Args)
             {
                 if (arg.StartsWith("--gps="))
@@ -167,7 +170,7 @@ namespace BlockLimiter.Commands
                 }
                 
             }
-            
+            */
             
             foreach (var item in limitItems)
             {

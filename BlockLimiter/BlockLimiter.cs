@@ -23,7 +23,6 @@ using Torch.API.Plugins;
 using Torch;
 using Torch.API;
 using Torch.API.Managers;
-using Torch.Managers.PatchManager;
 using Torch.API.Session;
 using Torch.Session;
 using Torch.Views;
@@ -38,9 +37,6 @@ namespace BlockLimiter
 {
     public class BlockLimiter : TorchPluginBase, IWpfPlugin
     {
-        private PatchManager _pm;
-        private PatchContext _context;
-
         public readonly Logger Log = LogManager.GetLogger("BlockLimiter");
         private Thread _processThread;
         private List<Thread> _processThreads;
@@ -86,9 +82,9 @@ namespace BlockLimiter
                 return;
             }
 
-            Block.UpdateFactionLimits(fromFaction);
-            Block.UpdateFactionLimits(toFaction);
-            Block.UpdatePlayerLimits(playerId);
+            UpdateLimits.FactionLimit(fromFaction);
+            UpdateLimits.FactionLimit(toFaction);
+            UpdateLimits.PlayerLimit(playerId);
 
         }
 
@@ -101,14 +97,14 @@ namespace BlockLimiter
         private static void MyCubeGridOnOnSplitGridCreated(MyCubeGrid grid)
         {
             if (grid == null) return;
-            Grid.UpdateLimit(grid);
+            UpdateLimits.GridLimit(grid);
         }
 
         private static void StaticOnClientJoined(ulong obj)
         {
             var player = MySession.Static.Players.TryGetPlayerBySteamId(obj);
             if (player == null)return;
-            Block.UpdatePlayerLimits(player);
+            UpdateLimits.PlayerLimit(player);
         }
 
         private static void MyCubeGridsOnBlockDestroyed(MyCubeGrid arg1, MySlimBlock arg2)
@@ -213,8 +209,6 @@ namespace BlockLimiter
         public override void Init(ITorchBase torch)
         {
             base.Init(torch);
-            _pm = torch.Managers.GetManager<PatchManager>();
-            _context = _pm.AcquireContext();
             Instance = this;
             Load();
             CopyOver();
@@ -297,7 +291,6 @@ namespace BlockLimiter
         public override void Dispose()
         {
             base.Dispose();
-            _pm.FreeContext(_context);
             foreach (var thread in _processThreads)
                 thread.Abort();
             _processThread.Abort();
@@ -322,7 +315,7 @@ namespace BlockLimiter
                     foreach (var grid in grids)
                     {
                         if (grid == null) continue;
-                        Parallel.Invoke(() => Grid.UpdateLimit(grid));
+                        Parallel.Invoke(() => UpdateLimits.GridLimit(grid));
                     }
                 });
             }
@@ -336,7 +329,7 @@ namespace BlockLimiter
                         if (player.SteamId == 0) continue;
                         var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
                         if (identity == 0) continue;
-                        Parallel.Invoke(() => Block.UpdatePlayerLimits(identity));
+                        Parallel.Invoke(() => UpdateLimits.PlayerLimit(identity));
                     }
                 });
             }
@@ -345,12 +338,10 @@ namespace BlockLimiter
             {
                 Task.Run(() =>
                 {
-                    foreach (var player in MySession.Static.Players.GetAllPlayers())
+                    foreach (var (id,faction) in MySession.Static.Factions.Factions)
                     {
-                        if (player.SteamId == 0) continue;
-                        var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
-                        if (identity == 0) continue;
-                        Parallel.Invoke(() => Block.UpdatePlayerLimits(identity));
+                        if (faction.IsEveryoneNpc() || id == 0) continue;
+                        Parallel.Invoke(() => UpdateLimits.FactionLimit(id));
                     }
                 });
             }

@@ -30,24 +30,30 @@ namespace BlockLimiter.Patch
                 SlimOwnerChanged?.Invoke(__instance, newOwner);
                 return true;
             }
+
+            var block = __instance;
             
-            if (!Block.AllowBlock(__instance.BlockDefinition, newOwner, __instance.CubeGrid.EntityId))
+            if (block == null)
+                return false;
+            
+            if (!Block.AllowBlock(block.BlockDefinition, newOwner, block.CubeGrid.EntityId))
             {
                 Utilities.ValidationFailed();
                 return false;
             }
             
-            Block.RemoveBlock(__instance);
+           
+            Block.RemoveBlock(block);
+            block.TransferAuthorship(newOwner);
 
-            if (!Block.TryAdd(__instance.BlockDefinition,newOwner, __instance.CubeGrid.EntityId))
+            if (!Block.TryAdd(block.BlockDefinition,newOwner, block.CubeGrid.EntityId))
             {
                 Task.Run(() =>
                 {
                     Thread.Sleep(100);
                     MySandboxGame.Static.Invoke(() =>
                     {
-                        Block.UpdatePlayerLimits(newOwner);
-                        Grid.UpdateLimit(__instance.CubeGrid);
+                        UpdateLimits.PlayerLimit(newOwner);
                     }, "BlockLimiter");
                 });
             }

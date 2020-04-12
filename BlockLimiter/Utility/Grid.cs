@@ -14,6 +14,11 @@ namespace BlockLimiter.Utility
     {
         public static bool IsSizeViolation(MyObjectBuilder_CubeGrid grid)
         {
+
+            if (grid == null)
+            {
+                return false;
+            }
             var gridSize = grid.CubeBlocks.Count;
             var gridType = grid.GridSizeEnum;
             var isStatic = grid.IsStatic;
@@ -42,6 +47,9 @@ namespace BlockLimiter.Utility
         }
         public static bool IsSizeViolation(MyCubeGrid grid)
         {
+            if (grid == null)
+                return false;
+            
             var gridSize = grid.CubeBlocks.Count;
             var gridType = grid.GridSizeEnum;
             var isStatic = grid.IsStatic;
@@ -73,8 +81,6 @@ namespace BlockLimiter.Utility
         {
             if (IsSizeViolation(grid)) return false;
 
-            if (grid.BlocksCount == 0) return true;
-
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
                 if (!limit.LimitGrids) continue;
@@ -87,8 +93,9 @@ namespace BlockLimiter.Utility
                     case LimitItem.GridType.LargeGridsOnly:
                         continue;
                 }
+                
+                if (grid.BigOwners.Count > 0 && grid.BigOwners.Any(x=> Utilities.IsExcepted(x, limit.Exceptions))) continue;
 
-                if (grid.BigOwners.Count > 0 && limit.Exceptions.Contains(grid.BigOwners[0].ToString())) continue;
 
                 var count = grid.CubeBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
 
@@ -143,23 +150,6 @@ namespace BlockLimiter.Utility
             }
         }
 
-        public static void UpdateLimit(MyCubeGrid grid)
-        {
-            var blocks = grid.CubeBlocks;
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
-            {
-                if (!limit.LimitGrids || !IsGridType(grid,limit))
-                {
-                    limit.FoundEntities.Remove(grid.EntityId);
-                    continue;
-                }
-
-                var limitedBlocks = blocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
-                
-                if (limitedBlocks < 1)continue;
-                limit.FoundEntities[grid.EntityId] = limitedBlocks;
-            }
-        }
 
     }
 }

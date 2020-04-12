@@ -192,8 +192,8 @@ namespace BlockLimiter.Utility
                     sb.AppendLine($"Faction Limit = {fCount}/{item.Limit} ");
                 }
 
-                if (!item.LimitGrids || !item.FoundEntities.Any(x =>
-                    GridCache.TryGetGridById(x.Key, out var grid) && grid.BigOwners.Contains(playerId))) continue;
+                if (!item.LimitGrids || (!item.FoundEntities.Any(x =>
+                    GridCache.TryGetGridById(x.Key, out var grid) && grid.BigOwners.Contains(playerId)))) continue;
 
                 sb.AppendLine("Grid Limits:");
 
