@@ -5,6 +5,7 @@ using System.Net;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Cube;
 using Sandbox.Graphics.GUI;
 using VRage.Game;
 
@@ -75,6 +76,33 @@ namespace BlockLimiter.Utility
             }
 
             return false;
+        }
+
+        public static bool CanMerge(MyCubeGrid grid1, MyCubeGrid grid2)
+        {
+            if (grid1 == null || grid2 == null) return true;
+            
+            var blocksHash = new HashSet<MySlimBlock>();
+            
+            blocksHash.UnionWith(grid1.CubeBlocks);
+            blocksHash.UnionWith(grid2.CubeBlocks);
+            
+            var testGrid = new MyCubeGrid();
+            testGrid.CubeBlocks.UnionWith(blocksHash);
+            if (IsSizeViolation(testGrid)) return false;
+
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            {
+                if (!limit.LimitGrids) continue;
+
+                if (Utilities.IsExcepted(grid1.EntityId, limit.Exceptions)|| Utilities.IsExcepted(grid2.EntityId, limit.Exceptions)) continue;
+                
+                if (blocksHash.Count(x=> Block.IsMatch(x.BlockDefinition,limit)) <= limit.Limit) continue;
+                return false;
+            }
+
+            return true;
+
         }
 
         public static bool AllowConversion(MyCubeGrid grid)
