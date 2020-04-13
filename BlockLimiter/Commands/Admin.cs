@@ -221,6 +221,7 @@ namespace BlockLimiter.Commands
         [Command("updateplayer")]
         public void UpdatePlayer(string name)
         {
+            if (string.IsNullOrEmpty(name))return;
             var player = MySession.Static.Players.GetPlayerByName(name);
             if (player == null)
             {
@@ -229,6 +230,29 @@ namespace BlockLimiter.Commands
             }
             Context.Respond($"{name} limits updated");
             Utility.UpdateLimits.PlayerLimit(player.Identity.IdentityId);
+        }
+        
+        [Command("updategrid")]
+        public void UpdateGrid(string name)
+        {
+            if (string.IsNullOrEmpty(name))return;
+
+            if (!Utilities.TryGetEntityByNameOrId(name, out var entity))
+            {
+                Context.Respond("No entity found by that name");
+                return;
+            }
+
+            var grid = entity as MyCubeGrid;
+
+            if (grid == null)
+            {
+                Context.Respond("No grid found");
+                return;
+            }
+            
+            Context.Respond($"{grid.DisplayName} limits updated");
+            Utility.UpdateLimits.GridLimit(grid);
         }
 
         [Command("playerlimit", "gets the current limits of targeted player")]

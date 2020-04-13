@@ -1,5 +1,7 @@
 using System;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
@@ -24,12 +26,28 @@ namespace BlockLimiter.Patch
         private static  readonly MethodInfo ConvertToStationRequest = typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.OnConvertedToStationRequest), BindingFlags.Public | BindingFlags.Instance);
         private static readonly MethodInfo ConvertToShipRequest = typeof(MyCubeGrid).GetMethod("OnConvertedToShipRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
+        public static event Action<MyCubeGrid, long> SplitCreated;
+
         public static void Patch(PatchContext ctx)
         {
             ctx.GetPattern(ConvertToStationRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToStatic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             ctx.GetPattern(ConvertToShipRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToDynamic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("OnGridClosedRequest",  BindingFlags.NonPublic | BindingFlags.Static)).
                 Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnGridClosed), BindingFlags.Static|  BindingFlags.NonPublic));
+            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("CreateGridForSplit",  BindingFlags.NonPublic |  BindingFlags.Static)).
+                Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.Instance |  BindingFlags.NonPublic));
+        }
+
+
+        private static void OnCreateSplit(MyCubeGrid originalGrid)
+        {
+            if (originalGrid == null) return;
+            Task.Run(() =>
+            {
+                Thread.Sleep(100);
+                if (!GridCache.TryGetGridById(originalGrid.EntityId, out var newStateGrid)) return;
+                UpdateLimits.GridLimit(newStateGrid);
+            });
         }
 
         /// <summary>
@@ -83,7 +101,14 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             if (Grid.AllowConversion(grid) || remoteUserId == 0 || playerId == 0)
             {
-                UpdateLimits.GridLimit(grid);
+                var gridId = grid.EntityId;
+                Task.Run(()=>
+                {
+                    Thread.Sleep(100);
+                    GridCache.TryGetGridById(gridId, out var newStateGrid);
+                    if (newStateGrid == null) return;
+                    UpdateLimits.GridLimit(newStateGrid);
+                });
                 return true;
             }
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
@@ -112,7 +137,14 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             if (Grid.AllowConversion(grid) || remoteUserId == 0 || playerId == 0)
             {
-                UpdateLimits.GridLimit(grid);
+                var gridId = grid.EntityId;
+                Task.Run(()=>
+                {
+                    Thread.Sleep(100);
+                    GridCache.TryGetGridById(gridId, out var newStateGrid);
+                    if (newStateGrid == null) return;
+                    UpdateLimits.GridLimit(newStateGrid);
+                });
                 return true;
             }
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);

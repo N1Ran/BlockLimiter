@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,32 +19,53 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class BlockOwnershipTransfer
     {
-        
-        //private static  readonly MethodInfo TransferAuthor = typeof(MySlimBlock).GetMethod(nameof(MySlimBlock.TransferAuthorship), BindingFlags.NonPublic | BindingFlags.Instance);
-        //private static readonly MethodInfo TransferOwner = typeof(MyCubeBlock).GetMethod(nameof(MyCubeBlock.ChangeBlockOwnerRequest), BindingFlags.NonPublic | BindingFlags.Instance);
+        private static  readonly MethodInfo Changed = typeof(MyCubeBlock).GetMethod("ChangeOwner", BindingFlags.Public | BindingFlags.Instance);
+
 
         private static void Patch(PatchContext ctx)
         {
             ctx.GetPattern(typeof(MySlimBlock).GetMethod(nameof(MySlimBlock.TransferAuthorship), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)).
                 Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(OnTransfer), BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
 
-            /*
-            var t = typeof(MySlimBlock);
-            var m = t.GetMethod(nameof(MySlimBlock.TransferAuthorship), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            ctx.GetPattern(m).Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(OnTransfer),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
-            */
+            ctx.GetPattern(typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.ChangeOwnerRequest), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)).
+                Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(ChangeOwner), BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             
-            var tMyCubeBlock = typeof(MyCubeBlock);
-            var mMyCubeBlock = tMyCubeBlock.GetMethod(nameof(MyCubeBlock.ChangeOwner), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            ctx.GetPattern(mMyCubeBlock).Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(ChangeOwner),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("OnChangeOwnersRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)).
+                Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(ChangeOwnerRequest), BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
         }
 
         public static event Action<MySlimBlock, long> SlimOwnerChanged;
 
+        private static bool ChangeOwnerRequest(List<MyCubeGrid.MySingleOwnershipRequest> requests, long requestingPlayer)
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+            var blocks = new List<MySlimBlock>();
+            
+            foreach (var request in requests)
+            {
+                if (!MyEntities.TryGetEntityById<MyCubeBlock>(request.BlockId, out var entity, false)) continue;
+                blocks.Add(entity.SlimBlock);
+            }
+
+            if (blocks.Count == 0)
+            {
+                return true;
+            }
+
+            if (!Block.CanAdd(blocks, requestingPlayer, out _))
+            {
+                Utilities.ValidationFailed();
+                Utilities.SendFailSound(Utilities.GetSteamIdFromPlayerId(requests[0].Owner));
+                return false;
+            }
+            
+            return true;
+        }
+
         private static bool OnTransfer(MySlimBlock __instance, long newOwner)
         {
             
-            if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.BlockOwnershipTransfer)
+            if (!BlockLimiterConfig.Instance.EnableLimits)
             {
                 return true;
             }
@@ -53,39 +75,64 @@ namespace BlockLimiter.Patch
             
             if (block == null)
                 return false;
-            if (!Block.AllowBlock(block.BlockDefinition, newOwner,0))
+
+            if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
             {
-                Utilities.ValidationFailed();
-                return false;
+                if (!Block.AllowBlock(block.BlockDefinition, newOwner, 0))
+                {
+                    Utilities.ValidationFailed();
+                    return false;
+                }
             }
             
-            Block.TryRemove(block.BlockDefinition,oldId);
+            if (!Block.TryRemove(block.BlockDefinition,oldId))
+            {
 
-            Block.TryAdd(block.BlockDefinition, newOwner);
+                Parallel.Invoke(() =>
+                {
+                    Thread.Sleep(500);
+                    UpdateLimits.PlayerLimit(oldId);
+                });
+            }
+            
+            if (!Block.TryAdd(block.BlockDefinition,newOwner))
+            {
+
+                Parallel.Invoke(() =>
+                {
+                    Thread.Sleep(500);
+                    UpdateLimits.PlayerLimit(oldId);
+                });
+            }
+            
             SlimOwnerChanged?.Invoke(__instance, newOwner);
             return true;
         }
-        private static bool ChangeOwner(MyCubeBlock __instance, long owner, MyOwnershipShareModeEnum shareMode)
+        private static bool ChangeOwner(MyCubeBlock block, long playerId)
         {
             
-            if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.BlockOwnershipTransfer)
+            if (!BlockLimiterConfig.Instance.EnableLimits)
             {
                 return true;
             }
 
-            var block = __instance;
-            
-            if (block == null || owner == 0)
-                return false;
 
             
-            if (!Block.AllowBlock(block.BlockDefinition, owner,0))
-            {
-                Utilities.ValidationFailed();
+            if (block == null || playerId == 0)
                 return false;
+            
+            if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
+            {
+                if (!Block.AllowBlock(block.BlockDefinition, playerId, 0))
+                {
+                    Utilities.ValidationFailed();
+                    return false;
+                }
             }
             
-            __instance.SlimBlock.TransferAuthorship(owner);
+            block.ChangeOwner(playerId, MyOwnershipShareModeEnum.Faction);
+
+            block.SlimBlock.TransferAuthorship(playerId);
             
             return true;
         }

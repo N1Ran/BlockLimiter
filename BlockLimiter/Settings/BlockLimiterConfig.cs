@@ -8,6 +8,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows;
 using System.Windows.Threading;
 using System.Xml;
 using System.Xml.Serialization;
@@ -72,6 +73,7 @@ namespace BlockLimiter.Settings
         private MtObservableCollection<LimitItem> _limitItems;
         private string _denyMessage = "Limit reached";
         private string _projectionDenyMessage = "Blocks removed from projection due for going over limit";
+        private bool _mergerBlocking;
 
 
         [Display(Order = 2, GroupName = "Main Settings", Name = "Server Name", Description = "")]
@@ -99,7 +101,7 @@ namespace BlockLimiter.Settings
         }
         
         
-        [Display(Order = 3, GroupName = "Main Settings", Name =  "Enable Grid Convert Blocking", Description = "Will block grid conversion if grid will violate limits upon conversion")]
+        [Display(Order = 5, GroupName = "Main Settings", Name =  "Enable Grid Convert Blocking", Description = "Will block grid conversion if grid will violate limits upon conversion")]
         public bool EnableConvertBlock
         {
             get => _gridConvertBlocking;
@@ -110,7 +112,7 @@ namespace BlockLimiter.Settings
             }
         }
         
-        [Display(Order =  4, GroupName = "Main Settings", Name =  "Enable Ownership Blocking", Description = "Will block ownership if player exceeds limit of block being transferred to them")]
+        [Display(Order =  4, GroupName = "Main Settings", Name =  "Enable Ownership Transfer Blocking", Description = "Will block ownership if player exceeds limit of block being transferred to them")]
         public bool BlockOwnershipTransfer
         {
             get => _blockOwnershipTransfer;
@@ -121,7 +123,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 7, Name = "Ships", GroupName = "General BlockCount Limit", Description = "Max size for moving grids")]
+        [Display(Order = 3, Name = "Ships", GroupName = "General BlockCount Limit", Description = "Max size for moving grids")]
         public int MaxBlockSizeShips
         {
             get => _maxBlockSizeShips;
@@ -132,7 +134,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 7, Name = "Stations", GroupName = "General BlockCount Limit", Description = "Max size for static grids")]
+        [Display(Order = 4, Name = "Stations", GroupName = "General BlockCount Limit", Description = "Max size for static grids")]
         public int MaxBlockSizeStations
         {
             get => _maxBlockSizeStations;
@@ -143,7 +145,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 10, Name = "LargeGrids", GroupName = "General BlockCount Limit", Description = "Max size for large grids")]
+        [Display(Order = 2, Name = "LargeGrids", GroupName = "General BlockCount Limit", Description = "Max size for large grids")]
         public int MaxBlocksLargeGrid
         {
             get => _maxBlocksLargeGrid;
@@ -154,7 +156,7 @@ namespace BlockLimiter.Settings
             }
         }
         
-        [Display(Order = 11, Name = "SmallGrids", GroupName = "General BlockCount Limit", Description = "Max size for small grids")]
+        [Display(Order = 1, Name = "SmallGrids", GroupName = "General BlockCount Limit", Description = "Max size for small grids")]
         public int MaxBlocksSmallGrid
         {
             get => _maxBlocksSmallGrid;
@@ -165,9 +167,21 @@ namespace BlockLimiter.Settings
             }
         }
 
+                
+        [Display(Order = 7, GroupName = "Main Settings", Name = "Merger Blocking", Description = "Enables checking merge attempts with limits")]
+        public bool MergerBlocking
+        {
+            get => _mergerBlocking;
+            set
+            {
+                _mergerBlocking = value;
+                Changed();
+            }
+        }
+
         
         
-        [Display(Order = 5, GroupName = "Main Settings", Name = "Use Vanilla Limits", Description = "This will add vanilla block limits to limiter's checks")]
+        [Display(Order = 8, GroupName = "Main Settings", Name = "Use Vanilla Limits", Description = "This will add vanilla block limits to limiter's checks")]
         public bool UseVanillaLimits
         {
             get => _vanillaLimits;
@@ -178,8 +192,9 @@ namespace BlockLimiter.Settings
                 Changed();
             }
         }
+        
 
-        [Display(Order = 6, GroupName = "Main Settings", Name = "Enable Logs", Description = "Logs are only advice to check for issues with the limiter")]
+        [Display(Order = 9, GroupName = "Main Settings", Name = "Enable Logs", Description = "Logs are only advice to check for issues with the limiter")]
         public bool EnableLog
         {
             get => _enableLog;
@@ -190,7 +205,7 @@ namespace BlockLimiter.Settings
             }
         }
         
-        [Display(Order = 7, GroupName = "Main Settings", Name = "Deny Message", Description = "Message posted when limit is reached")]
+        [Display(Order = 3, GroupName = "Main Settings", Name = "Deny Message", Description = "Message posted when limit is reached")]
         public string DenyMessage
         {
             get => _denyMessage;
@@ -201,7 +216,7 @@ namespace BlockLimiter.Settings
             }
         }
         
-        [Display(Order = 7, GroupName = "Main Settings", Name = "Projection Deny Message", Description = "Message posted when blocks are removed from projection")]
+        [Display(Order = 4, GroupName = "Main Settings", Name = "Projection Deny Message", Description = "Message posted when blocks are removed from projection")]
         public string ProjectionDenyMessage
         {
             get => _projectionDenyMessage;
@@ -223,7 +238,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Punishment Interval (s)", GroupName = "Punishment", Description = "How often the punishment is triggered.")]
+        [Display(Order = 5,Name = "Punishment Interval (s)", GroupName = "Punishment", Description = "How often the punishment is triggered.")]
         public int PunishInterval
         {
             get => _punishInterval;
@@ -234,7 +249,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Annoyance Message", GroupName = "Punishment")]
+        [Display(Order = 2, Name = "Annoyance Message", GroupName = "Punishment")]
         public string AnnoyMessage
         {
             get => _annoyMsg;
@@ -245,7 +260,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Annoy Message Interval (s)", GroupName = "Punishment", Description = "How often annoyance message is triggered in seconds")]
+        [Display(Order = 3,Name = "Annoy Message Interval (s)", GroupName = "Punishment", Description = "How often annoyance message is triggered in seconds")]
         public int AnnoyInterval
         {
             get => _annoyInterval;
@@ -256,7 +271,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Annoy Duration (ms)", GroupName = "Punishment", Description = "How long annoying message stays on the screen in ms")]
+        [Display(Order = 4, Name = "Annoy Duration (ms)", GroupName = "Punishment", Description = "How long annoying message stays on the screen in ms")]
         public int AnnoyDuration
         {
             get => _annoyDuration;

@@ -69,6 +69,7 @@ namespace BlockLimiter
         }
 
 
+
         private void FactionsOnFactionStateChanged(MyFactionStateChange factionState, long fromFaction, long toFaction, long playerId, long senderId)
         {
             if (factionState == MyFactionStateChange.RemoveFaction)
@@ -103,7 +104,17 @@ namespace BlockLimiter
         private static void MyCubeGridOnOnSplitGridCreated(MyCubeGrid grid)
         {
             if (grid == null) return;
-            UpdateLimits.GridLimit(grid);
+            
+            Instance.Log.Warn($"Checking limits for {grid.Name}");
+            Task.Run(() =>
+            {
+                Thread.Sleep(100);
+                var entity = MyEntities.GetEntityByName(grid.Name);
+                var newStateGrid = entity as MyCubeGrid;
+                if (newStateGrid == null) return;
+                BlockLimiter.Instance.Log.Warn($"{newStateGrid.DisplayName} updated");
+                UpdateLimits.GridLimit(newStateGrid);
+            });
         }
 
         private static void StaticOnClientJoined(ulong obj)

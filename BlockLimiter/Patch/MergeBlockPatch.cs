@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
@@ -34,20 +36,41 @@ namespace BlockLimiter.Patch
 
         private static bool MergeCheck(MyShipMergeBlock __instance)
         {
-            if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.EnableConvertBlock) return true;
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
 
             var mergeBlock = __instance;
 
             if (mergeBlock?.Other == null)
                 return true;
-            
 
-            if (!Grid.CanMerge(mergeBlock.CubeGrid, mergeBlock.Other.CubeGrid))
+            if (BlockLimiterConfig.Instance.MergerBlocking)
             {
-                Utilities.ValidationFailed();
-                mergeBlock.Enabled = false;
-                return false;
+                if (!Grid.CanMerge(mergeBlock.CubeGrid, mergeBlock.Other.CubeGrid))
+                {
+                    mergeBlock.Enabled = false;
+                    return false;
+                }
+                
             }
+
+
+            var gridTwo = mergeBlock.Other.CubeGrid;
+            var gridOne = mergeBlock.CubeGrid;
+
+            Task.Run(() =>
+            {
+                Thread.Sleep(TimeSpan.FromTicks(100));
+
+                if (gridOne?.Name != null)
+                {
+                    UpdateLimits.GridLimit(gridOne);
+                }
+
+                if (gridTwo?.Name != null)
+                {
+                    UpdateLimits.GridLimit(gridTwo);
+                }
+            });
 
             return true;
         }
