@@ -59,6 +59,11 @@ namespace BlockLimiter.Patch
                 return true;
             }
 
+            if (!Block.TryAdd(block, playerId))
+            {
+                
+            }
+
             var b = block.BlockPairName;
             var p = player.DisplayName;
             if (BlockLimiterConfig.Instance.EnableLog)

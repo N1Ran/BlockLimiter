@@ -90,8 +90,14 @@ namespace BlockLimiter
 
         private static void MyCubeGridsOnBlockBuilt(MyCubeGrid grid, MySlimBlock block)
         {
-            if (!GridCache.TryGetGridById(grid.EntityId, out _))GridCache.AddGrid(grid.EntityId);
+            if (!GridCache.TryGetGridById(grid.EntityId, out _))
+            {
+                GridCache.AddGrid(grid.EntityId);
+                Block.TryAdd(block, grid);
+                return;
+            }
             Block.TryAdd(block, grid);
+
         }
 
         private static void MyCubeGridOnOnSplitGridCreated(MyCubeGrid grid)

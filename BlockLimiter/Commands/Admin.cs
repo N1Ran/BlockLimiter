@@ -218,6 +218,19 @@ namespace BlockLimiter.Commands
 
         }
 
+        [Command("updateplayer")]
+        public void UpdatePlayer(string name)
+        {
+            var player = MySession.Static.Players.GetPlayerByName(name);
+            if (player == null)
+            {
+                Context.Respond("player not found");
+                return;
+            }
+            Context.Respond($"{name} limits updated");
+            Utility.UpdateLimits.PlayerLimit(player.Identity.IdentityId);
+        }
+
         [Command("playerlimit", "gets the current limits of targeted player")]
         public void GetPlayerLimit(string id)
         {

@@ -72,7 +72,7 @@ namespace BlockLimiter.Patch
                 if (BlockLimiterConfig.Instance.EnableLog)
                     BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {area.DefinitionId.SubtypeId} due to limits");
                 //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-                MyVisualScriptLogicProvider.SendChatMessage($"Limit reached",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+                MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
                 Utilities.SendFailSound(remoteUserId);
                 Utilities.ValidationFailed();
 
@@ -87,7 +87,7 @@ namespace BlockLimiter.Patch
 
 
         /// <summary>
-        /// Checks blocks being placed on grids.  Does not include blocks being placed alone.
+        /// Checks blocks being placed on grids.
         /// </summary>
         /// <param name="__instance"></param>
         /// <param name="locations"></param>

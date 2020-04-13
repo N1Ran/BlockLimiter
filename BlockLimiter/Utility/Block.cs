@@ -17,7 +17,7 @@ namespace BlockLimiter.Utility
 {
     public static class Block
     {
-        public static bool AllowBlock(MyCubeBlockDefinition block, long playerId, long gridId = 0)
+        public static bool AllowBlock(MyCubeBlockDefinition block, long playerId = 0, long gridId = 0)
         {
             var allow = true;
             var blockCache = new HashSet<MySlimBlock>();
@@ -227,9 +227,9 @@ namespace BlockLimiter.Utility
         public static bool IsMatch(MyCubeBlockDefinition block, LimitItem item)
         {
             if (!item.BlockList.Any()) return false;
-            return item.BlockList.Any(x => x.Equals(block.Id.SubtypeId.ToString(), StringComparison.OrdinalIgnoreCase)) || item.BlockList.Any(x =>
-                x.Equals(block.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase)) || 
-                   item.BlockList.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase));
+            return item.BlockList.Any(x => x.Equals(block.Id.SubtypeId.ToString(), StringComparison.OrdinalIgnoreCase))
+                   || item.BlockList.Any(x => x.Equals(block.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase))
+                   || item.BlockList.Any(x=>x.Equals(block.BlockPairName,StringComparison.OrdinalIgnoreCase));
         }
 
         public static bool TryAdd(MySlimBlock block, MyCubeGrid grid)
@@ -257,6 +257,33 @@ namespace BlockLimiter.Utility
                 if (!limit.LimitGrids || gridId <= 0) continue;
                 if (!GridCache.TryGetGridById(gridId, out var grid) || !Grid.IsGridType(grid, limit)) continue;
                 limit.FoundEntities.AddOrUpdate(gridId, 1, (l, i) => i + 1);
+
+            }
+            return true;
+
+
+        }
+        public static bool TryRemove(MyCubeBlockDefinition block, long playerId, long gridId = 0)
+        {
+            if (block == null) return false;
+            
+            var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
+
+
+
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits.Where(limit => IsMatch(block, limit)))
+            {
+                if (playerId > 0)
+                {
+                    if (limit.LimitFaction && playerFaction != null)
+                        limit.FoundEntities.AddOrUpdate(playerFaction.FactionId, 0, (l, i) => Math.Max(0,i - 1));
+                    if (limit.LimitPlayers)
+                        limit.FoundEntities.AddOrUpdate(playerId, 0, (l, i) => Math.Max(0,i - 1));
+                }
+
+                if (!limit.LimitGrids || gridId <= 0) continue;
+                if (!GridCache.TryGetGridById(gridId, out var grid) || !Grid.IsGridType(grid, limit)) continue;
+                limit.FoundEntities.AddOrUpdate(gridId, 0, (l, i) => Math.Max(0,i - 1));
 
             }
             return true;
@@ -323,7 +350,6 @@ namespace BlockLimiter.Utility
                     limit.FoundEntities.AddOrUpdate((long)faction, 0, (l, i) => Math.Max(0,i - 1));
                 }
             }
-
 
         }
 

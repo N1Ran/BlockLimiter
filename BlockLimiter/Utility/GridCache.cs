@@ -10,6 +10,7 @@ using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using VRage;
 using VRage.Collections;
+using VRage.Game;
 using VRage.Game.Entity;
 using VRage.ModAPI;
 
@@ -32,9 +33,10 @@ namespace BlockLimiter.Utility
             BlockOwnershipTransfer.SlimOwnerChanged += SlimOwnerChanged;
         }
 
-        private static void SlimOwnerChanged(MySlimBlock arg1, long arg2)
+        private static void SlimOwnerChanged(MySlimBlock block, long newOwner)
         {
-            _dirtyEntities.Add(arg1.CubeGrid);
+            _dirtyEntities.Add(block.CubeGrid);
+            UpdateGridBuilders(block.CubeGrid);
         }
 
         public static void Update()
@@ -124,7 +126,7 @@ namespace BlockLimiter.Utility
             }
         }
         
-        private static List<long> UpdateGridBuilders(MyCubeGrid grid)
+        public static List<long> UpdateGridBuilders(MyCubeGrid grid)
         {
             var builders = new Dictionary<long, int>();
             foreach (var block in grid.CubeBlocks)

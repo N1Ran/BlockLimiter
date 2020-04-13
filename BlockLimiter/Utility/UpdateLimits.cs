@@ -21,23 +21,41 @@ namespace BlockLimiter.Utility
             var faction = MySession.Static.Factions.GetPlayerFaction(id);
             
             GridCache.GetBlocks(blockCache);
-            if (blockCache.Count < 1)
+            if (blockCache.Count == 0)
+            {
                 return;
-            playerBlocks.UnionWith(blockCache.Where(x=>x.OwnerId == id || x.BuiltBy == id));
+            }
             
-            if (playerBlocks.Count == 0) return;
+            playerBlocks.UnionWith(blockCache.Where(x=> Block.IsOwner(x,id)));
+
+            if (playerBlocks.Count == 0)
+            {
+                foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+                {
+                    limit.FoundEntities.Remove(id);
+                }
+                return;
+            }
             
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (!limit.LimitPlayers 
-                    || Utilities.IsExcepted(id, limit.Exceptions) 
-                    || faction != null && Utilities.IsExcepted(faction.FactionId, limit.Exceptions)) continue;
+                if (!limit.LimitPlayers
+                    || Utilities.IsExcepted(id, limit.Exceptions)
+                    || faction != null && Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
+                {
+                    limit.FoundEntities.Remove(id);
+                    continue;
+                }
 
                 var limitedBlocks = playerBlocks.Count(x =>
                     Block.IsMatch(x.BlockDefinition, limit));
-                if (limitedBlocks == 0) continue;
-                limit.FoundEntities[id] = limitedBlocks;
+                if (limitedBlocks == 0)
+                {
+                    limit.FoundEntities.Remove(id);
+                    continue;
+                }
                 
+                limit.FoundEntities[id] = limitedBlocks;
             }
         }
 
@@ -65,8 +83,12 @@ namespace BlockLimiter.Utility
                 }
 
                 var limitedBlocks = blocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
-                
-                if (limitedBlocks < 1)continue;
+
+                if (limitedBlocks == 0)
+                {
+                    limit.FoundEntities.Remove(grid.EntityId);
+                    continue;
+                }
                 limit.FoundEntities[grid.EntityId] = limitedBlocks;
             }
         }
@@ -92,11 +114,21 @@ namespace BlockLimiter.Utility
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (!limit.LimitFaction || Utilities.IsExcepted(faction.FactionId, limit.Exceptions)) continue;
+                if (!limit.LimitFaction || Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
+                {
+                    limit.FoundEntities.Remove(id);
+                    continue;
+                }
                 var factionBlockCount = factionBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
+
+                if (factionBlockCount == 0)
+                {
+                    limit.FoundEntities.Remove(id);
+                    continue;
+                }
                 limit.FoundEntities[id] = factionBlockCount;
             }
         }
-
+        
     }
 }

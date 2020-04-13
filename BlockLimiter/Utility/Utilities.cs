@@ -44,6 +44,7 @@ namespace BlockLimiter.Utility
             return id?.DisplayName;
         }
 
+
         public static long GetPlayerIdFromSteamId(ulong steamId)
         {
             return MySession.Static.Players.TryGetIdentityId(steamId);
@@ -59,23 +60,40 @@ namespace BlockLimiter.Utility
             _spawnGridReply(false, target);
         }
 
+        /// <summary>
+        /// Gets the entity with name or ID given
+        /// </summary>
+        /// <param name="nameOrId"></param>
+        /// <param name="entity"></param>
+        /// <returns></returns>
         public static bool TryGetEntityByNameOrId(string nameOrId, out IMyEntity entity)
         {
-            if (long.TryParse(nameOrId, out long id))
+            if (long.TryParse(nameOrId, out var id))
                 return MyAPIGateway.Entities.TryGetEntityById(id, out entity);
 
             foreach (var ent in MyEntities.GetEntities())
             {
-                if (ent.DisplayName == nameOrId)
-                {
-                    entity = ent;
-                    return true;
-                }
+                if (ent.DisplayName != nameOrId) continue;
+                entity = ent;
+                return true;
             }
             
             entity = null;
             return false;
-            
+        }
+
+        public static bool TryGetPlayerById(long id, out MyPlayer player)
+        {
+            player = null;
+            if (id == 0) return false;
+            foreach (var ident in MySession.Static.Players.GetOnlinePlayers())
+            {
+                if (ident.Identity.IdentityId != id) continue;
+                player = ident;
+                return true;
+            }
+
+            return false;
         }
 
         public static long NextInt64(Random rnd)
