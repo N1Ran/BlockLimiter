@@ -142,6 +142,7 @@ namespace BlockLimiter.Punishment
                 
                 MySandboxGame.Static.Invoke(() =>
                 {
+                    
                     foreach (var (block, punishment) in removeBlocks)
                     {
                         try
@@ -152,7 +153,7 @@ namespace BlockLimiter.Punishment
                                     if (BlockLimiterConfig.Instance.EnableLog)
                                         Log.Info(
                                         $"removed {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
-                                    block.CubeGrid.RazeBlock(block.Position);
+                                    block.CubeGrid.RemoveBlock(block);
                                     continue;
                                 case LimitItem.PunishmentType.ShutOffBlock:
                                     if (!(block.FatBlock is MyFunctionalBlock funcBlock)) continue;
