@@ -12,6 +12,7 @@ using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.Entities.Blocks;
+using SpaceEngineers.Game.ModAPI.Ingame;
 using Torch.Managers.PatchManager;
 using Torch.Mod;
 using Torch.Mod.Messages;
@@ -32,7 +33,7 @@ namespace BlockLimiter.Patch
                 Prefixes.Add(typeof(MergeBlockPatch).GetMethod(nameof(MergeCheck), BindingFlags.NonPublic | BindingFlags.Static));
 
         }
-
+        
 
         private static bool MergeCheck(MyShipMergeBlock __instance)
         {
@@ -43,6 +44,9 @@ namespace BlockLimiter.Patch
             if (mergeBlock?.Other == null)
                 return true;
 
+            if (mergeBlock.IsLocked) return true;
+
+
             if (BlockLimiterConfig.Instance.MergerBlocking)
             {
                 if (!Grid.CanMerge(mergeBlock.CubeGrid, mergeBlock.Other.CubeGrid))
@@ -52,14 +56,14 @@ namespace BlockLimiter.Patch
                 }
                 
             }
-
-
+            
             var gridTwo = mergeBlock.Other.CubeGrid;
             var gridOne = mergeBlock.CubeGrid;
+            
 
             Task.Run(() =>
             {
-                Thread.Sleep(TimeSpan.FromTicks(100));
+                Thread.Sleep(100);
 
                 if (gridOne?.Name != null)
                 {

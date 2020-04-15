@@ -1,30 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using BlockLimiter.Settings;
-using Sandbox;
-using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities.Blocks;
-using Sandbox.ModAPI;
-using Torch.API.Managers;
 using Torch.Managers.PatchManager;
 using Torch.Mod;
 using Torch.Mod.Messages;
-using Torch.Utils;
 using VRage.Game;
 using VRage.Network;
-using VRage.Library.Collections;
-using VRage.Network;
 using System.Linq;
-using System.Reflection.Emit;
 using BlockLimiter.Utility;
 using NLog;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Definitions;
 using Sandbox.Game;
-using Sandbox.Game.Entities.Character;
 using Sandbox.Game.World;
 using Torch;
 using Torch.Managers;
@@ -66,15 +53,18 @@ namespace BlockLimiter.Patch
                 Log.Warn("Grid null in projectorPatch");
                 return false;
             }
+            
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var player = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId);
+            
+            var blocks = grid.CubeBlocks;
 
-            var stopSpawn = Grid.IsSizeViolation(grid);
+            if (player == null || blocks.Count == 0) return true;
+
             var target = new EndpointId(remoteUserId);
             var playerId = player.Identity.IdentityId;
-            
-            if (stopSpawn)
+            if (Grid.IsSizeViolation(grid))
             {
                 NetworkManager.RaiseEvent(__instance, RemoveProjectionMethod, target);
                 Utilities.SendFailSound(remoteUserId);
@@ -84,16 +74,21 @@ namespace BlockLimiter.Patch
                     Log.Info($"Projection blocked from {player.DisplayName}");
                 return false;
             }
+
+            
+            var limits = new HashSet<LimitItem>();
+            
+            limits.UnionWith(BlockLimiterConfig.Instance.AllLimits.Where(x=>x.RestrictProjection && !Utilities.IsExcepted(grid.EntityId, x.Exceptions) &&
+                                                                            !Utilities.IsExcepted(player.Identity.IdentityId, x.Exceptions)));
+
+            if (limits.Count == 0) return true;
             
             var count = 0;
-            var blocks = projectedGrids[0].CubeBlocks;
 
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
 
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            foreach (var limit in limits)
             {
-                if (!limit.RestrictProjection || Utilities.IsExcepted(grid.EntityId, limit.Exceptions) ||
-                    Utilities.IsExcepted(player.Identity.IdentityId, limit.Exceptions)) continue;
 
                 var pBlocks = blocks.Where(x => Block.IsMatch(Utilities.GetDefinition(x), limit)).ToList();
                 

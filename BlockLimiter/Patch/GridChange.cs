@@ -26,16 +26,16 @@ namespace BlockLimiter.Patch
         private static  readonly MethodInfo ConvertToStationRequest = typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.OnConvertedToStationRequest), BindingFlags.Public | BindingFlags.Instance);
         private static readonly MethodInfo ConvertToShipRequest = typeof(MyCubeGrid).GetMethod("OnConvertedToShipRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        public static event Action<MyCubeGrid, long> SplitCreated;
-
         public static void Patch(PatchContext ctx)
         {
+            
             ctx.GetPattern(ConvertToStationRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToStatic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             ctx.GetPattern(ConvertToShipRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToDynamic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("OnGridClosedRequest",  BindingFlags.NonPublic | BindingFlags.Static)).
                 Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnGridClosed), BindingFlags.Static|  BindingFlags.NonPublic));
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("CreateGridForSplit",  BindingFlags.NonPublic |  BindingFlags.Static)).
                 Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.Instance |  BindingFlags.NonPublic));
+            
         }
 
 

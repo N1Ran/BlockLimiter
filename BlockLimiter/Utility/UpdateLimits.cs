@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using BlockLimiter.Settings;
+using NLog.Fluent;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
@@ -10,8 +13,8 @@ namespace BlockLimiter.Utility
 {
     public static class UpdateLimits
     {
-        
-        
+
+        private static int _count;
         public static void PlayerLimit(long id)
         {
             if (id == 0) return;
@@ -39,6 +42,29 @@ namespace BlockLimiter.Utility
             
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
+                Parallel.Invoke(() =>
+                {
+                    if (!limit.LimitPlayers
+                        || Utilities.IsExcepted(id, limit.Exceptions)
+                        || faction != null && Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
+                    {
+                        limit.FoundEntities.Remove(id);
+                        return;
+                    }
+
+                    var limitedBlocks = playerBlocks.Count(x =>
+                        Block.IsMatch(x.BlockDefinition, limit));
+                    if (limitedBlocks == 0)
+                    {
+                        limit.FoundEntities.Remove(id);
+                        return;
+                    }
+                
+                    limit.FoundEntities[id] = limitedBlocks;
+
+                });
+                
+                /*
                 if (!limit.LimitPlayers
                     || Utilities.IsExcepted(id, limit.Exceptions)
                     || faction != null && Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
@@ -56,6 +82,9 @@ namespace BlockLimiter.Utility
                 }
                 
                 limit.FoundEntities[id] = limitedBlocks;
+                BlockLimiter.Instance.Log.Warn($"{limitedBlocks} added to {id}");
+                */
+
             }
         }
 
@@ -73,10 +102,45 @@ namespace BlockLimiter.Utility
         
         public static void GridLimit(MyCubeGrid grid)
         {
-            var blocks = grid.CubeBlocks;
+            
+            var blocks = new HashSet<MySlimBlock>();
+            blocks.UnionWith(grid.CubeBlocks);    
+            
+            if (blocks.Count == 0) return;
+
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (!limit.LimitGrids || !Grid.IsGridType(grid,limit))
+                Parallel.Invoke(() =>
+                {
+                    if (!limit.LimitGrids)
+                    {
+                        limit.FoundEntities.Remove(grid.EntityId);
+                        return;
+                    }
+                
+                    if (!Grid.IsGridType(grid,limit))
+                    {
+                        limit.FoundEntities.Remove(grid.EntityId);
+                        return;
+                    }
+
+                    var limitedBlocks = blocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
+
+                    if (limitedBlocks == 0)
+                    {
+                        limit.FoundEntities.Remove(grid.EntityId);
+                        return;
+                    }
+                    limit.FoundEntities[grid.EntityId] = limitedBlocks;
+                });
+                /*
+                if (!limit.LimitGrids)
+                {
+                    limit.FoundEntities.Remove(grid.EntityId);
+                    return;
+                }
+                
+                if (!Grid.IsGridType(grid,limit))
                 {
                     limit.FoundEntities.Remove(grid.EntityId);
                     continue;
@@ -90,6 +154,7 @@ namespace BlockLimiter.Utility
                     continue;
                 }
                 limit.FoundEntities[grid.EntityId] = limitedBlocks;
+                */
             }
         }
 
@@ -114,6 +179,24 @@ namespace BlockLimiter.Utility
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
+                
+                Parallel.Invoke(() =>
+                {
+                    if (!limit.LimitFaction || Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
+                    {
+                        limit.FoundEntities.Remove(id);
+                        return;
+                    }
+                    var factionBlockCount = factionBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
+
+                    if (factionBlockCount == 0)
+                    {
+                        limit.FoundEntities.Remove(id);
+                        return;
+                    }
+                    limit.FoundEntities[id] = factionBlockCount;
+                });
+                /*
                 if (!limit.LimitFaction || Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
                 {
                     limit.FoundEntities.Remove(id);
@@ -127,6 +210,7 @@ namespace BlockLimiter.Utility
                     continue;
                 }
                 limit.FoundEntities[id] = factionBlockCount;
+                */
             }
         }
         
