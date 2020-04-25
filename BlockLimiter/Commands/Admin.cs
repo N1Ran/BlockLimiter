@@ -59,23 +59,84 @@ namespace BlockLimiter.Commands
                 Context.Respond($"Cooldown in effect.  Try again in {timeRemaining.TotalSeconds:N0} seconds");
                 return;
             }
-            if (!_doCheck)
+
+            var args = Context.Args;
+
+            if (args.Count == 0)
             {
-                Context.Respond("Warning: This command will drop sim speed for few seconds/minutes while recalculating limits.  Run command again to proceed");
-                _doCheck = true;
-                Task.Run(() =>
+                if (!_doCheck)
                 {
-                    Thread.Sleep(30000);
-                   _doCheck = false;
-                });
+                    Context.Respond("Warning: This command will drop sim speed for few seconds/minutes while recalculating limits.  Run command again to proceed");
+                    _doCheck = true;
+                    Task.Run(() =>
+                    {
+                        Thread.Sleep(30000);
+                        _doCheck = false;
+                    });
+                    return;
+                }
+                _doCheck = false;
+                BlockLimiterConfig.Instance.Save();
+                BlockLimiter.ResetLimits();
+                _lastRun = DateTime.Now;
+            
+                Context.Respond("Limits updated");
                 return;
             }
-            _doCheck = false;
-            BlockLimiterConfig.Instance.Save();
-            BlockLimiter.ResetLimits();
-            _lastRun = DateTime.Now;
+
+            foreach (var arg in args)
+            {
+                if (arg.StartsWith("-player"))
+                {
+                    var name = arg.Replace("-player=", "");
+                    if (!Utilities.TryGetPlayerByNameOrId(name, out var identity))
+                    {
+                        Context.Respond($"Player {name} not found");
+                        continue;
+                    }
+
+                    Context.Respond($"Updated {identity.DisplayName} limits");
+                    Utility.UpdateLimits.PlayerLimit(identity.IdentityId);
+                    continue;
+                }
+                
+                if (arg.StartsWith("-grid"))
+                {
+                    var gridName = arg.Replace("-grid=", "");
+
+                    if (!Utilities.TryGetEntityByNameOrId(gridName, out var entity))
+                    {
+                        
+                        Context.Respond($"No entity with the name {gridName} found");
+                        continue;
+                    }
+
+                    if (!(entity is MyCubeGrid grid))
+                    {
+                        Context.Respond("No grid found");
+                        continue;
+                    }
             
-            Context.Respond("Limits updated");
+                    Context.Respond($"{grid.DisplayName} limits updated");
+                    Utility.UpdateLimits.GridLimit(grid);
+                    continue;
+
+                }
+                
+                if (arg.StartsWith("-faction"))
+                {
+                    var factionTag = arg.Replace("-faction=","");
+                    var faction = MySession.Static.Factions.TryGetFactionByTag(factionTag);
+                    if (faction == null)
+                    {
+                        Context.Respond($"{factionTag} was not found in factions.  Check spelling and case.");
+                        continue;
+                    }
+                    Context.Respond($"{faction.Tag} limits updated");
+                    Utility.UpdateLimits.FactionLimit(faction.FactionId);
+                }
+            }
+
         }
 
         [Command("reload", "Reloads current BlockLimiter.cfg and apply any changes to current session")]
@@ -112,19 +173,6 @@ namespace BlockLimiter.Commands
             Context.Respond("Limits reloaded from config file");
         }
 
-#if DEBUG
-        [Command("updatefaction")]
-        public void UpdateFaction(string factionTag)
-        {
-            var faction = MySession.Static.Factions.TryGetFactionByTag(factionTag);
-            if (faction == null)
-            {
-                Context.Respond("Not a faction");
-                return;
-            }
-            Block.UpdateFactionLimits(faction.FactionId);
-        }
-#endif
         
         [Command("violations", "gets the list of violations per limit")]
         [Permission(MyPromoteLevel.Moderator)]
@@ -218,45 +266,9 @@ namespace BlockLimiter.Commands
 
         }
 
-        [Command("updateplayer")]
-        public void UpdatePlayer(string name)
-        {
-            if (string.IsNullOrEmpty(name))return;
-            var player = MySession.Static.Players.GetPlayerByName(name);
-            if (player == null)
-            {
-                Context.Respond("player not found");
-                return;
-            }
-            Context.Respond($"{name} limits updated");
-            Utility.UpdateLimits.PlayerLimit(player.Identity.IdentityId);
-        }
-        
-        [Command("updategrid")]
-        public void UpdateGrid(string name)
-        {
-            if (string.IsNullOrEmpty(name))return;
-
-            if (!Utilities.TryGetEntityByNameOrId(name, out var entity))
-            {
-                Context.Respond("No entity found by that name");
-                return;
-            }
-
-            var grid = entity as MyCubeGrid;
-
-            if (grid == null)
-            {
-                Context.Respond("No grid found");
-                return;
-            }
-            
-            Context.Respond($"{grid.DisplayName} limits updated");
-            Utility.UpdateLimits.GridLimit(grid);
-        }
 
         [Command("playerlimit", "gets the current limits of targeted player")]
-        public void GetPlayerLimit(string id)
+        public void GetPlayerLimit(string name)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)
             {
@@ -265,32 +277,15 @@ namespace BlockLimiter.Commands
             }
 
             var sb = new StringBuilder();
+
+            if (!Utilities.TryGetPlayerByNameOrId(name, out var id))
+            {
+                Context.Respond($"Player {name} not found");
+                return;
+            }
+
+            sb = Utilities.GetLimit(id.IdentityId);
             
-            if (long.TryParse(id, out var identityId))
-            {
-               sb = Utilities.GetLimit(identityId);
-            }
-
-            else
-            {
-                var player = MySession.Static.Players.GetAllIdentities()
-                    .FirstOrDefault(x => x.DisplayName.Equals(id, StringComparison.OrdinalIgnoreCase));
-                //var player = MySession.Static.Players.GetPlayerByName(id);
-
-                if (player == null)
-                {
-                    Context.Respond("Player not found");
-                    return;
-                }
-                var playerId = player.IdentityId;
-                
-                if (playerId == 0)
-                {
-                    Context.Respond("Player not found");
-                    return;
-                }
-                sb = Utilities.GetLimit(playerId);
-            }
             
             if (Context.Player == null || Context.Player.IdentityId == 0)
             {
@@ -357,11 +352,6 @@ namespace BlockLimiter.Commands
 
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"Faction Limits",sb.ToString()),Context.Player.SteamUserId);
 
-            
-            
-            
-
-            
 
         }
 

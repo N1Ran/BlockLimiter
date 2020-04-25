@@ -39,6 +39,7 @@ namespace BlockLimiter.Patch
         private static bool PrefixNewBlueprint(MyProjectorBase __instance, ref List<MyObjectBuilder_CubeGrid> projectedGrids)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)return true;
+
             var proj = __instance;
             if (proj == null)
             {
@@ -61,6 +62,7 @@ namespace BlockLimiter.Patch
             var blocks = grid.CubeBlocks;
 
             if (player == null || blocks.Count == 0) return true;
+            if (Utilities.IsExcepted(player.Identity.IdentityId, new List<string>())) return true;
 
             var target = new EndpointId(remoteUserId);
             var playerId = player.Identity.IdentityId;

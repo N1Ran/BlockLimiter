@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Security.Authentication.ExtendedProtection;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Media;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Settings;
@@ -28,10 +30,46 @@ namespace BlockLimiter.Patch
     {
         public static void Patch(PatchContext ctx)
         {
-            var t = typeof(MyCubeBuilder);
-            var m = t.GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static);
-            ctx.GetPattern(m).Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(Prefix),BindingFlags.NonPublic|BindingFlags.Static));
+            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
+                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(Prefix),BindingFlags.NonPublic|BindingFlags.Static));
+            
+            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation",  BindingFlags.Public  |  BindingFlags.Static)).
+                Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(AttemptSpawn), BindingFlags.Static |  BindingFlags.NonPublic));
 
+        }
+
+        private static bool AttemptSpawn(List<MyObjectBuilder_CubeGrid> entities)
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+
+            var grids = entities;
+
+            if (grids.Count == 0) return false;
+
+            var remoteUserId = MyEventContext.Current.Sender.Value;
+
+            if (remoteUserId == 0) return true;
+
+            var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
+
+            if (grids.All(x => Grid.CanSpawn(x, playerId)))
+            {
+                var blocks = grids.SelectMany(x => x.CubeBlocks).ToList();
+                foreach (var block in blocks)
+                {
+                    Block.TryAdd(Utilities.GetDefinition(block), playerId);
+                }
+
+                return true;
+            }
+            if (BlockLimiterConfig.Instance.EnableLog)
+                BlockLimiter.Instance.Log.Info($"Blocked {remoteUserId} from spawning a grid");
+            
+            MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
+
+            Utilities.ValidationFailed();
+            Utilities.SendFailSound(remoteUserId);
+            return false;
         }
 
         /// <summary>
@@ -54,15 +92,11 @@ namespace BlockLimiter.Patch
             var player = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId);
             var playerId = player.Identity.IdentityId;
 
-            if (Block.AllowBlock(block, playerId, (MyObjectBuilder_CubeGrid) null))
+            if (Block.AllowBlock(block, playerId, null))
             {
                 return true;
             }
 
-            if (!Block.TryAdd(block, playerId))
-            {
-                
-            }
 
             var b = block.BlockPairName;
             var p = player.DisplayName;

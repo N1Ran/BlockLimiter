@@ -3,3 +3,6 @@
 ################################################################################
 
 /.idea/.idea.BlockLimiter
+/BlockLimiter/bin
+/GameBinaries
+/TorchBinaries

@@ -14,6 +14,7 @@ using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using Torch;
 using Torch.Managers;
 using Torch.Mod;
 using Torch.Mod.Messages;
@@ -68,18 +69,51 @@ namespace BlockLimiter.Utility
         /// <returns></returns>
         public static bool TryGetEntityByNameOrId(string nameOrId, out IMyEntity entity)
         {
+            
             if (long.TryParse(nameOrId, out var id))
                 return MyAPIGateway.Entities.TryGetEntityById(id, out entity);
 
+
             foreach (var ent in MyEntities.GetEntities())
             {
-                if (ent.DisplayName != nameOrId) continue;
+                if (string.IsNullOrEmpty(ent.DisplayName)) continue;
+                if (!ent.DisplayName.Equals(nameOrId)) continue;
                 entity = ent;
                 return true;
             }
             
             entity = null;
             return false;
+        }
+
+        public static bool TryGetPlayerByNameOrId(string nameOrId, out MyIdentity identity)
+        {
+            identity = null;
+            if (ulong.TryParse(nameOrId, out var steamId))
+            {
+                var id0 = MySession.Static.Players.TryGetIdentityId(steamId);
+                identity = MySession.Static.Players.TryGetIdentity(id0);
+                
+                return identity != null;
+            }
+
+            if (long.TryParse(nameOrId, out var id1))
+            {
+                identity = MySession.Static.Players.TryGetIdentity(id1);
+
+                return identity != null;
+            }
+
+            foreach (var id3 in MySession.Static.Players.GetAllIdentities())
+            {
+                if (string.IsNullOrEmpty(id3.DisplayName) || !id3.DisplayName.Equals(nameOrId)) continue;
+                identity = id3;
+                return identity != null;
+            }
+
+            identity = null;
+            return false;
+
         }
 
         public static bool TryGetPlayerById(long id, out MyPlayer player)
@@ -124,7 +158,12 @@ namespace BlockLimiter.Utility
         public static bool IsExcepted(long obj, List<string> exceptions)
         {
             var excepted = false;
-            if (exceptions.Contains(obj.ToString()))
+
+            var allExceptions = new HashSet<string>();
+            allExceptions.UnionWith(exceptions);
+            allExceptions.UnionWith(BlockLimiterConfig.Instance.GeneralException);
+
+            if (allExceptions.Contains(obj.ToString()))
             {
                 return true;
             }
@@ -133,20 +172,21 @@ namespace BlockLimiter.Utility
 
             if (faction != null)
             {
-                return exceptions.Contains(faction.Tag);
+                return allExceptions.Contains(faction.Tag);
             }
 
-            if (MySession.Static.Players.TryGetPlayerId(obj, out var playerId))
+            var id = MySession.Static.Players.TryGetIdentity(obj);
+            if (id != null)
             {
-                var player = MySession.Static.Players.GetPlayerById(playerId);
-                return (player != null && exceptions.Contains(player.DisplayName)) ||
-                       exceptions.Contains(playerId.SteamId.ToString());
+                var steamId = MySession.Static.Players.TryGetSteamId(obj);
+                return (allExceptions.Contains(id.DisplayName)) || steamId > 0 &&
+                       allExceptions.Contains(steamId.ToString());
             }
             
 
             if (!GridCache.TryGetGridById(obj, out var grid)) return false;
-            if (exceptions.Contains(grid.DisplayName)) excepted = true;
-            if (grid.BigOwners.Any(x => exceptions.Contains(x.ToString()))) return true;
+            if (allExceptions.Contains(grid.DisplayName)) excepted = true;
+            if (grid.BigOwners.Any(x => allExceptions.Contains(x.ToString()))) return true;
 
             return excepted;
         }

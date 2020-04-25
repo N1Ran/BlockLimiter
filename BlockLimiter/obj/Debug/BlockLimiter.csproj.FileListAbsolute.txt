@@ -10,6 +10,6 @@ D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Deb
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.pdb
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Debug\BlockLimiter.dll
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Debug\BlockLimiter.pdb
-C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.csprojAssemblyReference.cache
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.dll
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.pdb
+C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.csproj.CoreCompileInputs.cache

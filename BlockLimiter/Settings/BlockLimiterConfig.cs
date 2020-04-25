@@ -74,6 +74,7 @@ namespace BlockLimiter.Settings
         private string _denyMessage = "Limit reached";
         private string _projectionDenyMessage = "Blocks removed from projection due for going over limit";
         private bool _mergerBlocking;
+        private List<string> _generalException;
 
 
         [Display(Order = 2, GroupName = "Main Settings", Name = "Server Name", Description = "")]
@@ -201,6 +202,18 @@ namespace BlockLimiter.Settings
             set
             {
                 _enableLog = value; 
+                Changed();
+            }
+        }
+
+        [Display(Order = 10, GroupName = "Main Settings", Name = "Exception",
+            Description = "Any player, grid or faction listed will be ignored by the plugin.")]
+        public List<string> GeneralException
+        {
+            get => _generalException;
+            set
+            {
+                _generalException = value;
                 Changed();
             }
         }

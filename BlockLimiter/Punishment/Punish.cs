@@ -81,7 +81,6 @@ namespace BlockLimiter.Punishment
 
                         if (Math.Abs(punishCount - count) <= item.Limit)
                         {
-                            BlockLimiter.Instance.Log.Info($"{Math.Abs(punishCount - count)}");
                             break;
                         }
 

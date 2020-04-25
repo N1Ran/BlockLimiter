@@ -27,6 +27,7 @@ using Torch.API.Session;
 using Torch.Session;
 using Torch.Views;
 using VRage.Game;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Game.VisualScripting;
 using VRage.Network;
@@ -61,14 +62,11 @@ namespace BlockLimiter
             _processThread = new Thread(PluginProcessing);
             _processThread.Start();
             
-            MyCubeGrids.BlockDestroyed += MyCubeGridsOnBlockDestroyed;
             MyCubeGrid.OnSplitGridCreated += MyCubeGridOnOnSplitGridCreated;
             MyMultiplayer.Static.ClientJoined += StaticOnClientJoined;
             MyCubeGrids.BlockBuilt += MyCubeGridsOnBlockBuilt;
             MySession.Static.Factions.FactionStateChanged += FactionsOnFactionStateChanged;
         }
-
-
 
         private void FactionsOnFactionStateChanged(MyFactionStateChange factionState, long fromFaction, long toFaction, long playerId, long senderId)
         {
@@ -122,11 +120,6 @@ namespace BlockLimiter
             UpdateLimits.PlayerLimit(player);
         }
 
-        private static void MyCubeGridsOnBlockDestroyed(MyCubeGrid arg1, MySlimBlock arg2)
-        {
-            if (!BlockLimiterConfig.Instance.EnableLimits)return;
-            Block.RemoveBlock(arg2);
-        }
 
 
         private void GetVanillaLimits()
@@ -321,6 +314,7 @@ namespace BlockLimiter
                 }
                 return;
             }
+
             if (updateGrids)
             {
                 var grids = new HashSet<MyCubeGrid>();
@@ -369,21 +363,20 @@ namespace BlockLimiter
                     }
                 });
             }
-           
 
         }
 
         
-        public static bool CheckLimits_future(MyObjectBuilder_CubeGrid[] grids)
+        
+        public static bool CheckLimits_future(MyObjectBuilder_CubeGrid[] grids, long id = 0)
         {
-
-            if (!BlockLimiterConfig.Instance.EnableLimits)
+            if (grids.Length == 0 ||!BlockLimiterConfig.Instance.EnableLimits || Utilities.IsExcepted(id, new List<string>()))
             {
                 return false;
             }
 
-            return !grids.Any(Grid.IsSizeViolation) && 
-                   !grids.Any(z=>z.CubeBlocks.Any(b=>Block.AllowBlock(MyDefinitionManager.Static.GetCubeBlockDefinition(b),0,z)));
+
+            return !grids.Any(Grid.IsSizeViolation) && grids.Any(x=> !Grid.CanSpawn(x,id));
         }
 
         public static bool CanAdd(List<MySlimBlock> blocks, long id, out List<MySlimBlock> nonAllowedBlocks)

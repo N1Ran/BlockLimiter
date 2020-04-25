@@ -58,6 +58,12 @@ namespace BlockLimiter.Patch
 
             var def = MyDefinitionManager.Static.GetCubeBlockDefinition(area.DefinitionId);
             var grid = __instance;
+
+            int blocksToBuild = (int) area.BuildAreaSize.X * (int) area.BuildAreaSize.Y * (int) area.BuildAreaSize.Z;
+
+            
+
+
             if (grid == null)
             {
                 BlockLimiter.Instance.Log.Debug("Null grid in BuildBlockHandler");
@@ -66,11 +72,12 @@ namespace BlockLimiter.Patch
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
+
             
-            if (!Block.AllowBlock(def, playerId, grid.EntityId))
+            if (!Block.IsWithinLimit(def, playerId, grid.EntityId, blocksToBuild))
             {
                 if (BlockLimiterConfig.Instance.EnableLog)
-                    BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {area.DefinitionId.SubtypeId} due to limits");
+                    BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
                 //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
                 MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
                 Utilities.SendFailSound(remoteUserId);
@@ -116,7 +123,7 @@ namespace BlockLimiter.Patch
             if (!Block.AllowBlock(def, playerId, grid.EntityId))
             {
                 if (BlockLimiterConfig.Instance.EnableLog)
-                    BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def} block due to limits");
+                    BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
                 MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
                 Utilities.SendFailSound(remoteUserId);
                 Utilities.ValidationFailed();

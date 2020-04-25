@@ -16,6 +16,7 @@ using Torch.Managers;
 using Torch.Managers.PatchManager;
 using Torch.Utils;
 using VRage.Game;
+using VRage.Game.Entity;
 using VRage.Network;
 
 namespace BlockLimiter.Patch
@@ -28,19 +29,52 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
-            
+            ctx.GetPattern(typeof(MyEntity).GetMethod("Close", BindingFlags.Public | BindingFlags.Instance)).
+                Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnClose),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+
             ctx.GetPattern(ConvertToStationRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToStatic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             ctx.GetPattern(ConvertToShipRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToDynamic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
-            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("OnGridClosedRequest",  BindingFlags.NonPublic | BindingFlags.Static)).
-                Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnGridClosed), BindingFlags.Static|  BindingFlags.NonPublic));
+            
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("CreateGridForSplit",  BindingFlags.NonPublic |  BindingFlags.Static)).
                 Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.Instance |  BindingFlags.NonPublic));
-            
+
         }
 
 
+        /// <summary>
+        /// Removes blocks on closure
+        /// </summary>
+        /// <param name="__instance"></param>
+        /// <returns></returns>
+        private static bool OnClose(MyEntity __instance)
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+
+            if (__instance.Closed || __instance.MarkedForClose) return true;
+            
+            switch (__instance)
+            {
+                case MyCubeBlock cubeBlock:
+                    Block.RemoveBlock(cubeBlock.SlimBlock);
+                    break;
+                case MyCubeGrid grid:
+                {
+                    GridCache.RemoveGrid(grid.EntityId);
+                    break;
+                }
+            }
+
+
+            return true;
+        }
+
+        /// <summary>
+        /// Updates limits on grid split
+        /// </summary>
+        /// <param name="originalGrid"></param>
         private static void OnCreateSplit(MyCubeGrid originalGrid)
         {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return;
             if (originalGrid == null) return;
             Task.Run(() =>
             {
@@ -50,37 +84,9 @@ namespace BlockLimiter.Patch
             });
         }
 
-        /// <summary>
-        /// Triggers when a grid is removed from the world and removes the grid and block from player/faction count
-        /// </summary>
-        /// <param name="entityId"></param>
-        /// <returns></returns>
-        private static bool OnGridClosed(ref long entityId)
-        {
-            if (!BlockLimiterConfig.Instance.EnableLimits)
-            {
-                return true;
-            }
-
-            if (!GridCache.TryGetGridById(entityId, out var grid))
-            {
-                BlockLimiter.Instance.Log.Debug("Null closure");
-                return true;
-            }
-            
-            GridCache.RemoveGrid(entityId);
-            
-            foreach (var block in grid.CubeBlocks)
-            {
-                if (block == null) continue;
-                Block.RemoveBlock(block);
-            }
-            
-            return true;
-        }
         
         /// <summary>
-        ///
+        ///Checks if grid will violate limit on conversion and updates limits after
         /// </summary>
         /// <param name="__instance"></param>
         /// <returns></returns>
