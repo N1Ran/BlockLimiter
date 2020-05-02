@@ -38,6 +38,11 @@ namespace BlockLimiter.Patch
 
         }
 
+        /// <summary>
+        /// Decides if grid being spawned is permitted
+        /// </summary>
+        /// <param name="entities"></param>
+        /// <returns></returns>
         private static bool AttemptSpawn(List<MyObjectBuilder_CubeGrid> entities)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
@@ -55,9 +60,10 @@ namespace BlockLimiter.Patch
             if (grids.All(x => Grid.CanSpawn(x, playerId)))
             {
                 var blocks = grids.SelectMany(x => x.CubeBlocks).ToList();
+
                 foreach (var block in blocks)
                 {
-                    Block.TryAdd(Utilities.GetDefinition(block), playerId);
+                    Block.IncreaseCount(Utilities.GetDefinition(block),block.BuiltBy,1);
                 }
 
                 return true;
@@ -92,7 +98,7 @@ namespace BlockLimiter.Patch
             var player = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId);
             var playerId = player.Identity.IdentityId;
 
-            if (Block.AllowBlock(block, playerId, null))
+            if (Block.IsWithinLimits(block, playerId, null))
             {
                 return true;
             }

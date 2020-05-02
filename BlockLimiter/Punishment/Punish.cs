@@ -1,26 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using System.Threading.Tasks;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
 using Sandbox;
-using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
-using Sandbox.ModAPI;
-using Torch;
 using VRage.Collections;
 using VRage.Game;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.Library.Collections;
-using VRageMath;
 
 namespace BlockLimiter.Punishment
 {
@@ -31,13 +21,12 @@ namespace BlockLimiter.Punishment
 
         public override int GetUpdateResolution()
         {
-            return BlockLimiterConfig.Instance.PunishInterval * 1000;
+            return Math.Max(BlockLimiterConfig.Instance.PunishInterval,1) * 1000;
         }
         public override void Handle()
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
-            
             
 
             if (!limitItems.Any())
@@ -58,6 +47,7 @@ namespace BlockLimiter.Punishment
             var removeBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
 
             var punishCount = 0;
+            var blocks = _blockCache.ToList();
 
             foreach (var item in limitItems)
             {
@@ -74,9 +64,9 @@ namespace BlockLimiter.Punishment
 
                     if (count <= item.Limit) continue;
 
-
-                    foreach (var block in _blockCache)
+                    for (var i = blocks.Count; i --> 0;)
                     {
+                        var block = blocks[i];
                         if (!Block.IsMatch(block.BlockDefinition, item)) continue;
 
                         if (Math.Abs(punishCount - count) <= item.Limit)
@@ -111,17 +101,13 @@ namespace BlockLimiter.Punishment
                             }
                         }
 
-                        if (item.LimitFaction)
-                        {
-                            var faction = MySession.Static.Factions.TryGetFactionById(id);
-                            if (faction != null && block.FatBlock.GetOwnerFactionTag().Equals(faction.Tag))
-                            {
-                                punishCount++;
-                                removeBlocks[block] = item.Punishment;
-                            }
-                        }
+                        if (!item.LimitFaction) continue;
+                        var faction = MySession.Static.Factions.TryGetFactionById(id);
+                        if (faction == null || !block.FatBlock.GetOwnerFactionTag().Equals(faction.Tag)) continue;
+                        punishCount++;
+                        removeBlocks[block] = item.Punishment;
                     }
-                    
+
                     
 
                 }
@@ -155,7 +141,7 @@ namespace BlockLimiter.Punishment
                                     block.CubeGrid.RemoveBlock(block);
                                     continue;
                                 case LimitItem.PunishmentType.ShutOffBlock:
-                                    if (!(block.FatBlock is MyFunctionalBlock funcBlock)) continue;
+                                    if (!(block.FatBlock is MyFunctionalBlock funcBlock) || funcBlock.Enabled == false) continue;
                                     if (BlockLimiterConfig.Instance.EnableLog)
                                         Log.Info(
                                         $"Turned off {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");

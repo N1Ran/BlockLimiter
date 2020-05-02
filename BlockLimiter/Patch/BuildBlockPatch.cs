@@ -61,8 +61,6 @@ namespace BlockLimiter.Patch
 
             int blocksToBuild = (int) area.BuildAreaSize.X * (int) area.BuildAreaSize.Y * (int) area.BuildAreaSize.Z;
 
-            
-
 
             if (grid == null)
             {
@@ -74,7 +72,7 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
             
-            if (!Block.IsWithinLimit(def, playerId, grid.EntityId, blocksToBuild))
+            if (!Block.IsWithinLimits(def, playerId, grid.EntityId, blocksToBuild))
             {
                 if (BlockLimiterConfig.Instance.EnableLog)
                     BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
@@ -111,6 +109,7 @@ namespace BlockLimiter.Patch
                 return true;
             }
 
+
             var def = MyDefinitionManager.Static.GetCubeBlockDefinition(locations.FirstOrDefault().BlockDefinition);
 
             if (def == null) return true;
@@ -120,7 +119,7 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
 
-            if (!Block.AllowBlock(def, playerId, grid.EntityId))
+            if (!Block.IsWithinLimits(def, playerId, grid.EntityId, locations.Count))
             {
                 if (BlockLimiterConfig.Instance.EnableLog)
                     BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");

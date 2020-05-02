@@ -55,7 +55,7 @@ namespace BlockLimiter.Patch
             switch (__instance)
             {
                 case MyCubeBlock cubeBlock:
-                    Block.RemoveBlock(cubeBlock.SlimBlock);
+                    Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
                     break;
                 case MyCubeGrid grid:
                 {

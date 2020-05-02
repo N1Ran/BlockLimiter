@@ -14,7 +14,6 @@ namespace BlockLimiter.Utility
     public static class UpdateLimits
     {
 
-        private static int _count;
         public static void PlayerLimit(long id)
         {
             if (id == 0) return;

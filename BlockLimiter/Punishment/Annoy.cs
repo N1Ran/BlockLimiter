@@ -22,7 +22,7 @@ namespace BlockLimiter.Punishment
         
         public override int GetUpdateResolution()
         {
-            return BlockLimiterConfig.Instance.AnnoyInterval*1000;
+            return Math.Max(BlockLimiterConfig.Instance.AnnoyInterval,1) * 1000;
         }
 
         public override void Handle()

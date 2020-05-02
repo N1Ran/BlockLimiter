@@ -92,10 +92,10 @@ namespace BlockLimiter
             if (!GridCache.TryGetGridById(grid.EntityId, out _))
             {
                 GridCache.AddGrid(grid.EntityId);
-                Block.TryAdd(block, grid);
-                return;
             }
-            Block.TryAdd(block, grid);
+
+            Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
+
 
         }
 
