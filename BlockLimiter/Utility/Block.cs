@@ -37,13 +37,16 @@ namespace BlockLimiter.Utility
                 if (grid != null && faction != null && (Utilities.IsExcepted(playerId,item.Exceptions) || Utilities.IsExcepted(faction.FactionId,item.Exceptions) || Utilities.IsExcepted(grid.EntityId,item.Exceptions)))
                     continue;
 
-                if (item.Limit == 0 && item.LimitGrids || item.LimitPlayers || item.LimitFaction) return false;
+                if (item.Limit == 0 && (item.LimitGrids || item.LimitPlayers || item.LimitFaction))
+                {
 
-                if (grid != null)
+                    return false;
+                }
+
+
+                if (grid != null && Grid.IsGridType(grid,item))
                 {
                     var gridId = grid.EntityId;
-                    if (!Grid.IsGridType(grid, item)) continue;
-                    if (item.Limit == 0) return false;
 
                     if (gridId > 0 && item.LimitGrids && item.FoundEntities.TryGetValue(gridId, out var gCount))
                     {
@@ -108,18 +111,16 @@ namespace BlockLimiter.Utility
                 
                 if (ownerId > 0 && (Utilities.IsExcepted(ownerId,item.Exceptions) || ownerFaction != null && Utilities.IsExcepted(ownerFaction.FactionId,item.Exceptions) || gridId > 0 && Utilities.IsExcepted(gridId,item.Exceptions)))
                     continue;
-                if (item.Limit == 0 && item.LimitGrids || item.LimitPlayers || item.LimitFaction) return false;
+                if (item.Limit == 0 && (item.LimitGrids || item.LimitPlayers || item.LimitFaction))
+                {
+                    return false;
+                }
+
 
                 if (item.LimitGrids && gridId > 0 && item.FoundEntities.TryGetValue(gridId, out var gCount))
                 {
-                    if (GridCache.TryGetGridById(gridId, out var grid))
+                    if (GridCache.TryGetGridById(gridId, out var grid) && Grid.IsGridType(grid,item))
                     {
-                        if (!Grid.IsGridType(grid, item)) continue;
-                    }
-
-                    if (item.LimitGrids )
-                    {
-                        
                         if (gCount + count > item.Limit)
                         {
                             allow = false;
@@ -127,7 +128,6 @@ namespace BlockLimiter.Utility
                         }
 
                     }
-
                 }
 
 

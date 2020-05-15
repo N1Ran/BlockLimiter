@@ -120,7 +120,7 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
 
-            if (!Block.IsWithinLimits(def, playerId, grid.EntityId, locations.Count))
+            if (!Block.IsWithinLimits(def, playerId, grid.EntityId))
             {
                 if (BlockLimiterConfig.Instance.EnableLog)
                     BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
