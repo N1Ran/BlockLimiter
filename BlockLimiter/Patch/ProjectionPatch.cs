@@ -11,6 +11,8 @@ using VRage.Network;
 using System.Linq;
 using BlockLimiter.Utility;
 using NLog;
+using System.Threading;
+using System.Threading.Tasks;
 using Sandbox.Game;
 using Sandbox.Game.World;
 using Torch;
@@ -70,7 +72,11 @@ namespace BlockLimiter.Patch
             var playerId = player.Identity.IdentityId;
             if (Grid.IsSizeViolation(grid))
             {
-                NetworkManager.RaiseEvent(__instance, RemoveProjectionMethod, target);
+                Task.Run(() =>
+                {
+                    Thread.Sleep(100);
+                    NetworkManager.RaiseEvent(__instance, RemoveProjectionMethod, target);
+                });
                 Utilities.SendFailSound(remoteUserId);
                 Utilities.ValidationFailed();
                 MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
@@ -124,16 +130,17 @@ namespace BlockLimiter.Patch
 
             try
             {
-                NetworkManager.RaiseEvent(__instance, NewBlueprintMethod, new List<MyObjectBuilder_CubeGrid>{grid});
+                NetworkManager.RaiseEvent(__instance, NewBlueprintMethod,
+                    new List<MyObjectBuilder_CubeGrid> {grid});
             }
             catch (Exception e)
             {
                 //NullException thrown here but seems to work for some reason.  Don't Touch any further
             }
 
-           
-            ModCommunication.SendMessageTo(new NotificationMessage($"{BlockLimiterConfig.Instance.ProjectionDenyMessage}", 15000,
-                        MyFontEnum.Red), remoteUserId);
+            var msg = BlockLimiterConfig.Instance.ProjectionDenyMessage.Replace("{BC}", $"{count}");
+
+            MyVisualScriptLogicProvider.SendChatMessage($"{msg}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
 
             return true;
 

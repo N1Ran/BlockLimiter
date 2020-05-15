@@ -72,7 +72,7 @@ namespace BlockLimiter.Settings
         private bool _blockOwnershipTransfer;
         private MtObservableCollection<LimitItem> _limitItems;
         private string _denyMessage = "Limit reached";
-        private string _projectionDenyMessage = "Blocks removed from projection due for going over limit";
+        private string _projectionDenyMessage = "{BC} blocks removed from projection due for going over limit";
         private bool _mergerBlocking;
         private List<string> _generalException;
 

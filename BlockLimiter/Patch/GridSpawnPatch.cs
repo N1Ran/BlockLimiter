@@ -14,8 +14,10 @@ using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
+using Sandbox.Game.Gui;
 using Sandbox.Game.World;
 using Torch;
+using Torch.Managers;
 using Torch.Managers.PatchManager;
 using Torch.Mod;
 using Torch.Mod.Messages;
@@ -28,6 +30,8 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class GridSpawnPatch
     {
+        private static MethodInfo _showPasteFailed =
+            typeof(MyCubeGrid).GetMethod("ShowPasteFailedOperation", BindingFlags.Static | BindingFlags.Public);
         public static void Patch(PatchContext ctx)
         {
             ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
@@ -72,7 +76,7 @@ namespace BlockLimiter.Patch
                 BlockLimiter.Instance.Log.Info($"Blocked {remoteUserId} from spawning a grid");
             
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
-
+            NetworkManager.RaiseStaticEvent(_showPasteFailed);
             Utilities.ValidationFailed();
             Utilities.SendFailSound(remoteUserId);
             return false;
@@ -110,7 +114,8 @@ namespace BlockLimiter.Patch
                 BlockLimiter.Instance.Log.Info($"Blocked {p} from placing a {b}");
             
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-            MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
+            var msg = BlockLimiterConfig.Instance.DenyMessage.Replace("{BN}", $"{b}");
+            MyVisualScriptLogicProvider.SendChatMessage($"{msg}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
 
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();

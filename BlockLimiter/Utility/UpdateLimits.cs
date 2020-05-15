@@ -63,26 +63,6 @@ namespace BlockLimiter.Utility
 
                 });
                 
-                /*
-                if (!limit.LimitPlayers
-                    || Utilities.IsExcepted(id, limit.Exceptions)
-                    || faction != null && Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
-                {
-                    limit.FoundEntities.Remove(id);
-                    continue;
-                }
-
-                var limitedBlocks = playerBlocks.Count(x =>
-                    Block.IsMatch(x.BlockDefinition, limit));
-                if (limitedBlocks == 0)
-                {
-                    limit.FoundEntities.Remove(id);
-                    continue;
-                }
-                
-                limit.FoundEntities[id] = limitedBlocks;
-                BlockLimiter.Instance.Log.Warn($"{limitedBlocks} added to {id}");
-                */
 
             }
         }
@@ -101,6 +81,7 @@ namespace BlockLimiter.Utility
         
         public static void GridLimit(MyCubeGrid grid)
         {
+            if (grid == null) return;
             
             var blocks = new HashSet<MySlimBlock>();
             blocks.UnionWith(grid.CubeBlocks);    
@@ -132,28 +113,6 @@ namespace BlockLimiter.Utility
                     }
                     limit.FoundEntities[grid.EntityId] = limitedBlocks;
                 });
-                /*
-                if (!limit.LimitGrids)
-                {
-                    limit.FoundEntities.Remove(grid.EntityId);
-                    return;
-                }
-                
-                if (!Grid.IsGridType(grid,limit))
-                {
-                    limit.FoundEntities.Remove(grid.EntityId);
-                    continue;
-                }
-
-                var limitedBlocks = blocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
-
-                if (limitedBlocks == 0)
-                {
-                    limit.FoundEntities.Remove(grid.EntityId);
-                    continue;
-                }
-                limit.FoundEntities[grid.EntityId] = limitedBlocks;
-                */
             }
         }
 

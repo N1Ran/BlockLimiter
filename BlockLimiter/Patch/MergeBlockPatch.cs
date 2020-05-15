@@ -32,6 +32,9 @@ namespace BlockLimiter.Patch
             ctx.GetPattern(typeof(MyShipMergeBlock).GetMethod(nameof(MyShipMergeBlock.UpdateBeforeSimulation10), BindingFlags.Public | BindingFlags.Instance )).
                 Prefixes.Add(typeof(MergeBlockPatch).GetMethod(nameof(MergeCheck), BindingFlags.NonPublic | BindingFlags.Static));
 
+            ctx.GetPattern(typeof(MyShipMergeBlock).GetMethod("AddConstraint",  BindingFlags.NonPublic|BindingFlags.Instance )).
+                Suffixes.Add(typeof(MergeBlockPatch).GetMethod(nameof(AddBlocks), BindingFlags.NonPublic | BindingFlags.Static));
+
         }
         
 
@@ -43,8 +46,8 @@ namespace BlockLimiter.Patch
 
             if (mergeBlock?.Other == null)
                 return true;
-
-            if (mergeBlock.IsLocked) return true;
+            
+            if (mergeBlock.IsLocked || !mergeBlock.IsFunctional || !mergeBlock.Other.IsFunctional) return true;
 
 
             if (BlockLimiterConfig.Instance.MergerBlocking)
@@ -56,28 +59,25 @@ namespace BlockLimiter.Patch
                 }
                 
             }
-            
-            var gridTwo = mergeBlock.Other.CubeGrid;
-            var gridOne = mergeBlock.CubeGrid;
-            
-
-            Task.Run(() =>
-            {
-                Thread.Sleep(100);
-
-                if (gridOne?.Name != null)
-                {
-                    UpdateLimits.GridLimit(gridOne);
-                }
-
-                if (gridTwo?.Name != null)
-                {
-                    UpdateLimits.GridLimit(gridTwo);
-                }
-            });
 
             return true;
         }
 
+        private static void AddBlocks(MyShipMergeBlock __instance)
+        {
+            var id = __instance.CubeGrid.EntityId;
+
+            Task.Run((() =>
+            {
+                Thread.Sleep(10000);
+                if (!GridCache.TryGetGridById(id, out var grid))
+                {
+                    return;
+                }
+
+                UpdateLimits.GridLimit(grid);
+
+            }));
+        }
     }
 }

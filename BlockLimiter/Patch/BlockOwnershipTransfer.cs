@@ -46,9 +46,8 @@ namespace BlockLimiter.Patch
         /// <returns></returns>
         private static bool ChangeOwnersRequest(List<MyCubeGrid.MySingleOwnershipRequest> requests, long requestingPlayer)
         {
-            Log.Warn("ChangeOwnersRequest triggered");
 
-            if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.BlockOwnershipTransfer) return true;
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
             var blocks = new List<MySlimBlock>();
 
 
@@ -73,30 +72,35 @@ namespace BlockLimiter.Patch
                 return true;
             }
 
-            if (newOwner == requestingPlayer)
+
+            if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
             {
+                if (newOwner == requestingPlayer)
+                {
+                    foreach (var block in blocks)
+                    {
+                        block.TransferAuthorship(newOwner);
+                    }
+
+                    return true;
+                }
+
+                if (!Block.CanAdd(blocks, newOwner, out _))
+                {
+                    if (BlockLimiterConfig.Instance.EnableLog)
+                        Log.Info($"Ownership blocked {blocks.Count} blocks from {MySession.Static.Players.TryGetIdentity(requestingPlayer).DisplayName} to {MySession.Static.Players.TryGetIdentity(newOwner).DisplayName}");
+
+                    Utilities.ValidationFailed();
+                    Utilities.SendFailSound(Utilities.GetSteamIdFromPlayerId(requestingPlayer));
+                    return false;
+                }
                 foreach (var block in blocks)
                 {
                     block.TransferAuthorship(newOwner);
                 }
 
-                return true;
             }
 
-            if (!Block.CanAdd(blocks, newOwner, out _))
-            {
-                if (BlockLimiterConfig.Instance.EnableLog)
-                    Log.Info($"Ownership blocked {blocks.Count} blocks from {MySession.Static.Players.TryGetIdentity(requestingPlayer).DisplayName} to {MySession.Static.Players.TryGetIdentity(newOwner).DisplayName}");
-
-                Utilities.ValidationFailed();
-                Utilities.SendFailSound(Utilities.GetSteamIdFromPlayerId(requestingPlayer));
-                return false;
-            }
-
-            foreach (var block in blocks)
-            {
-                block.TransferAuthorship(newOwner);
-            }
             return true;
 
         }
@@ -109,7 +113,6 @@ namespace BlockLimiter.Patch
         /// <returns></returns>
         private static bool OnTransfer(MySlimBlock __instance, long newOwner)
         {
-            Log.Warn("OnTransfer triggered");
             if (!BlockLimiterConfig.Instance.EnableLimits)
             {
                 return true;
@@ -150,7 +153,6 @@ namespace BlockLimiter.Patch
         /// <returns></returns>
         private static bool ChangeOwner(MyCubeBlock block, long playerId)
         {
-            Log.Warn("ChangOwner triggered");
             if (block == null) return false;
             
             if (!BlockLimiterConfig.Instance.EnableLimits)
@@ -173,12 +175,12 @@ namespace BlockLimiter.Patch
 
                     return false;
                 }
+
+                block.ChangeOwner(playerId, MyOwnershipShareModeEnum.Faction);
+                block.SlimBlock.TransferAuthorship(playerId);
+
             }
 
-            
-            block.ChangeOwner(playerId, MyOwnershipShareModeEnum.Faction);
-            block.SlimBlock.TransferAuthorship(playerId);
-            
             return true;
         }
     }
