@@ -66,6 +66,18 @@ namespace BlockLimiter
             MyMultiplayer.Static.ClientJoined += StaticOnClientJoined;
             MyCubeGrids.BlockBuilt += MyCubeGridsOnBlockBuilt;
             MySession.Static.Factions.FactionStateChanged += FactionsOnFactionStateChanged;
+            MyEntities.OnEntityAdd += MyEntitiesOnOnEntityAdd;
+        }
+
+        private void MyEntitiesOnOnEntityAdd(MyEntity entity)
+        {
+            if (!(entity is MyCubeGrid grid)) return;
+            var blocks = grid.CubeBlocks;
+            foreach (var block in blocks)
+            {
+                Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1);
+            }
+
         }
 
         private void FactionsOnFactionStateChanged(MyFactionStateChange factionState, long fromFaction, long toFaction, long playerId, long senderId)
@@ -87,11 +99,12 @@ namespace BlockLimiter
 
         }
 
-        private static void MyCubeGridsOnBlockBuilt(MyCubeGrid grid, MySlimBlock block)
+        private void MyCubeGridsOnBlockBuilt(MyCubeGrid grid, MySlimBlock block)
         {
             if (!GridCache.TryGetGridById(grid.EntityId, out _))
             {
                 GridCache.AddGrid(grid.EntityId);
+                return;
             }
 
             Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);

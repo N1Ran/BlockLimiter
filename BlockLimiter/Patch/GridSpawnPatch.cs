@@ -64,12 +64,13 @@ namespace BlockLimiter.Patch
             if (grids.All(x => Grid.CanSpawn(x, playerId)))
             {
                 var blocks = grids.SelectMany(x => x.CubeBlocks).ToList();
-
+                var count = 0;
                 foreach (var block in blocks)
                 {
-                    Block.IncreaseCount(Utilities.GetDefinition(block),block.BuiltBy,1);
+                    //Block.IncreaseCount(Utilities.GetDefinition(block),playerId,1);
+                    count++;
                 }
-
+                BlockLimiter.Instance.Log.Warn($"{count} blocks given spawned for {playerId}");
                 return true;
             }
             if (BlockLimiterConfig.Instance.EnableLog)

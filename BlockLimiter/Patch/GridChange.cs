@@ -97,12 +97,15 @@ namespace BlockLimiter.Patch
                 return true;
             }
             var grid = __instance;
-
+            
             if (grid == null)
             {
                 if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Warn("Null grid in GridChange handler");
                 return true;
             }
+
+            if (grid.GridSizeEnum == MyCubeSize.Small) return true;
+
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             if (Grid.AllowConversion(grid) || remoteUserId == 0 || playerId == 0)
