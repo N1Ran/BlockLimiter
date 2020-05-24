@@ -32,7 +32,25 @@ namespace BlockLimiter.Patch
         {
             ctx.GetPattern(typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.Instance | BindingFlags.NonPublic)).
                 Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixNewBlueprint), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
+
+            ctx.GetPattern(typeof(MyProjectorBase).GetMethod("RemoveProjection", BindingFlags.Instance | BindingFlags.NonPublic)).
+                Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(DecreaseProjectedCount), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
         }
+
+
+        private static void DecreaseProjectedCount(MyProjectorBase __instance)
+        {
+            if (!BlockLimiterConfig.Instance.CountProjections)return;
+            MyIdentity myIdentity = MySession.Static.Players.TryGetIdentity(__instance.BuiltBy);
+
+            var grid = __instance.ProjectedGrid;
+            if (grid == null || myIdentity == null) return;
+            foreach (var block in grid.CubeBlocks)
+            {
+                Block.DecreaseCount(block.BlockDefinition,myIdentity.IdentityId,1,__instance.CubeGrid.EntityId);
+            }
+        }
+
 
         /// <summary>
         /// Aim to block projections or remove blocks to match grid/player limits.
@@ -99,7 +117,7 @@ namespace BlockLimiter.Patch
 
             foreach (var limit in limits)
             {
-
+                if (Utilities.IsExcepted(proj.BuiltBy, limit.Exceptions)||Utilities.IsExcepted(proj.CubeGrid.EntityId,limit.Exceptions)) continue;
                 var pBlocks = blocks.Where(x => Block.IsMatch(Utilities.GetDefinition(x), limit)).ToList();
                 
                 if (pBlocks.Count < 1) continue;

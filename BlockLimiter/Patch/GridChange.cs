@@ -36,7 +36,7 @@ namespace BlockLimiter.Patch
             ctx.GetPattern(ConvertToShipRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToDynamic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("CreateGridForSplit",  BindingFlags.NonPublic |  BindingFlags.Static)).
-                Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.Instance |  BindingFlags.NonPublic));
+                Suffixes.Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.Instance |  BindingFlags.NonPublic));
 
         }
 
@@ -46,12 +46,12 @@ namespace BlockLimiter.Patch
         /// </summary>
         /// <param name="__instance"></param>
         /// <returns></returns>
-        private static bool OnClose(MyEntity __instance)
+        private static void OnClose(MyEntity __instance)
         {
-            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+            if (!BlockLimiterConfig.Instance.EnableLimits) return;
 
-            if (__instance.Closed || __instance.MarkedForClose) return true;
-            
+            if (__instance.MarkedForClose) return;
+
             switch (__instance)
             {
                 case MyCubeBlock cubeBlock:
@@ -65,7 +65,6 @@ namespace BlockLimiter.Patch
             }
 
 
-            return true;
         }
 
         /// <summary>

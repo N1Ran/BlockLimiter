@@ -49,8 +49,12 @@ namespace BlockLimiter.Punishment
 
                 foreach (var item in limitItems)
                 {
+                    if (Utilities.IsExcepted(player.Identity.IdentityId, item.Exceptions)) continue;
+
                     foreach (var (id,count) in item.FoundEntities)
                     {
+                        if (id == 0 || Utilities.IsExcepted(id, item.Exceptions))continue;
+
                         if (id == player.Identity.IdentityId && count > item.Limit)
                         {
                             annoyList.Add(steamId);

@@ -24,6 +24,46 @@ namespace BlockLimiter.Commands
     [Category("blocklimit")]
     public partial class Player:CommandModule
     {
+        private static Dictionary<ulong, DateTime> _updateCommandTimeout = new Dictionary<ulong, DateTime>();
+
+        [Command("update mylimit")]
+        [Permission(MyPromoteLevel.None)]
+        public void UpdateMyLimit()
+        {
+            if (Context.Player == null || Context.Player.SteamUserId == 0)
+            {
+                Context.Respond("This command can only be run by a player in game");
+                return;
+            }
+
+            var steamid = Context.Player.SteamUserId;
+
+            if (!_updateCommandTimeout.TryGetValue(steamid, out var lastRun))
+            {
+                _updateCommandTimeout[steamid] = DateTime.Now;
+
+                Utility.UpdateLimits.PlayerLimit(Context.Player.IdentityId);
+                Context.Respond("Limits Updated");
+                return;
+
+            }
+
+            var diff = DateTime.Now - lastRun;
+            if (diff.TotalMinutes < 5)
+            {
+                var totalRemaining = TimeSpan.FromMinutes(5) - diff;
+                Context.Respond($"Cooldown in effect.  Try again in {totalRemaining.TotalSeconds:N0} seconds");
+                return;
+            }
+
+            _updateCommandTimeout[steamid] = DateTime.Now;
+
+            Utility.UpdateLimits.PlayerLimit(Context.Player.IdentityId);
+            Context.Respond("Limits Updated");
+
+
+
+        }
         [Command("mylimit", "list current player status")]
         [Permission(MyPromoteLevel.None)]
         public void MyLimit()

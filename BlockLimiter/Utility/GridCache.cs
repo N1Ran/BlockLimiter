@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BlockLimiter.Patch;
+using BlockLimiter.Settings;
 using Sandbox;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
@@ -51,7 +52,9 @@ namespace BlockLimiter.Utility
                 if (e.Count > 0)
                 {
                     _gridCache.Clear();
-                    _gridCache.UnionWith(e.OfType<MyCubeGrid>().Where(x=>x.Projector == null));
+                    _gridCache.UnionWith(!BlockLimiterConfig.Instance.CountProjections
+                        ? e.OfType<MyCubeGrid>().Where(x => x.Projector == null)
+                        : e.OfType<MyCubeGrid>());
                 }
             }
 
@@ -104,7 +107,7 @@ namespace BlockLimiter.Utility
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks));
+                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks).ToList());
             }
         }
 

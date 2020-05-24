@@ -62,6 +62,8 @@ namespace BlockLimiter.Commands
 
             var args = Context.Args;
 
+            GridCache.Update();
+
             if (args.Count == 0)
             {
                 if (!_doCheck)

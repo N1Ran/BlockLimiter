@@ -75,6 +75,7 @@ namespace BlockLimiter.Settings
         private string _projectionDenyMessage = "{BC} blocks removed from projection due for going over limit";
         private bool _mergerBlocking;
         private List<string> _generalException;
+        private bool _countProjection;
 
 
         [Display(Order = 2, GroupName = "Main Settings", Name = "Server Name", Description = "")]
@@ -214,6 +215,18 @@ namespace BlockLimiter.Settings
             set
             {
                 _generalException = value;
+                Changed();
+            }
+        }
+
+        [Display(Order = 11, GroupName = "Main Settings", Name = "Count Projections",
+            Description = "Adds projected blocks to block counts.  Recommended to avoid exploits")]
+        public bool CountProjections
+        {
+            get => _countProjection;
+            set
+            {
+                _countProjection = value;
                 Changed();
             }
         }

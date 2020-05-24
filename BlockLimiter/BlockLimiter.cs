@@ -72,11 +72,14 @@ namespace BlockLimiter
         private void MyEntitiesOnOnEntityAdd(MyEntity entity)
         {
             if (!(entity is MyCubeGrid grid)) return;
+            if (!BlockLimiterConfig.Instance.CountProjections && (grid.Projector != null||grid.IsPreview)) return;
+
             var blocks = grid.CubeBlocks;
             foreach (var block in blocks)
             {
-                Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1);
+                Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1,grid.EntityId);
             }
+
 
         }
 
@@ -106,7 +109,6 @@ namespace BlockLimiter
                 GridCache.AddGrid(grid.EntityId);
                 return;
             }
-
             Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
 
 

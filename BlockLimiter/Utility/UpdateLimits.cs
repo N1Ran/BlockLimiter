@@ -154,21 +154,6 @@ namespace BlockLimiter.Utility
                     }
                     limit.FoundEntities[id] = factionBlockCount;
                 });
-                /*
-                if (!limit.LimitFaction || Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
-                {
-                    limit.FoundEntities.Remove(id);
-                    continue;
-                }
-                var factionBlockCount = factionBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
-
-                if (factionBlockCount == 0)
-                {
-                    limit.FoundEntities.Remove(id);
-                    continue;
-                }
-                limit.FoundEntities[id] = factionBlockCount;
-                */
             }
         }
         
