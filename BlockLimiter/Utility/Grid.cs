@@ -13,6 +13,11 @@ namespace BlockLimiter.Utility
 {
     public static class Grid
     {
+        public static bool IsSizeViolation(long id)
+        {
+            return GridCache.TryGetGridById(id, out var grid) && IsSizeViolation(grid);
+        }
+
         public static bool IsSizeViolation(MyObjectBuilder_CubeGrid grid)
         {
 
@@ -46,14 +51,15 @@ namespace BlockLimiter.Utility
 
             return false;
         }
-        public static bool IsSizeViolation(MyCubeGrid grid)
+
+        public static bool IsSizeViolation(MyCubeGrid grid, bool converting = false)
         {
             if (grid == null)
                 return false;
             
             var gridSize = grid.CubeBlocks.Count;
             var gridType = grid.GridSizeEnum;
-            var isStatic = grid.IsStatic;
+            var isStatic = converting? !grid.IsStatic:grid.IsStatic;
 
             if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
             {
@@ -107,7 +113,7 @@ namespace BlockLimiter.Utility
 
         public static bool AllowConversion(MyCubeGrid grid)
         {
-            if (IsSizeViolation(grid)) return false;
+            if (IsSizeViolation(grid,true)) return false;
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {

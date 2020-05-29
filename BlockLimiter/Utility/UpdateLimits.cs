@@ -67,17 +67,6 @@ namespace BlockLimiter.Utility
             }
         }
 
-        public static void PlayerLimit(MyPlayer player)
-        {
-            if (player?.Identity?.IdentityId == null)
-            {
-                BlockLimiter.Instance.Log.Warn("Attempt to update null player");
-                return;
-            }
-            if (player.Identity != null) PlayerLimit(player.Identity.IdentityId);
-        }
-        
-        
         
         public static void GridLimit(MyCubeGrid grid)
         {

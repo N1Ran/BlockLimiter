@@ -55,7 +55,13 @@ namespace BlockLimiter.Patch
             switch (__instance)
             {
                 case MyCubeBlock cubeBlock:
-                    Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
+                    if (cubeBlock.BuiltBy == cubeBlock.OwnerId)
+                        Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
+                    else
+                    {
+                        Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
+                        Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.OwnerId);
+                    }
                     break;
                 case MyCubeGrid grid:
                 {
@@ -79,7 +85,16 @@ namespace BlockLimiter.Patch
             {
                 Thread.Sleep(100);
                 if (!GridCache.TryGetGridById(originalGrid.EntityId, out var newStateGrid)) return;
-                UpdateLimits.GridLimit(newStateGrid);
+                foreach (var block in newStateGrid.CubeBlocks)
+                {
+                    if (block.BuiltBy == block.OwnerId)
+                        Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,originalGrid.EntityId);
+                    else
+                    {
+                        Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,originalGrid.EntityId);
+                        Block.DecreaseCount(block.BlockDefinition,block.OwnerId);
+                    }
+                }
             });
         }
 
@@ -121,7 +136,7 @@ namespace BlockLimiter.Patch
             }
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Info(
-                $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to violation");
+                $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
             return false;
@@ -157,7 +172,7 @@ namespace BlockLimiter.Patch
             }
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             if (BlockLimiterConfig.Instance.EnableLog)BlockLimiter.Instance.Log.Info(
-                $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to violation");
+                $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
             return false;

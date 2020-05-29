@@ -29,6 +29,7 @@ namespace BlockLimiter.Utility
 
             if (playerId > 0 && Utilities.IsExcepted(playerId, new List<string>()) || (faction != null && Utilities.IsExcepted(faction.FactionId,new List<string>()))) return true;
 
+            if (grid != null && Grid.IsSizeViolation(grid)) return false;
 
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
@@ -98,11 +99,13 @@ namespace BlockLimiter.Utility
 
             var ownerFaction = MySession.Static.Factions.GetPlayerFaction(ownerId);
 
+
             if (ownerId > 0 && Utilities.IsExcepted(ownerId, new List<string>()) || (ownerFaction != null && Utilities.IsExcepted(ownerFaction.FactionId,new List<string>())) ||
                 gridId > 0 && Utilities.IsExcepted(gridId, new List<string>())) return true;
 
             var allow = true;
 
+            if (Grid.IsSizeViolation(gridId)) return false;
 
 
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
@@ -178,9 +181,19 @@ namespace BlockLimiter.Utility
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
 
             var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
+            
             foreach (var limit in Limits)
             {
                 if (!IsMatch(def,limit))continue;
+
+                if (limit.IgnoreNpcs)
+                {
+                    if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
+                    if (GridCache.TryGetGridById(gridId, out var grid) &&
+                        MySession.Static.Players.IdentityIsNpc(grid.BigOwners.FirstOrDefault())) continue;
+                    
+                }
+
                 if (limit.LimitPlayers && playerId > 0)
                     limit.FoundEntities.AddOrUpdate(playerId, amount, (l, i) => i+amount);
                 if (limit.LimitGrids && gridId > 0)
@@ -202,6 +215,15 @@ namespace BlockLimiter.Utility
             foreach (var limit in Limits)
             {
                 if (!IsMatch(def,limit))continue;
+
+                if (limit.IgnoreNpcs)
+                {
+                    if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
+                    if (GridCache.TryGetGridById(gridId, out var grid) &&
+                        MySession.Static.Players.IdentityIsNpc(grid.BigOwners.FirstOrDefault())) continue;
+                    
+                }
+
                 if (limit.LimitPlayers && playerId > 0)
                     limit.FoundEntities.AddOrUpdate(playerId, 0, (l, i) => Math.Max(0,i - amount));
                 if (limit.LimitGrids && gridId > 0)
@@ -223,6 +245,12 @@ namespace BlockLimiter.Utility
             }
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
+                if (limit.IgnoreNpcs)
+                {
+                    if (MySession.Static.Players.IdentityIsNpc(id)) continue;
+                    
+                }
+
                 limit.FoundEntities.TryGetValue(id, out var currentCount);
                 if(Utilities.IsExcepted(id, limit.Exceptions)) continue;
                 var affectedBlocks = blocks.Where(x => IsMatch(Utilities.GetDefinition(x), limit)).ToList();
@@ -246,6 +274,11 @@ namespace BlockLimiter.Utility
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
+                if (limit.IgnoreNpcs)
+                {
+                    if (MySession.Static.Players.IdentityIsNpc(id)) continue;
+                }
+
                 if(Utilities.IsExcepted(id, limit.Exceptions)) continue;
                 if (!limit.FoundEntities.TryGetValue(id, out var currentCount)) continue;
                 var affectedBlocks = blocks.Where(x => IsMatch(x.BlockDefinition, limit)).ToList();

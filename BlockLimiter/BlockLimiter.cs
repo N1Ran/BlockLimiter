@@ -75,6 +75,7 @@ namespace BlockLimiter
             if (!BlockLimiterConfig.Instance.CountProjections && (grid.Projector != null||grid.IsPreview)) return;
 
             var blocks = grid.CubeBlocks;
+
             foreach (var block in blocks)
             {
                 Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1,grid.EntityId);
@@ -132,7 +133,7 @@ namespace BlockLimiter
         {
             var player = MySession.Static.Players.TryGetPlayerBySteamId(obj);
             if (player == null)return;
-            UpdateLimits.PlayerLimit(player);
+            UpdateLimits.PlayerLimit(player.Identity.IdentityId);
         }
 
 
@@ -234,7 +235,7 @@ namespace BlockLimiter
             base.Init(torch);
             Instance = this;
             Load();
-            CopyOver();
+            //CopyOver();
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)
                 _sessionManager.SessionStateChanged += SessionChanged;
@@ -295,6 +296,8 @@ namespace BlockLimiter
             });
 
         }
+
+        /*
         
         /// <summary>
         /// TO Do Remove on next update
@@ -310,6 +313,7 @@ namespace BlockLimiter
             BlockLimiterConfig.Instance.Save();
 
         }
+        */
 
         public override void Dispose()
         {
