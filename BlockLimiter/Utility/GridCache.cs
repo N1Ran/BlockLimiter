@@ -107,7 +107,7 @@ namespace BlockLimiter.Utility
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks).ToList());
+                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks));
             }
         }
 

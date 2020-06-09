@@ -68,7 +68,6 @@ namespace BlockLimiter.Patch
 
             if (newOwner == 0)
             {
-
                 return true;
             }
 

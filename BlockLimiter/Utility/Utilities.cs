@@ -116,26 +116,7 @@ namespace BlockLimiter.Utility
 
         }
 
-        public static bool TryGetPlayerById(long id, out MyPlayer player)
-        {
-            player = null;
-            if (id == 0) return false;
-            foreach (var ident in MySession.Static.Players.GetOnlinePlayers())
-            {
-                if (ident.Identity.IdentityId != id) continue;
-                player = ident;
-                return true;
-            }
 
-            return false;
-        }
-
-        public static long NextInt64(Random rnd)
-        {
-            var buffer = new byte[sizeof(long)];
-            rnd.NextBytes(buffer);
-            return BitConverter.ToInt64(buffer, 0);
-        }
 
         public static void ValidationFailed()
         {
@@ -157,11 +138,12 @@ namespace BlockLimiter.Utility
 
         public static bool IsExcepted(long obj, List<string> exceptions)
         {
-            var excepted = false;
 
             var allExceptions = new HashSet<string>();
             allExceptions.UnionWith(exceptions);
             allExceptions.UnionWith(BlockLimiterConfig.Instance.GeneralException);
+
+            if (!allExceptions.Any()) return false;
 
             if (allExceptions.Contains(obj.ToString()))
             {
@@ -172,38 +154,70 @@ namespace BlockLimiter.Utility
 
             if (faction != null)
             {
-                return allExceptions.Contains(faction.Tag);
+                return allExceptions.Contains(faction.Tag) || allExceptions.Contains(faction.FactionId.ToString()) || allExceptions.Contains(faction.Name);
             }
 
-            var id = MySession.Static.Players.TryGetIdentity(obj);
-            if (id != null)
+            var identity = MySession.Static.Players.TryGetIdentity(obj);
+
+            if (identity != null)
             {
-                var steamId = MySession.Static.Players.TryGetSteamId(obj);
-                return (allExceptions.Contains(id.DisplayName)) || steamId > 0 &&
-                       allExceptions.Contains(steamId.ToString());
-            }
+               if (allExceptions.Contains(identity.DisplayName)) return true;
+
+               var x = MySession.Static.Players.TryGetSteamId(identity.IdentityId);
+
+               if (x > 0 && allExceptions.Contains(x.ToString())) return true;
+            } 
+
+            var steamId = MySession.Static.Players.TryGetSteamId(obj);
+
+            if (steamId > 0 && allExceptions.Contains(steamId.ToString())) return true;
             
 
             if (!GridCache.TryGetGridById(obj, out var grid)) return false;
-            if (allExceptions.Contains(grid.DisplayName)) excepted = true;
-            if (grid.BigOwners.Any(x => allExceptions.Contains(x.ToString()))) return true;
 
-            return excepted;
+            if (allExceptions.Contains(grid.DisplayName)) return true;
+
+            var gridFac = grid.CubeBlocks.Select(x => x.FatBlock?.GetOwnerFactionTag()).FirstOrDefault();
+
+            if (allExceptions.Contains(gridFac)) return true;
+
+            var owners = new HashSet<long>(5);
+            
+            owners.UnionWith(grid.BigOwners);
+
+            if (owners.Count == 0) return false;
+
+            foreach (var ownerId in owners)
+            {
+                if (allExceptions.Contains(ownerId.ToString())) return true;
+
+                var ownerIdent = MySession.Static.Players.TryGetIdentity(ownerId);
+
+                if (ownerIdent != null && allExceptions.Contains(ownerIdent.DisplayName)) return true;
+
+                var ownerSteamId = MySession.Static.Players.TryGetSteamId(ownerId);
+
+                if (ownerSteamId > 0 && allExceptions.Contains(ownerSteamId.ToString())) return true;
+            }
+
+            return false;
+
         }
 
 
 
         #region Limits
 
-        public static void UpdateLimits(bool useVanilla, out HashSet<LimitItem> items)
+        public static HashSet<LimitItem> UpdateLimits(bool useVanilla)
         {
-            items = new HashSet<LimitItem>();
+            var items = new HashSet<LimitItem>();
             if (useVanilla && BlockLimiter.Instance.VanillaLimits.Count > 0)
             {
                 items.UnionWith(BlockLimiter.Instance.VanillaLimits);
             }
 
             items.UnionWith(BlockLimiterConfig.Instance.LimitItems);
+            return items;
         }
 
         public static StringBuilder GetLimit(long playerId)

@@ -190,7 +190,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _vanillaLimits = value;
-                Utilities.UpdateLimits(_vanillaLimits, out AllLimits);
+                AllLimits = Utilities.UpdateLimits(_vanillaLimits);
                 Changed();
             }
         }
@@ -418,7 +418,7 @@ namespace BlockLimiter.Settings
 private void ItemsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 {
     OnPropertyChanged();
-    Utilities.UpdateLimits(UseVanillaLimits, out AllLimits);
+    AllLimits = Utilities.UpdateLimits(UseVanillaLimits);
     Instance.Save(); 
 }
 

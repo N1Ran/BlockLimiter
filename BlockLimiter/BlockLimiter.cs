@@ -267,7 +267,7 @@ namespace BlockLimiter
                     EnableControl();
                     GetVanillaLimits();
                     GridCache.Update();
-                    Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits, out BlockLimiterConfig.Instance.AllLimits);
+                    BlockLimiterConfig.Instance.AllLimits = Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits);
                     ResetLimits();
                     break;
                 case TorchSessionState.Unloading:
@@ -385,7 +385,7 @@ namespace BlockLimiter
 
         }
 
-        
+        #region External Access
         
         public static bool CheckLimits_future(MyObjectBuilder_CubeGrid[] grids, long id = 0)
         {
@@ -403,6 +403,7 @@ namespace BlockLimiter
             return Block.CanAdd(blocks, id, out nonAllowedBlocks);
         }
         
+        #endregion
 
         
     }

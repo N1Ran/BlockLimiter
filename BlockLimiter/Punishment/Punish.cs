@@ -7,6 +7,7 @@ using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
 using Sandbox;
+using Sandbox.Definitions;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using VRage.Collections;
@@ -18,6 +19,7 @@ namespace BlockLimiter.Punishment
     {
         private static readonly Logger Log = BlockLimiter.Instance.Log;
         private readonly HashSet<MySlimBlock> _blockCache = new HashSet<MySlimBlock>();
+        private static bool _firstCheckCompleted;
 
         public override int GetUpdateResolution()
         {
@@ -49,6 +51,8 @@ namespace BlockLimiter.Punishment
             var punishCount = 0;
             var blocks = _blockCache.ToList();
 
+
+
             foreach (var item in limitItems)
             {
                 if (!item.FoundEntities.Any() ||
@@ -58,16 +62,27 @@ namespace BlockLimiter.Punishment
                 {
                     if (id == 0 || Utilities.IsExcepted(id, item.Exceptions))
                     {
-                        item.FoundEntities.Remove(id);
                         continue;
                     }
 
                     if (count <= item.Limit) continue;
 
+
                     for (var i = blocks.Count; i --> 0;)
                     {
                         var block = blocks[i];
+
+                        if (block?.BuiltBy == null || block.CubeGrid.IsPreview)
+                        {
+                            blocks.RemoveAtFast(1);
+                            continue;
+                        }
+
                         if (!Block.IsMatch(block.BlockDefinition, item)) continue;
+
+                        var defBase = MyDefinitionManager.Static.GetDefinition(block.BlockDefinition.Id);
+
+                        if (defBase != null && !_firstCheckCompleted && !defBase.Context.IsBaseGame) continue;
 
                         if (Math.Abs(punishCount - count) <= item.Limit)
                         {
@@ -121,7 +136,9 @@ namespace BlockLimiter.Punishment
             {
                 return;
             }
-            
+
+            _firstCheckCompleted = !_firstCheckCompleted;
+
             Task.Run(() =>
             {
                 

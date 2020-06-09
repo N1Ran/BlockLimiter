@@ -31,7 +31,7 @@ namespace BlockLimiter.Patch
     public static class GridSpawnPatch
     {
         private static MethodInfo _showPasteFailed =
-            typeof(MyCubeGrid).GetMethod("ShowPasteFailedOperation", BindingFlags.Static | BindingFlags.Public);
+            typeof(MyCubeGrid).GetMethod("SendHudNotificationAfterPaste", BindingFlags.Static | BindingFlags.Public);
         public static void Patch(PatchContext ctx)
         {
             ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
@@ -66,12 +66,19 @@ namespace BlockLimiter.Patch
                 return true;
             }
             if (BlockLimiterConfig.Instance.EnableLog)
-                BlockLimiter.Instance.Log.Info($"Blocked {remoteUserId} from spawning a grid");
+                BlockLimiter.Instance.Log.Info($"Blocked {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName} from spawning a grid");
             
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
-            NetworkManager.RaiseStaticEvent(_showPasteFailed);
-            Utilities.ValidationFailed();
-            Utilities.SendFailSound(remoteUserId);
+
+            //This is needed to keep the wheel of misery away (staticEvent specifically)
+            Task.Run(() =>
+            {
+                Thread.Sleep(100);
+                Utilities.ValidationFailed();
+                Utilities.SendFailSound(remoteUserId);
+                NetworkManager.RaiseStaticEvent(_showPasteFailed, new EndpointId(remoteUserId), null);
+            });
+
             return false;
         }
 

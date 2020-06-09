@@ -1,23 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
+using NLog;
 using Sandbox.Definitions;
+using Sandbox.Game;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Gui;
 using Sandbox.Game.World;
+using Sandbox.ModAPI;
 using Torch;
 using Torch.Commands;
 using Torch.Commands.Permissions;
+using Torch.Managers;
 using Torch.Mod;
 using Torch.Mod.Messages;
+using Torch.Utils;
 using VRage.Dedicated.RemoteAPI;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.Network;
+using VRage.Utils;
+using VRageMath;
 
 namespace BlockLimiter.Commands
 {
@@ -36,11 +46,11 @@ namespace BlockLimiter.Commands
                 return;
             }
 
-            var steamid = Context.Player.SteamUserId;
+            var steamId = Context.Player.SteamUserId;
 
-            if (!_updateCommandTimeout.TryGetValue(steamid, out var lastRun))
+            if (!_updateCommandTimeout.TryGetValue(steamId, out var lastRun))
             {
-                _updateCommandTimeout[steamid] = DateTime.Now;
+                _updateCommandTimeout[steamId] = DateTime.Now;
 
                 Utility.UpdateLimits.PlayerLimit(Context.Player.IdentityId);
                 Context.Respond("Limits Updated");
@@ -56,7 +66,7 @@ namespace BlockLimiter.Commands
                 return;
             }
 
-            _updateCommandTimeout[steamid] = DateTime.Now;
+            _updateCommandTimeout[steamId] = DateTime.Now;
 
             Utility.UpdateLimits.PlayerLimit(Context.Player.IdentityId);
             Context.Respond("Limits Updated");
@@ -142,6 +152,8 @@ namespace BlockLimiter.Commands
 
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of Limits",sb.ToString()),Context.Player.SteamUserId);
         }
+
+
         
         [Command("pairnames", "gets the list of all pair names possible")]
         [Permission(MyPromoteLevel.None)]
@@ -212,9 +224,84 @@ namespace BlockLimiter.Commands
                 return;
             }
 
+
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of pair names",sb.ToString()),Context.Player.SteamUserId);
         }
 
+        [Command("definitions", "gets the list of all pair names possible")]
+        [Permission(MyPromoteLevel.None)]
+        public void ListBlockDefinitions(string blockType=null)
+        {
+
+            var sb = new StringBuilder();
+
+            var allDef = MyDefinitionManager.Static.GetAllDefinitions();
+
+            var def = new List<MyDefinitionBase>();
+
+            if (!string.IsNullOrEmpty(blockType))
+            {
+                foreach (var defBase in allDef)
+                {
+                    if (!defBase.Id.TypeId.ToString().Substring(16).Equals(blockType,StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    def.Add(defBase);
+                }
+
+                if (!def.Any())
+                {
+                    Context.Respond($"Can't find any definition for {blockType}");
+                    return;
+                }
+
+            }
+
+            else
+            {
+                def.AddRange(allDef);
+            }
+
+            if (!def.Any())
+            {
+                Context.Respond("Na Bruh!");
+                return;
+            }
+
+            sb.AppendLine($"Total of {def.Count} definitions found on server");
+            var definitionDictionary = new Dictionary<MyModContext, List<string>>();
+            foreach (var myDefinitionId in def)
+            {
+                if (!MyDefinitionManager.Static.TryGetCubeBlockDefinition(myDefinitionId.Id, out var x)) continue;
+                if (myDefinitionId.Context == null) continue;
+                if (!definitionDictionary.ContainsKey(myDefinitionId.Context))
+                {
+                    definitionDictionary[myDefinitionId.Context] = new List<string> {x.Id.ToString().Substring(16)};
+                    continue;
+                }
+
+                if (definitionDictionary[myDefinitionId.Context].Contains(x.BlockPairName)) continue;
+                definitionDictionary[myDefinitionId.Context].Add(x.Id.ToString().Substring(16));
+            }
+
+            foreach (var (context,thisList) in definitionDictionary)
+            {
+                sb.AppendLine(context.IsBaseGame ? $"[{thisList.Count} Vanilla blocks]" : $"[{thisList.Count} blocks --- {context.ModName} - {context.ModId}]");
+                
+                thisList.ForEach(x=>sb.AppendLine(x));
+                sb.AppendLine();
+            }
+
+            if (Context.Player == null || Context.Player.IdentityId == 0)
+            {
+                Context.Respond(sb.ToString());
+                return;
+            }
+
+
+            ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of pair names",sb.ToString()),Context.Player.SteamUserId);
+        }
 
     }
+
+
 }
