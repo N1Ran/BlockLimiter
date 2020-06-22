@@ -184,33 +184,11 @@ namespace BlockLimiter.Utility
             }
         }
 
-        public static bool IsBlockType(MyCubeBlockDefinition def, LimitItem.GridType type)
-        {
-            var isType = false;
-            
-            switch (type)
-            {
-                case LimitItem.GridType.AllGrids:
-                    isType = true;
-                    break;
-                case LimitItem.GridType.SmallGridsOnly:
-                    isType = def.CubeSize == MyCubeSize.Small;
-                    break;
-                case LimitItem.GridType.LargeGridsOnly:
-                    isType = def.CubeSize == MyCubeSize.Large;
-                    break;
-                case LimitItem.GridType.StationsOnly:
-                    break;
-                case LimitItem.GridType.ShipsOnly:
-                    break;
-            }
-
-            return isType;
-        }
 
         public static bool CanSpawn(MyObjectBuilder_CubeGrid grid, long playerId)
         {
             if (Utilities.IsExcepted(playerId, new List<string>())) return true;
+
             if (grid == null || IsSizeViolation(grid)) return false;
 
             return playerId == 0 || Block.CanAdd(grid.CubeBlocks, playerId, out _);

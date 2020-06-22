@@ -24,6 +24,7 @@ namespace BlockLimiter.Patch
     public static class ProjectionPatch
     {
         private static readonly Logger Log = BlockLimiter.Instance.Log;
+
         private static  readonly MethodInfo RemoveProjectionMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly MethodInfo NewBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.NonPublic | BindingFlags.Instance);
        
@@ -98,8 +99,9 @@ namespace BlockLimiter.Patch
                 Utilities.SendFailSound(remoteUserId);
                 Utilities.ValidationFailed();
                 MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
-                if (BlockLimiterConfig.Instance.EnableLog)
-                    Log.Info($"Projection blocked from {player.DisplayName}");
+                
+                Log.Info($"Projection blocked from {player.DisplayName}");
+                
                 return false;
             }
 
@@ -143,6 +145,7 @@ namespace BlockLimiter.Patch
 
             if ( count < 1) return true;
             
+            Log.Info($"Removed {count} blocks from projector set by {player.DisplayName} ");
 
             NetworkManager.RaiseEvent(__instance, RemoveProjectionMethod, target);
 

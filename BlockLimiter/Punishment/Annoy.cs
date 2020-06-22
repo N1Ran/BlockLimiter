@@ -93,8 +93,7 @@ namespace BlockLimiter.Punishment
                 }
             }
 
-            if (BlockLimiterConfig.Instance.EnableLog)
-                Log.Info($"Blocklimiter annoyed {annoyList.Count} players");
+            Log.Info($"Blocklimiter annoyed {annoyList.Count} players");
 
         }
 

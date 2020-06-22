@@ -150,6 +150,7 @@
     <Compile Include="ProcessHandlers\ProcessHandlerBase.cs" />
     <Compile Include="Punishment\Annoy.cs" />
     <Compile Include="Punishment\Punish.cs" />
+    <Compile Include="Settings\LoggingConfig.cs" />
     <Compile Include="Utility\Block.cs" />
     <Compile Include="Utility\Grid.cs" />
     <Compile Include="Utility\GridCache.cs" />

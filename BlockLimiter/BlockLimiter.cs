@@ -198,7 +198,6 @@ namespace BlockLimiter
                                 }
                                 catch (Exception ex)
                                 {
-                                    if (BlockLimiterConfig.Instance.EnableLog)
                                         Log.Warn("Handler Problems: {0} - {1}", currentHandler.GetUpdateResolution(),
                                             ex);
                                 }
@@ -220,12 +219,10 @@ namespace BlockLimiter
             }
             catch (ThreadAbortException ex)
             {
-                if (BlockLimiterConfig.Instance.EnableLog) 
                     Log.Trace(ex);
             }
             catch (Exception ex)
             {
-                if (BlockLimiterConfig.Instance.EnableLog) 
                     Log.Error(ex);
             }
         }

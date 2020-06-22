@@ -58,6 +58,7 @@ namespace BlockLimiter.Utility
 
         public static void SendFailSound(ulong target)
         {
+            if (target == 0) return;
             _spawnGridReply(false, target);
         }
 
@@ -120,7 +121,9 @@ namespace BlockLimiter.Utility
 
         public static void ValidationFailed()
         {
-            ((MyMultiplayerServerBase)MyMultiplayer.Static).ValidationFailed(MyEventContext.Current.Sender.Value);
+            var user = MyEventContext.Current.Sender.Value;
+            if (user == 0) return;
+            ((MyMultiplayerServerBase)MyMultiplayer.Static).ValidationFailed(user);
         }
         
         private static MyConcurrentDictionary<MyStringHash, MyCubeBlockDefinition> _defCache = new MyConcurrentDictionary<MyStringHash, MyCubeBlockDefinition>();
@@ -139,8 +142,7 @@ namespace BlockLimiter.Utility
         public static bool IsExcepted(long obj, List<string> exceptions)
         {
 
-            var allExceptions = new HashSet<string>();
-            allExceptions.UnionWith(exceptions);
+            var allExceptions = new HashSet<string>(exceptions);
             allExceptions.UnionWith(BlockLimiterConfig.Instance.GeneralException);
 
             if (!allExceptions.Any()) return false;
@@ -163,15 +165,15 @@ namespace BlockLimiter.Utility
             {
                if (allExceptions.Contains(identity.DisplayName)) return true;
 
+               var identFaction = MySession.Static.Factions.GetPlayerFaction(obj);
+
+               if (identFaction!= null && (allExceptions.Contains(identFaction.Tag) || allExceptions.Contains(identFaction.Name) ||
+                   allExceptions.Contains(identFaction.FactionId.ToString()))) return true;
+
                var x = MySession.Static.Players.TryGetSteamId(identity.IdentityId);
 
                if (x > 0 && allExceptions.Contains(x.ToString())) return true;
             } 
-
-            var steamId = MySession.Static.Players.TryGetSteamId(obj);
-
-            if (steamId > 0 && allExceptions.Contains(steamId.ToString())) return true;
-            
 
             if (!GridCache.TryGetGridById(obj, out var grid)) return false;
 
@@ -179,7 +181,7 @@ namespace BlockLimiter.Utility
 
             var gridFac = grid.CubeBlocks.Select(x => x.FatBlock?.GetOwnerFactionTag()).FirstOrDefault();
 
-            if (allExceptions.Contains(gridFac)) return true;
+            if (!string.IsNullOrEmpty(gridFac) && allExceptions.Contains(gridFac)) return true;
 
             var owners = new HashSet<long>(5);
             

@@ -25,6 +25,7 @@ namespace BlockLimiter.Punishment
         {
             return Math.Max(BlockLimiterConfig.Instance.PunishInterval,1) * 1000;
         }
+
         public override void Handle()
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
@@ -46,12 +47,16 @@ namespace BlockLimiter.Punishment
                 return;
             }
             
-            var removeBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
+            var punishBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
 
             var punishCount = 0;
             var blocks = _blockCache.ToList();
 
-
+            if (BlockLimiterConfig.Instance.KillNoOwnerBlocks)
+            {
+                var noOwnerBlocks = _blockCache.Where(x => x.OwnerId == 0).ToList();
+                Block.KillBlocks(noOwnerBlocks);
+            }
 
             foreach (var item in limitItems)
             {
@@ -102,7 +107,7 @@ namespace BlockLimiter.Punishment
                         if (item.LimitGrids && block.CubeGrid.EntityId == id)
                         {
                             punishCount++;
-                            removeBlocks[block] = item.Punishment;
+                            punishBlocks[block] = item.Punishment;
                             continue;
                         }
 
@@ -111,7 +116,7 @@ namespace BlockLimiter.Punishment
                             if (Block.IsOwner(block, id))
                             {
                                 punishCount++;
-                                removeBlocks[block] = item.Punishment;
+                                punishBlocks[block] = item.Punishment;
                                 continue;
                             }
                         }
@@ -120,7 +125,7 @@ namespace BlockLimiter.Punishment
                         var faction = MySession.Static.Factions.TryGetFactionById(id);
                         if (faction == null || !block.FatBlock.GetOwnerFactionTag().Equals(faction.Tag)) continue;
                         punishCount++;
-                        removeBlocks[block] = item.Punishment;
+                        punishBlocks[block] = item.Punishment;
                     }
 
                     
@@ -132,56 +137,14 @@ namespace BlockLimiter.Punishment
             _blockCache.Clear();
 
             
-            if (!removeBlocks.Keys.Any())
+            if (!punishBlocks.Keys.Any())
             {
                 return;
             }
 
             _firstCheckCompleted = !_firstCheckCompleted;
 
-            Task.Run(() =>
-            {
-                
-                MySandboxGame.Static.Invoke(() =>
-                {
-                    
-                    foreach (var (block, punishment) in removeBlocks)
-                    {
-                        try
-                        {
-                            switch (punishment)
-                            {
-                                case LimitItem.PunishmentType.DeleteBlock:
-                                    if (BlockLimiterConfig.Instance.EnableLog)
-                                        Log.Info(
-                                        $"removed {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
-                                    block.CubeGrid.RemoveBlock(block);
-                                    continue;
-                                case LimitItem.PunishmentType.ShutOffBlock:
-                                    if (!(block.FatBlock is MyFunctionalBlock funcBlock) || funcBlock.Enabled == false) continue;
-                                    if (BlockLimiterConfig.Instance.EnableLog)
-                                        Log.Info(
-                                        $"Turned off {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
-                                    funcBlock.Enabled = false;
-                                    continue;
-                                case LimitItem.PunishmentType.Explode:
-                                    if (BlockLimiterConfig.Instance.EnableLog)
-                                        Log.Info(
-                                        $"Destroyed {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
-                                    block.DoDamage(block.BlockDefinition.MaxIntegrity * 10, MyDamageType.Explosion);
-                                    continue;
-                                default:
-                                    throw new ArgumentOutOfRangeException();
-                            }
-
-                        }
-                        catch (Exception e)
-                        {
-                            if(BlockLimiterConfig.Instance.EnableLog)Log.Error(e);
-                        }
-                    }
-                }, "BlockLimiter");
-            });
+            Block.Punish(punishBlocks);
         }
 
     }

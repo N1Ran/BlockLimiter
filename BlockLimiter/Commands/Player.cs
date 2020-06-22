@@ -138,6 +138,7 @@ namespace BlockLimiter.Commands
                 sb.AppendLine(name);
                 item.BlockList.ForEach(x=>sb.Append($"[{x}] "));
                 sb.AppendLine();
+                sb.AppendLine($"GridType: {item.GridTypeBlock}");
                 sb.AppendLine($"Limits:       {item.Limit}");
                 sb.AppendLine($"PlayerLimit:  {item.LimitPlayers}");
                 sb.AppendLine($"FactionLimit: {item.LimitFaction}");

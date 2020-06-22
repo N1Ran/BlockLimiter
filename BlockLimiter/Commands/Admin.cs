@@ -39,14 +39,6 @@ namespace BlockLimiter.Commands
             Context.Respond(enable ? "BlockLimiter Enabled" : "BlockLimiter Disabled");
         }
         
-        [Command("log", "enable/disable blocklimit log")]
-        [Permission(MyPromoteLevel.Admin)]
-        public void EnableLog(bool enable = true)
-        {
-            BlockLimiterConfig.Instance.EnableLog = enable;
-
-            Context.Respond(enable ? "Logging Enabled" : "Logging Disabled");
-        }
         
         [Command("update", "updates limits")]
         [Permission(MyPromoteLevel.Moderator)]

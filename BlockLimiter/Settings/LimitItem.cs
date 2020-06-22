@@ -29,7 +29,6 @@ namespace BlockLimiter.Settings
         private GridType _gridType = GridType.AllGrids;
         private string _name;
         private List<string> _blockList = new List<string>();
-        private List<string> _blockPairName = new List<string>();
         private List<string> _exceptions = new List<string>();
         private int _limit;
         private bool _restrictProjection;
@@ -78,17 +77,6 @@ namespace BlockLimiter.Settings
         }
 
         
-        [Display(Visible = false)]
-        public List<string> BlockPairName
-        {
-            get => _blockPairName;
-            set
-            {
-                _blockPairName = value;
-                OnPropertyChanged();
-            }
-
-        }
 
         [Display(Name = "Exceptions", Description = "List of player or grid exception. You can also use entityId.")]
         public List<string> Exceptions

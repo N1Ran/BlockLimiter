@@ -74,7 +74,6 @@ namespace BlockLimiter.Patch
             
             if (!Block.IsWithinLimits(def, playerId, grid.EntityId, blocksToBuild))
             {
-                if (BlockLimiterConfig.Instance.EnableLog)
                     BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
                 //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
                 var msg = BlockLimiterConfig.Instance.DenyMessage.Replace("{BN}", $"{def.ToString().Substring(16)}");
@@ -122,7 +121,6 @@ namespace BlockLimiter.Patch
 
             if (!Block.IsWithinLimits(def, playerId, grid.EntityId))
             {
-                if (BlockLimiterConfig.Instance.EnableLog)
                     BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
                 var msg = BlockLimiterConfig.Instance.DenyMessage.Replace("{BN}", $"{def.ToString().Substring(16)}");
                 MyVisualScriptLogicProvider.SendChatMessage($"{msg}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);

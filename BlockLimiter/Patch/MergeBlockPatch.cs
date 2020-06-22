@@ -26,6 +26,7 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class MergeBlockPatch
     {
+        private static readonly Logger Log = BlockLimiter.Instance.Log;
 
         public static void Patch(PatchContext ctx)
         {
@@ -55,6 +56,7 @@ namespace BlockLimiter.Patch
                 if (!Grid.CanMerge(mergeBlock.CubeGrid, mergeBlock.Other.CubeGrid))
                 {
                     mergeBlock.Enabled = false;
+                    Log.Info($"Blocked merger between {mergeBlock.CubeGrid?.DisplayName} and {mergeBlock.Other?.CubeGrid?.DisplayName}");
                     return false;
                 }
                 

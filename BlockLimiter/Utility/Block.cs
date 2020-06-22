@@ -2,14 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using BlockLimiter.Patch;
 using BlockLimiter.Settings;
+using NLog;
+using Sandbox;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using VRage.Collections;
 using VRage.Game;
 using VRage.Game.ModAPI;
 
@@ -19,7 +23,21 @@ namespace BlockLimiter.Utility
     {
         private static readonly HashSet<LimitItem> Limits = BlockLimiterConfig.Instance.AllLimits;
 
-        
+        private static readonly Logger Log = BlockLimiter.Instance.Log;
+
+        public static void KillBlock(MyCubeBlock block)
+        {
+            KillBlocks(new List<MySlimBlock>{block.SlimBlock});
+        }
+        public static void KillBlocks(List<MySlimBlock> blocks)
+        {
+            Parallel.ForEach(blocks, block =>
+            {
+                if (!(block.FatBlock is MyFunctionalBlock funcBlock) || funcBlock.Enabled == false) return;
+                funcBlock.Enabled = false;
+            });
+        }
+
         public static bool IsWithinLimits(MyCubeBlockDefinition block, long playerId, MyObjectBuilder_CubeGrid grid = null)
         {
             
@@ -27,15 +45,13 @@ namespace BlockLimiter.Utility
             if (block == null) return true;
             var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
 
-            if (playerId > 0 && Utilities.IsExcepted(playerId, new List<string>()) || (faction != null && Utilities.IsExcepted(faction.FactionId,new List<string>()))) return true;
-
             if (grid != null && Grid.IsSizeViolation(grid)) return false;
 
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
                 if (!item.BlockList.Any() || !IsMatch(block, item)) continue;
                 
-                if (grid != null && faction != null && (Utilities.IsExcepted(playerId,item.Exceptions) || Utilities.IsExcepted(faction.FactionId,item.Exceptions) || Utilities.IsExcepted(grid.EntityId,item.Exceptions)))
+                if ((Utilities.IsExcepted(playerId,item.Exceptions) || (grid != null && Utilities.IsExcepted(grid.EntityId,item.Exceptions))))
                     continue;
 
                 if (item.Limit == 0 && (item.LimitGrids || item.LimitPlayers || item.LimitFaction))
@@ -100,19 +116,17 @@ namespace BlockLimiter.Utility
             var ownerFaction = MySession.Static.Factions.GetPlayerFaction(ownerId);
 
 
-            if (ownerId > 0 && Utilities.IsExcepted(ownerId, new List<string>()) || (ownerFaction != null && Utilities.IsExcepted(ownerFaction.FactionId,new List<string>())) ||
-                gridId > 0 && Utilities.IsExcepted(gridId, new List<string>())) return true;
-
             var allow = true;
 
             if (Grid.IsSizeViolation(gridId)) return false;
 
+            if (BlockLimiterConfig.Instance.AllLimits.Count == 0) return true;
 
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
                 if (!item.BlockList.Any() || !IsMatch(def, item)) continue;
                 
-                if (ownerId > 0 && (Utilities.IsExcepted(ownerId,item.Exceptions) || ownerFaction != null && Utilities.IsExcepted(ownerFaction.FactionId,item.Exceptions) || gridId > 0 && Utilities.IsExcepted(gridId,item.Exceptions)))
+                if ((ownerId > 0 && Utilities.IsExcepted(ownerId,item.Exceptions)) || (gridId > 0 && Utilities.IsExcepted(gridId,item.Exceptions)))
                     continue;
                 if (item.Limit == 0 && (item.LimitGrids || item.LimitPlayers || item.LimitFaction))
                 {
@@ -291,7 +305,77 @@ namespace BlockLimiter.Utility
             return nonAllowedBlocks.Count == 0;
         }
 
+        public static bool IsType(MyCubeBlockDefinition def, LimitItem.GridType type)
+        {
+            var isType = true;
+            
+            switch (type)
+            {
+                case LimitItem.GridType.AllGrids:
+                    break;
+                case LimitItem.GridType.SmallGridsOnly:
+                    isType = def.CubeSize == MyCubeSize.Small;
+                    break;
+                case LimitItem.GridType.LargeGridsOnly:
+                    isType = def.CubeSize == MyCubeSize.Large;
+                    break;
+                case LimitItem.GridType.StationsOnly:
+                    break;
+                case LimitItem.GridType.ShipsOnly:
+                    break;
+            }
 
+            return isType;
+        }
+
+
+        public static void Punish(MyConcurrentDictionary<MySlimBlock, LimitItem.PunishmentType> removalCollection)
+        {
+            if (removalCollection.Count == 0) return;
+            var log = BlockLimiter.Instance.Log;
+                        
+            Task.Run(() =>
+            {
+                
+                MySandboxGame.Static.Invoke(() =>
+                {
+                    
+                    foreach (var (block, punishment) in removalCollection)
+                    {
+                        try
+                        {
+                            switch (punishment)
+                            {
+                                case LimitItem.PunishmentType.DeleteBlock:
+                                    log.Info(
+                                        $"removed {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
+                                    block.CubeGrid.RemoveBlock(block,true);
+                                    continue;
+                                case LimitItem.PunishmentType.ShutOffBlock:
+                                    if (!(block.FatBlock is MyFunctionalBlock funcBlock) || funcBlock.Enabled == false) continue;
+                                    log.Info(
+                                        $"Turned off {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
+                                    funcBlock.Enabled = false;
+                                    continue;
+                                case LimitItem.PunishmentType.Explode:
+                                        log.Info(
+                                        $"Destroyed {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
+                                    block.DoDamage(block.BlockDefinition.MaxIntegrity * 10, MyDamageType.Explosion);
+                                    continue;
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Error(e);
+                        }
+                    }
+                }, "BlockLimiter");
+            });
+
+        }
 
 
     }

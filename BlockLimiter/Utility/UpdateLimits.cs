@@ -44,8 +44,7 @@ namespace BlockLimiter.Utility
                 Parallel.Invoke(() =>
                 {
                     if (!limit.LimitPlayers
-                        || Utilities.IsExcepted(id, limit.Exceptions)
-                        || faction != null && Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
+                        || Utilities.IsExcepted(id, limit.Exceptions))
                     {
                         limit.FoundEntities.Remove(id);
                         return;

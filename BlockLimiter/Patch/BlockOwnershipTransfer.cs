@@ -68,6 +68,8 @@ namespace BlockLimiter.Patch
 
             if (newOwner == 0)
             {
+                if (BlockLimiterConfig.Instance.KillNoOwnerBlocks)
+                    Block.KillBlocks(blocks);
                 return true;
             }
 
@@ -86,7 +88,6 @@ namespace BlockLimiter.Patch
 
                 if (!Block.CanAdd(blocks, newOwner, out _))
                 {
-                    if (BlockLimiterConfig.Instance.EnableLog)
                         Log.Info($"Ownership blocked {blocks.Count} blocks from {MySession.Static.Players.TryGetIdentity(requestingPlayer).DisplayName} to {MySession.Static.Players.TryGetIdentity(newOwner).DisplayName}");
 
                     Utilities.ValidationFailed();
@@ -130,7 +131,6 @@ namespace BlockLimiter.Patch
                 if (!Block.IsWithinLimits(block.BlockDefinition, newOwner, 0))
                 {
                     Utilities.ValidationFailed();
-                    if (BlockLimiterConfig.Instance.EnableLog)
                         Log.Info($"Authorship transfer blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(newOwner)?.DisplayName}");
                     return false;
                 }
@@ -162,14 +162,17 @@ namespace BlockLimiter.Patch
             
             if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
             {
-                            
+
                 if (playerId == 0)
+                {
+                    if (BlockLimiterConfig.Instance.KillNoOwnerBlocks)
+                        Block.KillBlock(block);
                     return true;
+                }
 
                 if (!Block.IsWithinLimits(block.BlockDefinition, playerId, 0))
                 {
                     Utilities.ValidationFailed();
-                    if (BlockLimiterConfig.Instance.EnableLog)
                         Log.Info($"Ownership blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
 
                     return false;
@@ -182,5 +185,6 @@ namespace BlockLimiter.Patch
 
             return true;
         }
+
     }
 }

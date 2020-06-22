@@ -67,7 +67,6 @@ namespace BlockLimiter.Settings
         private int _maxBlockSizeStations = 0;
         private int _maxBlocksSmallGrid = 0;
         private int _maxBlocksLargeGrid = 0;
-        private bool _enableLog;
         private bool _gridConvertBlocking;
         private bool _blockOwnershipTransfer;
         private MtObservableCollection<LimitItem> _limitItems;
@@ -76,51 +75,30 @@ namespace BlockLimiter.Settings
         private bool _mergerBlocking;
         private List<string> _generalException;
         private bool _countProjection;
+        private bool _killNoOwnerBlocks;
+        private string _logFileName = "BlockLimiter-${shortdate}.log";
 
 
-        [Display(Order = 2, GroupName = "Main Settings", Name = "Server Name", Description = "")]
-        public string ServerName
-        {
-            get => _serverName;
-            set
-            {
-                _serverName = string.IsNullOrEmpty(value) ? "Blocklimiter" : value; 
-                OnPropertyChanged();
-                Instance.Save(); 
-            }
-        }
+        #region General BlockCount Limit
 
-        [Display(Order = 1, GroupName = "Main Settings", Name = "Enable")]
-        public bool EnableLimits
+        [Display(Order = 1, Name = "SmallGrids", GroupName = "General BlockCount Limit", Description = "Max size for small grids")]
+        public int MaxBlocksSmallGrid
         {
-            get => _enable;
+            get => _maxBlocksSmallGrid;
             set
             {
-                _enable = value;
-                Changed();
-                if (value) BlockLimiter.ResetLimits();
-            }
-        }
-        
-        
-        [Display(Order = 5, GroupName = "Main Settings", Name =  "Enable Grid Convert Blocking", Description = "Will block grid conversion if grid will violate limits upon conversion")]
-        public bool EnableConvertBlock
-        {
-            get => _gridConvertBlocking;
-            set
-            {
-                _gridConvertBlocking = value; 
+                _maxBlocksSmallGrid = value; 
                 Changed();
             }
         }
-        
-        [Display(Order = 5, GroupName = "Main Settings", Name =  "Enable Ownership Transfer Blocking", Description = "Will block ownership if player exceeds limit of block being transferred to them")]
-        public bool BlockOwnershipTransfer
+
+        [Display(Order = 2, Name = "LargeGrids", GroupName = "General BlockCount Limit", Description = "Max size for large grids")]
+        public int MaxBlocksLargeGrid
         {
-            get => _blockOwnershipTransfer;
+            get => _maxBlocksLargeGrid;
             set
             {
-                _blockOwnershipTransfer = value;
+                _maxBlocksLargeGrid = value; 
                 Changed();
             }
         }
@@ -147,24 +125,74 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 2, Name = "LargeGrids", GroupName = "General BlockCount Limit", Description = "Max size for large grids")]
-        public int MaxBlocksLargeGrid
+        #endregion
+
+        #region Main Settings
+
+        [Display(Order = 1, GroupName = "Main Settings", Name = "Enable")]
+        public bool EnableLimits
         {
-            get => _maxBlocksLargeGrid;
+            get => _enable;
             set
             {
-                _maxBlocksLargeGrid = value; 
+                _enable = value;
+                Changed();
+                if (value) BlockLimiter.ResetLimits();
+            }
+        }
+
+        [Display(Order = 2, GroupName = "Main Settings", Name = "Server Name", Description = "Name used by the plugin when sending info to players")]
+        public string ServerName
+        {
+            get => _serverName;
+            set
+            {
+                _serverName = string.IsNullOrEmpty(value) ? "Blocklimiter" : value; 
+                OnPropertyChanged();
+                Instance.Save(); 
+            }
+        }
+
+        [Display(Order = 3, GroupName = "Main Settings", Name = "Deny Message", Description = "Message posted when limit is reached")]
+        public string DenyMessage
+        {
+            get => _denyMessage;
+            set
+            {
+                _denyMessage = value; 
+                Changed();
+            }
+        }
+
+        [Display(Order = 4, GroupName = "Main Settings", Name = "Projection Deny Message", Description = "Message posted when blocks are removed from projection")]
+        public string ProjectionDenyMessage
+        {
+            get => _projectionDenyMessage;
+            set
+            {
+                _projectionDenyMessage = value; 
+                Changed();
+            }
+        }
+
+        [Display(Order = 5, GroupName = "Main Settings", Name =  "Enable Grid Convert Blocking", Description = "Will block grid conversion if grid will violate limits upon conversion")]
+        public bool EnableConvertBlock
+        {
+            get => _gridConvertBlocking;
+            set
+            {
+                _gridConvertBlocking = value; 
                 Changed();
             }
         }
         
-        [Display(Order = 1, Name = "SmallGrids", GroupName = "General BlockCount Limit", Description = "Max size for small grids")]
-        public int MaxBlocksSmallGrid
+        [Display(Order = 6, GroupName = "Main Settings", Name =  "Enable Ownership Transfer Blocking", Description = "Will block ownership if player exceeds limit of block being transferred to them")]
+        public bool BlockOwnershipTransfer
         {
-            get => _maxBlocksSmallGrid;
+            get => _blockOwnershipTransfer;
             set
             {
-                _maxBlocksSmallGrid = value; 
+                _blockOwnershipTransfer = value;
                 Changed();
             }
         }
@@ -182,7 +210,6 @@ namespace BlockLimiter.Settings
         }
 
         
-        
         [Display(Order = 8, GroupName = "Main Settings", Name = "Use Vanilla Limits", Description = "This will add vanilla block limits to limiter's checks")]
         public bool UseVanillaLimits
         {
@@ -195,17 +222,6 @@ namespace BlockLimiter.Settings
             }
         }
         
-
-        [Display(Order = 9, GroupName = "Main Settings", Name = "Enable Logs", Description = "Logs are only advice to check for issues with the limiter")]
-        public bool EnableLog
-        {
-            get => _enableLog;
-            set
-            {
-                _enableLog = value; 
-                Changed();
-            }
-        }
 
         [Display(Order = 10, GroupName = "Main Settings", Name = "Exception",
             Description = "Any player, grid or faction listed will be ignored by the plugin.")]
@@ -230,28 +246,32 @@ namespace BlockLimiter.Settings
                 Changed();
             }
         }
-        
-        [Display(Order = 3, GroupName = "Main Settings", Name = "Deny Message", Description = "Message posted when limit is reached")]
-        public string DenyMessage
+
+        [Display(Order = 12, GroupName = "Main Settings", Name = "ShutOff UnOwned Blocks", Description = "Turns off any blocks that becomes UnOwned")]
+        public bool KillNoOwnerBlocks
         {
-            get => _denyMessage;
+            get => _killNoOwnerBlocks;
             set
             {
-                _denyMessage = value; 
+                _killNoOwnerBlocks = value;
                 Changed();
             }
         }
-        
-        [Display(Order = 4, GroupName = "Main Settings", Name = "Projection Deny Message", Description = "Message posted when blocks are removed from projection")]
-        public string ProjectionDenyMessage
+
+        [Display(Order = 13, GroupName = "Main Settings", Name = "Log File Name",
+            Description = "Log file is saved under provided name. Leave empty to log into default Torch log file")]
+        public string LogFileName
         {
-            get => _projectionDenyMessage;
+            get => _logFileName;
             set
             {
-                _projectionDenyMessage = value; 
+                _logFileName = value;
                 Changed();
             }
         }
+        #endregion
+
+        #region Punishment
 
         [Display(Order = 1, Name = "Enable Annoyance Message", GroupName = "Punishment")]
         public bool Annoy
@@ -307,6 +327,8 @@ namespace BlockLimiter.Settings
                 Changed();
             }
         }
+
+        #endregion
 
         private void Changed(bool updated = true)
         {
@@ -391,7 +413,7 @@ namespace BlockLimiter.Settings
                         x.Serialize(writer, _instance);
                         writer.Close();
                     }
-                    Log.Info($"Saved");
+                    LoggingConfig.Set();
 
                 }
             }
@@ -402,7 +424,6 @@ namespace BlockLimiter.Settings
                     Log.Error(e);
                 }
             }
-
         }
 
 #endregion

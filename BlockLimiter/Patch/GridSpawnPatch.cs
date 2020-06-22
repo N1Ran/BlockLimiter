@@ -30,6 +30,8 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class GridSpawnPatch
     {
+        private static readonly Logger Log = BlockLimiter.Instance.Log;
+
         private static MethodInfo _showPasteFailed =
             typeof(MyCubeGrid).GetMethod("SendHudNotificationAfterPaste", BindingFlags.Static | BindingFlags.Public);
         public static void Patch(PatchContext ctx)
@@ -65,19 +67,23 @@ namespace BlockLimiter.Patch
             {
                 return true;
             }
-            if (BlockLimiterConfig.Instance.EnableLog)
-                BlockLimiter.Instance.Log.Info($"Blocked {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName} from spawning a grid");
+
+            Log.Info($"Blocked {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName} from spawning a grid");
             
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
 
             //This is needed to keep the wheel of misery away (staticEvent specifically)
-            Task.Run(() =>
+
+            if (remoteUserId > 0)
             {
-                Thread.Sleep(100);
-                Utilities.ValidationFailed();
-                Utilities.SendFailSound(remoteUserId);
-                NetworkManager.RaiseStaticEvent(_showPasteFailed, new EndpointId(remoteUserId), null);
-            });
+                Task.Run(() =>
+                {
+                    Thread.Sleep(100);
+                    Utilities.ValidationFailed();
+                    Utilities.SendFailSound(remoteUserId);
+                    NetworkManager.RaiseStaticEvent(_showPasteFailed, new EndpointId(remoteUserId), null);
+                });
+            }
 
             return false;
         }
@@ -110,9 +116,9 @@ namespace BlockLimiter.Patch
 
             var b = block.BlockPairName;
             var p = player.DisplayName;
-            if (BlockLimiterConfig.Instance.EnableLog)
-                BlockLimiter.Instance.Log.Info($"Blocked {p} from placing a {b}");
-            
+
+            Log.Info($"Blocked {p} from placing a {b}");
+
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
             var msg = BlockLimiterConfig.Instance.DenyMessage.Replace("{BN}", $"{b}");
             MyVisualScriptLogicProvider.SendChatMessage($"{msg}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);

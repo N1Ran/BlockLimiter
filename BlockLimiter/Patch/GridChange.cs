@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
-using NLog.Fluent;
 using Sandbox.Engine.Physics;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
@@ -24,6 +23,9 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class GridChange
     {
+        private static readonly Logger Log = LogManager.GetLogger("BlockLimiter");
+
+
         private static  readonly MethodInfo ConvertToStationRequest = typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.OnConvertedToStationRequest), BindingFlags.Public | BindingFlags.Instance);
         private static readonly MethodInfo ConvertToShipRequest = typeof(MyCubeGrid).GetMethod("OnConvertedToShipRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -114,7 +116,7 @@ namespace BlockLimiter.Patch
             
             if (grid == null)
             {
-                if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Warn("Null grid in GridChange handler");
+                Log.Warn("Null grid in GridChange handler");
                 return true;
             }
 
@@ -135,7 +137,7 @@ namespace BlockLimiter.Patch
                 return true;
             }
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
-            if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Info(
+            Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
@@ -153,7 +155,7 @@ namespace BlockLimiter.Patch
             var grid = __instance;
             if (grid == null)
             {
-                if (BlockLimiterConfig.Instance.EnableLog) BlockLimiter.Instance.Log.Warn("Null grid in GridChange handler");
+                Log.Warn("Null grid in GridChange handler");
                 return true;
             }
             var remoteUserId = MyEventContext.Current.Sender.Value;
@@ -171,7 +173,7 @@ namespace BlockLimiter.Patch
                 return true;
             }
             MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
-            if (BlockLimiterConfig.Instance.EnableLog)BlockLimiter.Instance.Log.Info(
+            Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
