@@ -4,7 +4,7 @@ using NLog.Targets;
 
 namespace BlockLimiter.Settings
 {
-    public class LoggingConfig
+    public static class LoggingConfig
     {
 
         public static void Set()

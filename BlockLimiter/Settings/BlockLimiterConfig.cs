@@ -374,6 +374,7 @@ namespace BlockLimiter.Settings
                             writer.Close();
                         }
                     }
+                    LoggingConfig.Set();
                 }
             }
             catch (Exception ex)

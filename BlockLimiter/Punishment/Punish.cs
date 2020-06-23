@@ -54,7 +54,7 @@ namespace BlockLimiter.Punishment
 
             if (BlockLimiterConfig.Instance.KillNoOwnerBlocks)
             {
-                var noOwnerBlocks = _blockCache.Where(x => x.OwnerId == 0).ToList();
+                var noOwnerBlocks = _blockCache.Where(x => x.BlockDefinition.ContainsComputer() && x.OwnerId == 0).ToList();
                 Block.KillBlocks(noOwnerBlocks);
             }
 

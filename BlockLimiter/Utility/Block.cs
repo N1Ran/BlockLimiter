@@ -34,6 +34,10 @@ namespace BlockLimiter.Utility
             Parallel.ForEach(blocks, block =>
             {
                 if (!(block.FatBlock is MyFunctionalBlock funcBlock) || funcBlock.Enabled == false) return;
+                if (!block.BlockDefinition.ContainsComputer())return;
+                Log.Info(
+                    $"Turned off {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
+
                 funcBlock.Enabled = false;
             });
         }
@@ -352,10 +356,7 @@ namespace BlockLimiter.Utility
                                     block.CubeGrid.RemoveBlock(block,true);
                                     continue;
                                 case LimitItem.PunishmentType.ShutOffBlock:
-                                    if (!(block.FatBlock is MyFunctionalBlock funcBlock) || funcBlock.Enabled == false) continue;
-                                    log.Info(
-                                        $"Turned off {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
-                                    funcBlock.Enabled = false;
+                                    KillBlock(block.FatBlock);
                                     continue;
                                 case LimitItem.PunishmentType.Explode:
                                         log.Info(

@@ -69,7 +69,7 @@ namespace BlockLimiter.Patch
             if (newOwner == 0)
             {
                 if (BlockLimiterConfig.Instance.KillNoOwnerBlocks)
-                    Block.KillBlocks(blocks);
+                    Block.KillBlocks(blocks.Where(x=>x.BlockDefinition.ContainsComputer()).ToList());
                 return true;
             }
 
