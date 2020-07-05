@@ -232,7 +232,6 @@ namespace BlockLimiter
             base.Init(torch);
             Instance = this;
             Load();
-            //CopyOver();
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)
                 _sessionManager.SessionStateChanged += SessionChanged;
@@ -262,8 +261,9 @@ namespace BlockLimiter
                 case TorchSessionState.Loaded:
                     DoInit();
                     EnableControl();
-                    GetVanillaLimits();
                     GridCache.Update();
+                    Block.FixIds();
+                    GetVanillaLimits();
                     BlockLimiterConfig.Instance.AllLimits = Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits);
                     ResetLimits();
                     break;
@@ -294,23 +294,6 @@ namespace BlockLimiter
 
         }
 
-        /*
-        
-        /// <summary>
-        /// TO Do Remove on next update
-        /// </summary>
-        private void CopyOver()
-        {
-            foreach (var limit in BlockLimiterConfig.Instance.LimitItems)
-            {
-                if (limit.BlockPairName.Count == 0) continue;
-                limit.BlockList.AddRange(limit.BlockPairName);
-                limit.BlockPairName.Clear();
-            }
-            BlockLimiterConfig.Instance.Save();
-
-        }
-        */
 
         public override void Dispose()
         {
@@ -319,6 +302,7 @@ namespace BlockLimiter
                 thread.Abort();
             _processThread.Abort();
         }
+
 
         public static void ResetLimits(bool updateGrids = true, bool updatePlayers = true, bool updateFactions = true)
         {
@@ -335,36 +319,40 @@ namespace BlockLimiter
             {
                 var grids = new HashSet<MyCubeGrid>();
                 GridCache.GetGrids(grids);
-                
-                
                 Task.Run(() =>
                 {
-                    Thread.Sleep(500);
-                    foreach (var grid in grids)
+                    Parallel.ForEach(grids, grid =>
                     {
-                        if (grid == null) continue;
-                        Parallel.Invoke(()=>
-                        {
-                            Thread.Sleep(100);
-                            UpdateLimits.GridLimit(grid);
-                        });
-                    }
+                        if (grid == null) return;
+
+                        UpdateLimits.GridLimit(grid);
+                    });
                 });
+
+
             }
 
             if (updatePlayers)
             {
-                Task.Run(() =>
+                var players = MySession.Static.Players.GetAllPlayers();
+                if (players.Count > 0)
                 {
-                    Thread.Sleep(300);
-                    foreach (var player in MySession.Static.Players.GetAllPlayers())
+                    Task.Run(() =>
                     {
-                        if (player.SteamId == 0) continue;
-                        var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
-                        if (identity == 0) continue;
-                        Parallel.Invoke(()=>UpdateLimits.PlayerLimit(identity));
-                    }
-                });
+                        Parallel.ForEach(players, player =>
+                        {
+                            if (player.SteamId == 0) return;
+
+                            var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
+
+                            if (identity == 0) return;
+
+                            UpdateLimits.PlayerLimit(identity);
+                        });
+                    });
+
+                }
+
             }
 
             if (updateFactions)
@@ -372,11 +360,14 @@ namespace BlockLimiter
                 Task.Run(() =>
                 {
                     Thread.Sleep(100);
-                    foreach (var (id,faction) in MySession.Static.Factions.Factions)
+                    Parallel.ForEach(MySession.Static.Factions, factionInfo =>
                     {
-                        if (faction.IsEveryoneNpc() || id == 0) continue;
-                        Parallel.Invoke(()=>UpdateLimits.FactionLimit(id));
-                    }
+                        var (id, faction) = factionInfo;
+
+                        if (faction.IsEveryoneNpc() || id == 0) return;
+
+                        UpdateLimits.FactionLimit(id);
+                    });
                 });
             }
 

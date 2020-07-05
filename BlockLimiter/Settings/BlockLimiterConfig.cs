@@ -258,7 +258,8 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 13, GroupName = "Main Settings", Name = "Log File Name",
+
+        [Display(Order = 14, GroupName = "Main Settings", Name = "Log File Name",
             Description = "Log file is saved under provided name. Leave empty to log into default Torch log file")]
         public string LogFileName
         {

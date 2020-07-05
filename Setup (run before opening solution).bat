@@ -2,7 +2,7 @@
 
 @echo off
 setglobal
-set Torch=C:\Users\Olatide\Torch
+set Torch=D:\GameFolder\Torch
 endglobal
 set path=%Torch%\DedicatedServer64
 mklink /J GameBinaries "%path%"

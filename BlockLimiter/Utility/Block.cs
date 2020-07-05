@@ -337,45 +337,74 @@ namespace BlockLimiter.Utility
         {
             if (removalCollection.Count == 0) return;
             var log = BlockLimiter.Instance.Log;
-                        
+
+            
             Task.Run(() =>
             {
-                
-                MySandboxGame.Static.Invoke(() =>
+                Parallel.ForEach(removalCollection, collective =>
                 {
-                    
-                    foreach (var (block, punishment) in removalCollection)
+                    var (block, punishment) = collective;
+                    switch (punishment)
                     {
-                        try
-                        {
-                            switch (punishment)
+                        case LimitItem.PunishmentType.None:
+                            return;
+                        case LimitItem.PunishmentType.DeleteBlock:
+                            MySandboxGame.Static.Invoke(()=>
                             {
-                                case LimitItem.PunishmentType.DeleteBlock:
-                                    log.Info(
-                                        $"removed {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
-                                    block.CubeGrid.RemoveBlock(block,true);
-                                    continue;
-                                case LimitItem.PunishmentType.ShutOffBlock:
-                                    KillBlock(block.FatBlock);
-                                    continue;
-                                case LimitItem.PunishmentType.Explode:
-                                        log.Info(
-                                        $"Destroyed {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
-                                    block.DoDamage(block.BlockDefinition.MaxIntegrity * 10, MyDamageType.Explosion);
-                                    continue;
-                                default:
-                                    throw new ArgumentOutOfRangeException();
-                            }
-
-                        }
-                        catch (Exception e)
-                        {
-                            Log.Error(e);
-                        }
+                                block.CubeGrid.RemoveBlock(block);
+                            },"BlockLimiter");
+                            log.Info(
+                                $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
+                            return;
+                        case LimitItem.PunishmentType.ShutOffBlock:
+                            KillBlock(block.FatBlock);
+                            log.Info($"{block.BlockDefinition} shut off from {block.CubeGrid.DisplayName}");
+                            return;
+                        case LimitItem.PunishmentType.Explode:
+                            log.Info(
+                                $"Destroyed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
+                            MySandboxGame.Static.Invoke(() =>
+                            {
+                                block.DoDamage(block.BlockDefinition.MaxIntegrity * 10, MyDamageType.Explosion);
+                            },"BlockLimiter");
+                            return;
+                        default:
+                            return;
                     }
-                }, "BlockLimiter");
+                });
             });
 
+        }
+
+        public static void FixIds()
+        {
+            var blockCache = new HashSet<MySlimBlock>();
+
+            GridCache.GetBlocks(blockCache);
+
+            Task.Run(() =>
+            {
+                Parallel.ForEach(blockCache, block =>
+                {
+                    if (block == null  || !block.BlockDefinition.ContainsComputer()) return;
+
+                    if (block.OwnerId == block.BuiltBy) return;
+
+                    var changeOwnership = BlockLimiterConfig.Instance.BlockOwnershipTransfer;
+                    BlockLimiterConfig.Instance.BlockOwnershipTransfer = false;
+
+                    if (block.OwnerId == 0)
+                    {
+                        block.FatBlock.ChangeOwner(block.BuiltBy,MyOwnershipShareModeEnum.Faction);
+                        BlockLimiterConfig.Instance.BlockOwnershipTransfer = changeOwnership;
+
+                        return;
+                    }
+
+                    BlockLimiterConfig.Instance.BlockOwnershipTransfer = changeOwnership;
+                    block.TransferAuthorship(block.OwnerId);
+                });
+            });
         }
 
 

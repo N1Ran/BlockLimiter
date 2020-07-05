@@ -167,6 +167,14 @@ namespace BlockLimiter.Commands
             Context.Respond("Limits reloaded from config file");
         }
 
+        [Command("rematch ids", "Attempts to rematch owner/builtby Ids")]
+        [Permission(MyPromoteLevel.Moderator)]
+        public void FixIds()
+        {
+            Block.FixIds();
+            Context.Respond("Ids re-matched");
+        }
+
         
         [Command("violations", "gets the list of violations per limit")]
         [Permission(MyPromoteLevel.Moderator)]

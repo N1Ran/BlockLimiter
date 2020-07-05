@@ -1,28 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
-using System.Security.Authentication.ExtendedProtection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
 using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Character;
-using Sandbox.Game.Gui;
 using Sandbox.Game.World;
 using Torch;
 using Torch.Managers;
 using Torch.Managers.PatchManager;
-using Torch.Mod;
-using Torch.Mod.Messages;
 using VRage.Game;
-using VRage.Game.Components;
 using VRage.Network;
 
 namespace BlockLimiter.Patch
@@ -32,8 +22,9 @@ namespace BlockLimiter.Patch
     {
         private static readonly Logger Log = BlockLimiter.Instance.Log;
 
-        private static MethodInfo _showPasteFailed =
+        private static readonly MethodInfo ShowPasteFailed =
             typeof(MyCubeGrid).GetMethod("SendHudNotificationAfterPaste", BindingFlags.Static | BindingFlags.Public);
+
         public static void Patch(PatchContext ctx)
         {
             ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
@@ -47,13 +38,13 @@ namespace BlockLimiter.Patch
         /// <summary>
         /// Decides if grid being spawned is permitted
         /// </summary>
-        /// <param name="entities"></param>
+        /// <param name="parameters"></param>
         /// <returns></returns>
-        private static bool AttemptSpawn(List<MyObjectBuilder_CubeGrid> entities)
+        private static bool AttemptSpawn(MyCubeGrid.MyPasteGridParameters parameters)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
 
-            var grids = entities;
+            var grids = parameters.Entities;
 
             if (grids.Count == 0) return false;
 
@@ -81,7 +72,7 @@ namespace BlockLimiter.Patch
                     Thread.Sleep(100);
                     Utilities.ValidationFailed();
                     Utilities.SendFailSound(remoteUserId);
-                    NetworkManager.RaiseStaticEvent(_showPasteFailed, new EndpointId(remoteUserId), null);
+                    NetworkManager.RaiseStaticEvent(ShowPasteFailed, new EndpointId(remoteUserId), null);
                 });
             }
 

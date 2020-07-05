@@ -20,7 +20,6 @@ namespace BlockLimiter.Utility
             var blockCache = new HashSet<MySlimBlock>();
             var playerBlocks = new HashSet<MySlimBlock>();
             
-            var faction = MySession.Static.Factions.GetPlayerFaction(id);
             
             GridCache.GetBlocks(blockCache);
             if (blockCache.Count == 0)
@@ -38,32 +37,28 @@ namespace BlockLimiter.Utility
                 }
                 return;
             }
-            
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+
+            Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, limit =>
             {
-                Parallel.Invoke(() =>
+                if (!limit.LimitPlayers)
                 {
-                    if (!limit.LimitPlayers
-                        || Utilities.IsExcepted(id, limit.Exceptions))
-                    {
-                        limit.FoundEntities.Remove(id);
-                        return;
-                    }
+                    limit.FoundEntities.Remove(id);
+                    return;
+                }
+                var limitedBlocks = playerBlocks.Count(x =>
+                    Block.IsMatch(x.BlockDefinition, limit));
+                if (limitedBlocks == 0)
+                {
+                    limit.FoundEntities.Remove(id);
+                    return;
+                }
 
-                    var limitedBlocks = playerBlocks.Count(x =>
-                        Block.IsMatch(x.BlockDefinition, limit));
-                    if (limitedBlocks == 0)
-                    {
-                        limit.FoundEntities.Remove(id);
-                        return;
-                    }
-                
-                    limit.FoundEntities[id] = limitedBlocks;
+                limit.FoundEntities[id] = limitedBlocks;
 
-                });
-                
 
-            }
+            });
+
+
         }
 
         
@@ -76,32 +71,31 @@ namespace BlockLimiter.Utility
             
             if (blocks.Count == 0) return;
 
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, limit =>
             {
-                Parallel.Invoke(() =>
+                if (!limit.LimitGrids)
                 {
-                    if (!limit.LimitGrids)
-                    {
-                        limit.FoundEntities.Remove(grid.EntityId);
-                        return;
-                    }
+                    limit.FoundEntities.Remove(grid.EntityId);
+                    return;
+                }
                 
-                    if (!Grid.IsGridType(grid,limit))
-                    {
-                        limit.FoundEntities.Remove(grid.EntityId);
-                        return;
-                    }
+                if (!Grid.IsGridType(grid,limit))
+                {
+                    limit.FoundEntities.Remove(grid.EntityId);
+                    return;
+                }
 
-                    var limitedBlocks = blocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
+                var limitedBlocks = blocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
 
-                    if (limitedBlocks == 0)
-                    {
-                        limit.FoundEntities.Remove(grid.EntityId);
-                        return;
-                    }
-                    limit.FoundEntities[grid.EntityId] = limitedBlocks;
-                });
-            }
+                if (limitedBlocks == 0)
+                {
+                    limit.FoundEntities.Remove(grid.EntityId);
+                    return;
+                }
+                limit.FoundEntities[grid.EntityId] = limitedBlocks;
+
+            });
+
         }
 
         
@@ -112,7 +106,7 @@ namespace BlockLimiter.Utility
             var factionBlocks = new HashSet<MySlimBlock>();
             
             var faction = MySession.Static.Factions.TryGetFactionById(id);
-            
+            var limits = BlockLimiterConfig.Instance.AllLimits;
             if (faction == null) return;
             
             GridCache.GetBlocks(blockCache);
@@ -120,29 +114,36 @@ namespace BlockLimiter.Utility
                 return;
             
             factionBlocks.UnionWith(blockCache.Where(x => x.FatBlock?.GetOwnerFactionTag() == faction.Tag));
-            
-            if (factionBlocks.Count == 0) return;
 
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            if (factionBlocks.Count == 0)
             {
-                
-                Parallel.Invoke(() =>
+                foreach (var limit in limits)
                 {
-                    if (!limit.LimitFaction || Utilities.IsExcepted(faction.FactionId, limit.Exceptions))
-                    {
-                        limit.FoundEntities.Remove(id);
-                        return;
-                    }
-                    var factionBlockCount = factionBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
-
-                    if (factionBlockCount == 0)
-                    {
-                        limit.FoundEntities.Remove(id);
-                        return;
-                    }
-                    limit.FoundEntities[id] = factionBlockCount;
-                });
+                  limit.FoundEntities.Remove(id);  
+                }
+                return;
             }
+
+            Parallel.ForEach(limits, limit =>
+            {
+                if (!limit.LimitFaction)
+                {
+                    limit.FoundEntities.Remove(id);
+                    return;
+                }
+
+                var factionBlockCount = factionBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
+
+                if (factionBlockCount == 0)
+                {
+                    limit.FoundEntities.Remove(id);
+                    return;
+                }
+
+                limit.FoundEntities[id] = factionBlockCount;
+
+            });
+
         }
         
     }
