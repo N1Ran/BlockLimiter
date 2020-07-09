@@ -1,13 +1,17 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
+using ParallelTasks;
 using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
+using Sandbox.Game.SessionComponents;
 using Sandbox.Game.World;
 using Torch;
 using Torch.Managers;
@@ -24,6 +28,10 @@ namespace BlockLimiter.Patch
 
         private static readonly MethodInfo ShowPasteFailed =
             typeof(MyCubeGrid).GetMethod("SendHudNotificationAfterPaste", BindingFlags.Static | BindingFlags.Public);
+        
+        private static readonly MethodInfo SpawnGrid =
+            typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation", BindingFlags.Static | BindingFlags.Public);
+
 
         public static void Patch(PatchContext ctx)
         {
@@ -32,6 +40,7 @@ namespace BlockLimiter.Patch
             
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation",  BindingFlags.Public  |  BindingFlags.Static)).
                 Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(AttemptSpawn), BindingFlags.Static |  BindingFlags.NonPublic));
+            
 
         }
 
@@ -43,7 +52,6 @@ namespace BlockLimiter.Patch
         private static bool AttemptSpawn(MyCubeGrid.MyPasteGridParameters parameters)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
-
             var grids = parameters.Entities;
 
             if (grids.Count == 0) return false;
@@ -53,7 +61,69 @@ namespace BlockLimiter.Patch
             if (remoteUserId == 0) return true;
 
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
+            var playerName = MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName;
 
+            grids.RemoveAll(x => Grid.IsSizeViolation(x));
+
+            if (grids.Count == 0)
+            {
+                Log.Info($"Blocked {playerName} from spawning a grid");
+
+                if (remoteUserId > 0)
+                {
+                    Thread.Sleep(100);
+                    Utilities.ValidationFailed();
+                    Utilities.SendFailSound(remoteUserId);
+                    NetworkManager.RaiseStaticEvent(ShowPasteFailed, new EndpointId(remoteUserId), null);
+                }
+
+                return false;
+            }
+
+            var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
+
+            var removalCount = 0;
+            var removedList = new List<string>();
+            foreach (var grid in grids)
+            {
+                foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+                {
+                    var fCount = 0;
+
+                    if (Utilities.IsExcepted(playerId, limit.Exceptions)) continue;
+                    var matchBlocks = new HashSet<MyObjectBuilder_CubeBlock>(grid.CubeBlocks.Where(x => Block.IsMatch(Utilities.GetDefinition(x), limit)));
+                    limit.FoundEntities.TryGetValue(playerId, out var pCount);
+                    if (playerFaction != null)
+                        limit.FoundEntities.TryGetValue(playerFaction.FactionId, out fCount);
+
+                    foreach (var block in matchBlocks)
+                    {
+                        if (Math.Abs(matchBlocks.Count + pCount - removalCount) <= limit.Limit && Math.Abs(fCount + matchBlocks.Count - removalCount) <= limit.Limit) break;
+                        removalCount++;
+                        var blockDef = Utilities.GetDefinition(block).ToString().Substring(16);
+                        grid.CubeBlocks.Remove(block);
+                        if (removedList.Contains(blockDef))
+                            continue;
+                        removedList.Add(blockDef);
+                    }
+
+                }
+            }
+
+            if (removalCount == 0) return true;
+            
+            
+            parameters.Entities = grids;
+
+
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,removedList,removalCount);
+
+            MyVisualScriptLogicProvider.SendChatMessage($"{msg}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+
+
+            Log.Info($"Removed {removalCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
+            return true;
+            /*
             if (grids.All(x => Grid.CanSpawn(x, playerId)))
             {
                 return true;
@@ -77,6 +147,7 @@ namespace BlockLimiter.Patch
             }
 
             return false;
+            */
         }
 
         /// <summary>
@@ -105,13 +176,12 @@ namespace BlockLimiter.Patch
             }
 
 
-            var b = block.BlockPairName;
             var p = player.DisplayName;
 
-            Log.Info($"Blocked {p} from placing a {b}");
+            Log.Info($"Blocked {p} from placing {block}");
 
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-            var msg = BlockLimiterConfig.Instance.DenyMessage.Replace("{BN}", $"{b}");
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{block.ToString().Substring(16)});
             MyVisualScriptLogicProvider.SendChatMessage($"{msg}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
 
             Utilities.SendFailSound(remoteUserId);

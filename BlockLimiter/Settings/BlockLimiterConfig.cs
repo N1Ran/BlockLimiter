@@ -70,8 +70,11 @@ namespace BlockLimiter.Settings
         private bool _gridConvertBlocking;
         private bool _blockOwnershipTransfer;
         private MtObservableCollection<LimitItem> _limitItems;
-        private string _denyMessage = "Limit reached";
-        private string _projectionDenyMessage = "{BC} blocks removed from projection due for going over limit";
+        private string _denyMessage = "Limit reached - " +
+                                      "{BC} blocks denied  " +
+                                      "BlockNames: {BL}";
+        private string _projectionDenyMessage = "{BC} blocks removed from projection. " +
+                                                "BlockNames ==> {BL}";
         private bool _mergerBlocking;
         private List<string> _generalException;
         private bool _countProjection;
@@ -153,7 +156,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 3, GroupName = "Main Settings", Name = "Deny Message", Description = "Message posted when limit is reached")]
+        [Display(Order = 3, GroupName = "Main Settings", Name = "Deny Message", Description = "Message posted when limit is reached.  {BL} to list names of denied blocks. {BC} to give count of affected blocks")]
         public string DenyMessage
         {
             get => _denyMessage;
@@ -164,7 +167,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 4, GroupName = "Main Settings", Name = "Projection Deny Message", Description = "Message posted when blocks are removed from projection")]
+        [Display(Order = 4, GroupName = "Main Settings", Name = "Projection Deny Message", Description = "Message posted when blocks are removed from projection.  {BL} to list names of denied blocks. {BC} to give count of affected blocks")]
         public string ProjectionDenyMessage
         {
             get => _projectionDenyMessage;

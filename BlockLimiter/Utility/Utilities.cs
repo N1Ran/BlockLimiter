@@ -36,6 +36,17 @@ namespace BlockLimiter.Utility
         [ReflectedStaticMethod(Type = typeof(MyCubeBuilder), Name = "SpawnGridReply", OverrideTypes = new []{typeof(bool), typeof(ulong)})]
         private static Action<bool, ulong> _spawnGridReply;
 
+
+        public static string GetMessage(string msg, List<string> blockList, int count = 1)
+        {
+            var returnMsg = "";
+
+
+            returnMsg = msg.Replace("{BC}", count.ToString()).Replace("{BL}", string.Join(",", blockList));
+
+
+            return returnMsg;
+        }
         public static string GetPlayerNameFromSteamId(ulong steamId)
         {
             var pid = MySession.Static.Players.TryGetIdentityId(steamId);

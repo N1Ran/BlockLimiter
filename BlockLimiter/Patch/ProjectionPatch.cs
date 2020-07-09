@@ -93,7 +93,8 @@ namespace BlockLimiter.Patch
                 proj.SendRemoveProjection();
                 Utilities.SendFailSound(remoteUserId);
                 Utilities.ValidationFailed();
-                MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+                var msg1 = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{"Null"},grid.CubeBlocks.Count);
+                MyVisualScriptLogicProvider.SendChatMessage(msg1,BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
                 
                 Log.Info($"Projection blocked from {player.DisplayName} due to size limit");
                 
@@ -110,13 +111,12 @@ namespace BlockLimiter.Patch
             var count = 0;
 
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
-
+            var removedList = new List<string>();
             foreach (var limit in limits)
             {
                 if (Utilities.IsExcepted(player.Identity.IdentityId, limit.Exceptions)|| Utilities.IsExcepted(proj.CubeGrid.EntityId,limit.Exceptions)) continue;
 
-                var pBlocks = new List<MyObjectBuilder_CubeBlock>();
-                pBlocks.AddRange(projectedBlocks.Where(x => Block.IsMatch(Utilities.GetDefinition(x), limit)));
+                var pBlocks = new HashSet<MyObjectBuilder_CubeBlock>(projectedBlocks.Where(x => Block.IsMatch(Utilities.GetDefinition(x), limit)));
                 
                 if (pBlocks.Count == 0) continue;
 
@@ -133,6 +133,9 @@ namespace BlockLimiter.Patch
                     removalCount++;
                     count++;
                     projectedBlocks.Remove(block);
+                    var blockDef = Utilities.GetDefinition(block).ToString().Substring(16);
+                    if (removedList.Contains(blockDef))continue;
+                    removedList.Add(blockDef);
                 }
 
             }
@@ -154,9 +157,9 @@ namespace BlockLimiter.Patch
                 Log.Error(e);
             }
 
-            var msg = BlockLimiterConfig.Instance.ProjectionDenyMessage.Replace("{BC}", $"{count}");
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.ProjectionDenyMessage,removedList, count);
 
-            MyVisualScriptLogicProvider.SendChatMessage($"{msg}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+            MyVisualScriptLogicProvider.SendChatMessage(msg, BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
 
             return true;
 
