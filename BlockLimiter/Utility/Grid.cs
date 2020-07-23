@@ -54,7 +54,7 @@ namespace BlockLimiter.Utility
 
         public static bool IsSizeViolation(MyCubeGrid grid, bool converting = false)
         {
-            if (grid == null)
+            if (grid == null || Utilities.IsExcepted(grid.EntityId, new List<string>()) || grid.BigOwners.Any(x=>Utilities.IsExcepted(x,new List<string>())))
                 return false;
             
             var gridSize = grid.CubeBlocks.Count;

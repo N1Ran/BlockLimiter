@@ -378,6 +378,8 @@ namespace BlockLimiter.Utility
 
         public static void FixIds()
         {
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+                return;
             var blockCache = new HashSet<MySlimBlock>();
 
             GridCache.GetBlocks(blockCache);
@@ -393,7 +395,7 @@ namespace BlockLimiter.Utility
                     var changeOwnership = BlockLimiterConfig.Instance.BlockOwnershipTransfer;
                     BlockLimiterConfig.Instance.BlockOwnershipTransfer = false;
 
-                    if (block.OwnerId == 0)
+                    if (block.OwnerId == 0 && block.BuiltBy > 0)
                     {
                         block.FatBlock.ChangeOwner(block.BuiltBy,MyOwnershipShareModeEnum.Faction);
                         BlockLimiterConfig.Instance.BlockOwnershipTransfer = changeOwnership;

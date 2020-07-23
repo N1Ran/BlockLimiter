@@ -16,6 +16,8 @@ using BlockLimiter.Utility;
 using Torch;
 using Torch.Views;
 using NLog;
+using Sandbox.Game.World;
+using Sandbox.ModAPI;
 using VRage.Collections;
 using VRage.Game;
 
@@ -70,11 +72,8 @@ namespace BlockLimiter.Settings
         private bool _gridConvertBlocking;
         private bool _blockOwnershipTransfer;
         private MtObservableCollection<LimitItem> _limitItems;
-        private string _denyMessage = "Limit reached - " +
-                                      "{BC} blocks denied  " +
-                                      "BlockNames: {BL}";
-        private string _projectionDenyMessage = "{BC} blocks removed from projection. " +
-                                                "BlockNames ==> {BL}";
+        private string _denyMessage = "Limit reached \n{BC} blocks denied \nBlockNames: \n{BL}";
+        private string _projectionDenyMessage = "{BC} blocks removed from Projection. \nBlockNames = \ndO{BL}";
         private bool _mergerBlocking;
         private List<string> _generalException;
         private bool _countProjection;
@@ -140,7 +139,7 @@ namespace BlockLimiter.Settings
             {
                 _enable = value;
                 Changed();
-                if (value) BlockLimiter.ResetLimits();
+                if (value && MyAPIGateway.Session == null) BlockLimiter.Activate();
             }
         }
 

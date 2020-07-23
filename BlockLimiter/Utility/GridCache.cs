@@ -111,6 +111,24 @@ namespace BlockLimiter.Utility
             }
         }
 
+        public static void GetPlayerBlocks(HashSet<MySlimBlock> entities, long id)
+        {
+            using(_entityLock.AcquireSharedUsing())
+            {
+                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks.Where(x=>x.OwnerId == id)));
+            }
+        }
+
+        public static void GetFactionBlocks(HashSet<MySlimBlock> entities, long id)
+        {
+            var faction = MySession.Static.Factions.TryGetFactionById(id);
+            if (faction == null)return;
+            using(_entityLock.AcquireSharedUsing())
+            {
+                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks.Where(x=>x.FatBlock.GetOwnerFactionTag() == faction.Tag)));
+            }
+        }
+
         private static void UpdateBuilders()
         {
             Parallel.ForEach(_dirtyEntities, g => UpdateGridBuilders(g));

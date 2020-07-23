@@ -71,6 +71,8 @@ namespace BlockLimiter
 
         private void MyEntitiesOnOnEntityAdd(MyEntity entity)
         {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return;
+
             if (!(entity is MyCubeGrid grid)) return;
             if (!BlockLimiterConfig.Instance.CountProjections && (grid.Projector != null||grid.IsPreview)) return;
 
@@ -86,6 +88,8 @@ namespace BlockLimiter
 
         private void FactionsOnFactionStateChanged(MyFactionStateChange factionState, long fromFaction, long toFaction, long playerId, long senderId)
         {
+            if (!BlockLimiterConfig.Instance.EnableLimits || (factionState != MyFactionStateChange.FactionMemberLeave && factionState != MyFactionStateChange.FactionMemberAcceptJoin && factionState != MyFactionStateChange.RemoveFaction
+                ))return;
             if (factionState == MyFactionStateChange.RemoveFaction)
             {
                 foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
@@ -105,6 +109,8 @@ namespace BlockLimiter
 
         private void MyCubeGridsOnBlockBuilt(MyCubeGrid grid, MySlimBlock block)
         {
+            if (grid == null || !BlockLimiterConfig.Instance.EnableLimits) return;
+
             if (!GridCache.TryGetGridById(grid.EntityId, out _))
             {
                 GridCache.AddGrid(grid.EntityId);
@@ -117,7 +123,7 @@ namespace BlockLimiter
 
         private static void MyCubeGridOnOnSplitGridCreated(MyCubeGrid grid)
         {
-            if (grid == null) return;
+            if (grid == null || !BlockLimiterConfig.Instance.EnableLimits) return;
             
             Task.Run(() =>
             {
@@ -131,6 +137,7 @@ namespace BlockLimiter
 
         private static void StaticOnClientJoined(ulong obj)
         {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return;
             var player = MySession.Static.Players.TryGetPlayerBySteamId(obj);
             if (player == null)return;
             UpdateLimits.PlayerLimit(player.Identity.IdentityId);
@@ -245,7 +252,7 @@ namespace BlockLimiter
             base.Update();
             if (MyAPIGateway.Session == null|| !BlockLimiterConfig.Instance.EnableLimits)
                 return;
-            if (++_updateCounter % 1000 == 0)
+            if (++_updateCounter % 100 == 0)
             {
                 GridCache.Update();
             }
@@ -261,18 +268,28 @@ namespace BlockLimiter
                 case TorchSessionState.Loaded:
                     DoInit();
                     EnableControl();
-                    GridCache.Update();
-                    Block.FixIds();
                     GetVanillaLimits();
-                    BlockLimiterConfig.Instance.AllLimits = Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits);
-                    ResetLimits();
+                    GridCache.Update();
+                    if (BlockLimiterConfig.Instance.EnableLimits)
+                    {
+                        Activate();
+                    }
                     break;
                 case TorchSessionState.Unloading:
                     Dispose();
                     break;
+                default:
+                    return;
             }
         }
 
+        public static void Activate()
+        {
+            BlockLimiterConfig.Instance.AllLimits = Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits);
+            ResetLimits();
+            Block.FixIds();
+
+        }
         private static void Load()
         {
             BlockLimiterConfig.Instance.Load();

@@ -42,7 +42,7 @@ namespace BlockLimiter.Utility
             var returnMsg = "";
 
 
-            returnMsg = msg.Replace("{BC}", count.ToString()).Replace("{BL}", string.Join(",", blockList));
+            returnMsg = msg.Replace("{BC}", count.ToString()).Replace("{BL}", string.Join("\n", blockList));
 
 
             return returnMsg;
@@ -223,13 +223,12 @@ namespace BlockLimiter.Utility
 
         public static HashSet<LimitItem> UpdateLimits(bool useVanilla)
         {
-            var items = new HashSet<LimitItem>();
+            var items = new HashSet<LimitItem>(BlockLimiterConfig.Instance.LimitItems);
             if (useVanilla && BlockLimiter.Instance.VanillaLimits.Count > 0)
             {
                 items.UnionWith(BlockLimiter.Instance.VanillaLimits);
             }
 
-            items.UnionWith(BlockLimiterConfig.Instance.LimitItems);
             return items;
         }
 

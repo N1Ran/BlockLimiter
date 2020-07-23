@@ -17,18 +17,10 @@ namespace BlockLimiter.Utility
         public static void PlayerLimit(long id)
         {
             if (id == 0) return;
-            var blockCache = new HashSet<MySlimBlock>();
             var playerBlocks = new HashSet<MySlimBlock>();
-            
-            
-            GridCache.GetBlocks(blockCache);
-            if (blockCache.Count == 0)
-            {
-                return;
-            }
-            
-            playerBlocks.UnionWith(blockCache.Where(x=> Block.IsOwner(x,id)));
 
+            GridCache.GetPlayerBlocks(playerBlocks,id);
+            
             if (playerBlocks.Count == 0)
             {
                 foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
@@ -102,27 +94,23 @@ namespace BlockLimiter.Utility
         public static void FactionLimit(long id)
         {
             if (id == 0) return;
-            var blockCache = new HashSet<MySlimBlock>();
             var factionBlocks = new HashSet<MySlimBlock>();
-            
-            var faction = MySession.Static.Factions.TryGetFactionById(id);
             var limits = BlockLimiterConfig.Instance.AllLimits;
-            if (faction == null) return;
-            
-            GridCache.GetBlocks(blockCache);
-            if (blockCache.Count == 0)
-                return;
-            
-            factionBlocks.UnionWith(blockCache.Where(x => x.FatBlock?.GetOwnerFactionTag() == faction.Tag));
+
+            GridCache.GetFactionBlocks(factionBlocks,id);
 
             if (factionBlocks.Count == 0)
             {
                 foreach (var limit in limits)
                 {
-                  limit.FoundEntities.Remove(id);  
+                    limit.FoundEntities.Remove(id);  
                 }
                 return;
             }
+
+
+            var faction = MySession.Static.Factions.TryGetFactionById(id);
+            if (faction == null) return;
 
             Parallel.ForEach(limits, limit =>
             {

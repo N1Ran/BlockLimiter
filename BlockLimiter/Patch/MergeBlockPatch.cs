@@ -45,7 +45,7 @@ namespace BlockLimiter.Patch
 
             var mergeBlock = __instance;
 
-            if (mergeBlock?.Other == null)
+            if (mergeBlock?.Other == null )
                 return true;
             
             if (mergeBlock.IsLocked || !mergeBlock.IsFunctional || !mergeBlock.Other.IsFunctional) return true;
@@ -56,6 +56,9 @@ namespace BlockLimiter.Patch
                 if (!Grid.CanMerge(mergeBlock.CubeGrid, mergeBlock.Other.CubeGrid))
                 {
                     mergeBlock.Enabled = false;
+
+                    mergeBlock.SlimBlock.DoDamage(mergeBlock.BlockDefinition.MaxIntegrity * mergeBlock.BlockDefinition.CriticalIntegrityRatio, MyDamageType.Explosion);
+
                     Log.Info($"Blocked merger between {mergeBlock.CubeGrid?.DisplayName} and {mergeBlock.Other?.CubeGrid?.DisplayName}");
                     return false;
                 }
