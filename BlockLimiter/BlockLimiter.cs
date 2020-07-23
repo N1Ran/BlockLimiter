@@ -66,7 +66,14 @@ namespace BlockLimiter
             MyMultiplayer.Static.ClientJoined += StaticOnClientJoined;
             MyCubeGrids.BlockBuilt += MyCubeGridsOnBlockBuilt;
             MySession.Static.Factions.FactionStateChanged += FactionsOnFactionStateChanged;
+            MySession.Static.Factions.FactionCreated += FactionsOnFactionCreated;
             MyEntities.OnEntityAdd += MyEntitiesOnOnEntityAdd;
+        }
+
+        private void FactionsOnFactionCreated(long id)
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return;
+            UpdateLimits.FactionLimit(id);
         }
 
         private void MyEntitiesOnOnEntityAdd(MyEntity entity)
