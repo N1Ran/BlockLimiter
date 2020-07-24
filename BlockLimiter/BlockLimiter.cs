@@ -262,6 +262,7 @@ namespace BlockLimiter
             if (++_updateCounter % 100 == 0)
             {
                 GridCache.Update();
+                MergeBlockPatch.MergeBlockCache.Clear();
             }
 
         }

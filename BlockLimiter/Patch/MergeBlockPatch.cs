@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -13,6 +14,7 @@ using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.Entities.Blocks;
 using SpaceEngineers.Game.ModAPI.Ingame;
+using Torch.Managers;
 using Torch.Managers.PatchManager;
 using Torch.Mod;
 using Torch.Mod.Messages;
@@ -28,6 +30,11 @@ namespace BlockLimiter.Patch
     {
         private static readonly Logger Log = BlockLimiter.Instance.Log;
 
+        public static readonly HashSet<long> MergeBlockCache = new HashSet<long>();
+
+        private static MethodInfo _removeConstraints = typeof(MyShipMergeBlock).GetMethod("RemoveConstraintInBoth", BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.NonPublic);
+
+
         public static void Patch(PatchContext ctx)
         {
             ctx.GetPattern(typeof(MyShipMergeBlock).GetMethod(nameof(MyShipMergeBlock.UpdateBeforeSimulation10), BindingFlags.Public | BindingFlags.Instance )).
@@ -41,31 +48,38 @@ namespace BlockLimiter.Patch
 
         private static bool MergeCheck(MyShipMergeBlock __instance)
         {
-            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+            if (!BlockLimiterConfig.Instance.EnableLimits  || !BlockLimiterConfig.Instance.MergerBlocking) return true;
 
             var mergeBlock = __instance;
 
-            if (mergeBlock?.Other == null )
+            if (mergeBlock?.Other == null || MergeBlockCache.Contains(mergeBlock.CubeGrid.EntityId))
+
+            {
                 return true;
+            }
+
+
             
             if (mergeBlock.IsLocked || !mergeBlock.IsFunctional || !mergeBlock.Other.IsFunctional) return true;
 
 
-            if (BlockLimiterConfig.Instance.MergerBlocking)
+            if (Grid.CanMerge(mergeBlock.CubeGrid, mergeBlock.Other.CubeGrid))
             {
-                if (!Grid.CanMerge(mergeBlock.CubeGrid, mergeBlock.Other.CubeGrid))
+                if (!MergeBlockCache.Contains(mergeBlock.CubeGrid.EntityId))
                 {
-                    mergeBlock.Enabled = false;
-
-                    mergeBlock.SlimBlock.DoDamage(mergeBlock.BlockDefinition.MaxIntegrity * mergeBlock.BlockDefinition.CriticalIntegrityRatio, MyDamageType.Explosion);
-
-                    Log.Info($"Blocked merger between {mergeBlock.CubeGrid?.DisplayName} and {mergeBlock.Other?.CubeGrid?.DisplayName}");
-                    return false;
+                    MergeBlockCache.Add(mergeBlock.CubeGrid.EntityId);
                 }
-                
+  
+                return true;
             }
 
-            return true;
+            mergeBlock.Other.Enabled = false;
+
+            mergeBlock.Enabled = false;
+
+            Log.Info($"Blocked merger between {mergeBlock.CubeGrid?.DisplayName} and {mergeBlock.Other?.CubeGrid?.DisplayName}");
+            return false;
+
         }
 
         private static void AddBlocks(MyShipMergeBlock __instance)
