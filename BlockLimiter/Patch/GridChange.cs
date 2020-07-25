@@ -125,7 +125,7 @@ namespace BlockLimiter.Patch
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
-            if (Grid.AllowConversion(grid) || remoteUserId == 0 || playerId == 0)
+            if (Grid.AllowConversion(grid,out var blocks, out var count) || remoteUserId == 0 || playerId == 0)
             {
                 var gridId = grid.EntityId;
                 Task.Run(()=>
@@ -137,7 +137,7 @@ namespace BlockLimiter.Patch
                 });
                 return true;
             }
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>());
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,count);
 
             MyVisualScriptLogicProvider.SendChatMessage(msg,BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             Log.Info(
@@ -163,7 +163,7 @@ namespace BlockLimiter.Patch
             }
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
-            if (Grid.AllowConversion(grid) || remoteUserId == 0 || playerId == 0)
+            if (Grid.AllowConversion(grid, out var blocks, out var count) || remoteUserId == 0 || playerId == 0)
             {
                 var gridId = grid.EntityId;
                 Task.Run(()=>
@@ -175,7 +175,7 @@ namespace BlockLimiter.Patch
                 });
                 return true;
             }
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>());
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,count);
 
             MyVisualScriptLogicProvider.SendChatMessage(msg,BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             Log.Info(

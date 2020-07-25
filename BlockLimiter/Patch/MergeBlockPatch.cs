@@ -36,7 +36,6 @@ namespace BlockLimiter.Patch
 
         private static DateTime _lastLogTime;
 
-        private static MethodInfo _removeConstraints = typeof(MyShipMergeBlock).GetMethod("RemoveConstraintInBoth", BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.NonPublic);
 
 
         public static void Patch(PatchContext ctx)
