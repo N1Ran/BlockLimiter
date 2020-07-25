@@ -87,8 +87,10 @@ namespace BlockLimiter.Utility
             return false;
         }
 
-        public static bool CanMerge(MyCubeGrid grid1, MyCubeGrid grid2)
+        public static bool CanMerge(MyCubeGrid grid1, MyCubeGrid grid2, out List<string>blocks, out int count)
         {
+            blocks = new List<string>();
+            count = 0;
             if (grid1 == null || grid2 == null) return true;
 
             if (grid1.BigOwners.Any(x => Utilities.IsExcepted(x, new List<string>())) ||
@@ -100,38 +102,49 @@ namespace BlockLimiter.Utility
 
             if (blocksHash.Count == 0) return true;
             
+            blocks.Add("All blocks - Size Violation");
             var gridSize = grid1.CubeBlocks.Count + grid2.CubeBlocks.Count;
             var gridType = grid1.GridSizeEnum;
             var isStatic = grid1.IsStatic || grid2.IsStatic;
 
             if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
             {
+                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeShips);
                 return  false;
             }
 
             if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
             {
+                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeStations);
                 return  false;
             }
 
             if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridType == MyCubeSize.Large && gridSize >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
             {
+                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksLargeGrid);
                 return  false;
             }
 
             if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && gridType == MyCubeSize.Small && gridSize >= BlockLimiterConfig.Instance.MaxBlocksSmallGrid)
             {
+                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksSmallGrid);
                 return  false;
             }
 
-
+            blocks.Clear();
+            count = 0;
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
                 if (!limit.LimitGrids) continue;
 
                 if (Utilities.IsExcepted(grid1.EntityId, limit.Exceptions)|| Utilities.IsExcepted(grid2.EntityId, limit.Exceptions)) continue;
+
+                var matchingBlocks = new List<MySlimBlock>(blocksHash.Where(x=> Block.IsMatch(x.BlockDefinition,limit)));
                 
-                if (blocksHash.Count(x=> Block.IsMatch(x.BlockDefinition,limit)) <= limit.Limit) continue;
+                if (matchingBlocks.Count <= limit.Limit) continue;
+                count = Math.Abs(matchingBlocks.Count - limit.Limit);
+                blocks.Add(matchingBlocks[0].BlockDefinition.ToString().Substring(16));
+
                 return false;
             }
 
