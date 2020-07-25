@@ -80,8 +80,6 @@ namespace BlockLimiter.Patch
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,count);
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
-            mergeBlock.Enabled = false;
-            mergeBlock.Other.Enabled = false;
             MyVisualScriptLogicProvider.SendChatMessage(msg,BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
             Utilities.SendFailSound(remoteUserId);
 
