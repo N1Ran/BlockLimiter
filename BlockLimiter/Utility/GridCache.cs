@@ -78,7 +78,7 @@ namespace BlockLimiter.Utility
             
             using(_entityLock.AcquireSharedUsing())
             {
-                var entity = _gridCache.FirstOrDefault(e => e.EntityId == entityId);
+                var entity = _gridCache.FirstOrDefault(e => e?.EntityId == entityId);
 
                 _gridCache.Remove(entity);
             }
@@ -115,7 +115,7 @@ namespace BlockLimiter.Utility
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks.Where(x=>x.OwnerId == id)));
+                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks.Where(x=>x?.OwnerId == id)));
             }
         }
 
@@ -125,7 +125,7 @@ namespace BlockLimiter.Utility
             if (faction == null)return;
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks.Where(x=>x.FatBlock.GetOwnerFactionTag() == faction.Tag)));
+                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks.Where(x=>x?.FatBlock?.GetOwnerFactionTag() == faction.Tag)));
             }
         }
 
@@ -138,7 +138,7 @@ namespace BlockLimiter.Utility
             using(_entityLock.AcquireSharedUsing())
             using (_builderLock.AcquireSharedUsing())
             {
-                rem.UnionWith(from e in _bigBuilders where _gridCache.All(en => en.EntityId != e.Key) select e.Key);
+                rem.UnionWith(from e in _bigBuilders where _gridCache.All(en => en?.EntityId != e.Key) select e.Key);
             }
             using (_builderLock.AcquireExclusiveUsing())
             {

@@ -73,7 +73,7 @@ namespace BlockLimiter.Settings
         private bool _blockOwnershipTransfer;
         private MtObservableCollection<LimitItem> _limitItems;
         private string _denyMessage = "Limit reached \n{BC} blocks denied \nBlockNames: \n{BL}";
-        private string _projectionDenyMessage = "{BC} blocks removed from Projection. \nBlockNames = \ndO{BL}";
+        private string _projectionDenyMessage = "{BC} blocks removed from Projection. \nBlockNames = \n{BL}";
         private bool _mergerBlocking;
         private List<string> _generalException;
         private bool _countProjection;
