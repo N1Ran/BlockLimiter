@@ -52,11 +52,6 @@ namespace BlockLimiter.Punishment
 
             var punishCount = 0;
 
-            if (BlockLimiterConfig.Instance.KillNoOwnerBlocks)
-            {
-                var noOwnerBlocks = _blockCache.Where(x => x.BlockDefinition.ContainsComputer() && x.OwnerId == 0).ToList();
-                Block.KillBlocks(noOwnerBlocks);
-            }
 
             foreach (var item in limitItems)
             {
