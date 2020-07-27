@@ -196,7 +196,7 @@ namespace BlockLimiter.Utility
 
             var owners = new HashSet<long>(5);
             
-            owners.UnionWith(grid.BigOwners);
+            owners.UnionWith(GridCache.GetOwners(grid));
 
             if (owners.Count == 0) return false;
 
@@ -277,13 +277,13 @@ namespace BlockLimiter.Utility
                 }
 
                 if (!item.LimitGrids || (!item.FoundEntities.Any(x =>
-                    GridCache.TryGetGridById(x.Key, out var grid) && grid.BigOwners.Contains(playerId)))) continue;
+                    GridCache.TryGetGridById(x.Key, out var grid) && Grid.IsOwner(grid,playerId)))) continue;
 
                 sb.AppendLine("Grid Limits:");
 
                 foreach (var (id,gCount) in item.FoundEntities)
                 {
-                    if (!GridCache.TryGetGridById(id, out var grid) || !grid.BigOwners.Contains(playerId)) continue;
+                    if (!GridCache.TryGetGridById(id, out var grid) || !Grid.IsOwner(grid,playerId)) continue;
                     if (gCount < 1) continue;
                     sb.AppendLine($"->{grid.DisplayName} = {gCount} / {item.Limit}");
                 }

@@ -35,7 +35,8 @@ namespace BlockLimiter.ProcessHandlers
         /// <returns></returns>
         public bool CanProcess()
         {
-            return DateTime.Now - m_lastUpdate > TimeSpan.FromMilliseconds(GetUpdateResolution()) && BlockLimiterConfig.Instance.EnableLimits && MySession.Static.Players.GetOnlinePlayers().Count > 0;
+            return DateTime.Now - m_lastUpdate > TimeSpan.FromMilliseconds(GetUpdateResolution()) &&
+                   BlockLimiterConfig.Instance.EnableLimits;
         }
 
         /// <summary>

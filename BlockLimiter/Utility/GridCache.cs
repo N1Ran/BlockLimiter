@@ -23,13 +23,15 @@ namespace BlockLimiter.Utility
     public static class GridCache
     {
         private static readonly HashSet<MyCubeGrid> _gridCache = new HashSet<MyCubeGrid>();
-        private static readonly Dictionary<long, List<long>> _bigBuilders = new Dictionary<long, List<long>>();
+        private static readonly Dictionary<long, HashSet<long>> _bigBuilders = new Dictionary<long, HashSet<long>>();
+        private static readonly Dictionary<long, HashSet<long>> _bigOwners = new Dictionary<long, HashSet<long>>();
         private static readonly HashSet<MyCubeGrid> _dirtyEntities = new HashSet<MyCubeGrid>();
         private static int _updateCounter;
         private static readonly FastResourceLock _entityLock = new FastResourceLock();
         private static readonly FastResourceLock _builderLock = new FastResourceLock();
+        private static readonly FastResourceLock _ownerLock = new FastResourceLock();
 
-       static GridCache()
+        static GridCache()
         {
             BlockOwnershipTransfer.SlimOwnerChanged += SlimOwnerChanged;
         }
@@ -58,10 +60,9 @@ namespace BlockLimiter.Utility
                 }
             }
 
-            if (++_updateCounter % 100 == 0)
-            {
-                UpdateBuilders();
-            }
+            if (++_updateCounter % 100 != 0) return;
+            UpdateBuilders();
+            UpdateOwners();
         }
 
         public static bool TryGetGridById(long entityId, out MyCubeGrid entity)
@@ -107,7 +108,7 @@ namespace BlockLimiter.Utility
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks));
+                entities.UnionWith(_gridCache.SelectMany(g=>g?.CubeBlocks));
             }
         }
 
@@ -129,11 +130,76 @@ namespace BlockLimiter.Utility
             }
         }
 
+        private static void UpdateOwners()
+        {
+            Parallel.ForEach(_dirtyEntities, g => UpdateGridOwners(g));
+            _dirtyEntities.Clear();
+            var rem = new HashSet<long>();
+
+            using(_entityLock.AcquireSharedUsing())
+            using (_ownerLock.AcquireSharedUsing())
+            {
+                rem.UnionWith(from e in _bigBuilders where _gridCache.All(en => en?.EntityId != e.Key) select e.Key);
+            }
+            using (_ownerLock.AcquireExclusiveUsing())
+            {
+                foreach (var r in rem)
+                    _bigOwners.Remove(r);
+            }
+        }
+        
+        public static HashSet<long> UpdateGridOwners(MyCubeGrid grid)
+        {
+            var owners = new Dictionary<long, int>();
+            foreach (var block in grid.CubeBlocks)
+            {
+                owners.TryGetValue(block.OwnerId, out int c);
+                owners[block.OwnerId] = c + 1;
+            }
+
+            int max = 0;
+            var bigs = new HashSet<long>();
+
+            foreach (var b in owners)
+            {
+                if (b.Value > max)
+                {
+                    max = b.Value;
+                    bigs.Clear();
+                    bigs.Add(b.Key);
+                }
+                else if (b.Value == max)
+                {
+                    bigs.Add(b.Key);
+                }
+            }
+
+            using(_ownerLock.AcquireExclusiveUsing())
+                _bigOwners[grid.EntityId] = bigs;
+
+            return bigs;
+        } 
+        
+        public static HashSet<long> GetOwners(MyCubeGrid grid)
+        {
+            HashSet<long> l;
+            bool res;
+            using(_ownerLock.AcquireSharedUsing())
+                res = _bigOwners.TryGetValue(grid.EntityId, out l);
+
+            if (res)
+                return l;
+
+            l = UpdateGridOwners(grid);
+            grid.OnPhysicsChanged += Grid_OnPhysicsChanged;
+
+            return l;
+        }
         private static void UpdateBuilders()
         {
             Parallel.ForEach(_dirtyEntities, g => UpdateGridBuilders(g));
             _dirtyEntities.Clear();
-                var rem = new HashSet<long>();
+            var rem = new HashSet<long>();
 
             using(_entityLock.AcquireSharedUsing())
             using (_builderLock.AcquireSharedUsing())
@@ -147,7 +213,7 @@ namespace BlockLimiter.Utility
             }
         }
         
-        public static List<long> UpdateGridBuilders(MyCubeGrid grid)
+        public static HashSet<long> UpdateGridBuilders(MyCubeGrid grid)
         {
             var builders = new Dictionary<long, int>();
             foreach (var block in grid.CubeBlocks)
@@ -157,7 +223,7 @@ namespace BlockLimiter.Utility
             }
 
             int max = 0;
-            var bigs = new List<long>();
+            var bigs = new HashSet<long>();
 
             foreach (var b in builders)
             {
@@ -179,9 +245,9 @@ namespace BlockLimiter.Utility
             return bigs;
         } 
         
-        public static List<long> GetBuilders(MyCubeGrid grid)
+        public static HashSet<long> GetBuilders(MyCubeGrid grid)
         {
-            List<long> l;
+            HashSet<long> l;
             bool res;
             using(_builderLock.AcquireSharedUsing())
                 res = _bigBuilders.TryGetValue(grid.EntityId, out l);

@@ -139,7 +139,7 @@ namespace BlockLimiter.Settings
             {
                 _enable = value;
                 Changed();
-                if (value && MyAPIGateway.Session == null) BlockLimiter.Activate();
+                if (value && MyAPIGateway.Session != null) BlockLimiter.Activate();
             }
         }
 
@@ -150,8 +150,7 @@ namespace BlockLimiter.Settings
             set
             {
                 _serverName = string.IsNullOrEmpty(value) ? "Blocklimiter" : value; 
-                OnPropertyChanged();
-                Instance.Save(); 
+                Changed();
             }
         }
 

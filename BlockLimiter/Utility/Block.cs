@@ -23,23 +23,19 @@ namespace BlockLimiter.Utility
     {
         private static readonly HashSet<LimitItem> Limits = BlockLimiterConfig.Instance.AllLimits;
 
-        private static readonly Logger Log = BlockLimiter.Instance.Log;
 
         public static void KillBlock(MyCubeBlock block)
         {
-            KillBlocks(new List<MySlimBlock>{block.SlimBlock});
+            if (!(block is MyFunctionalBlock fBlock) || BlockSwitchPatch.KeepOffBlocks.Contains(fBlock))return;
+            BlockSwitchPatch.KeepOffBlocks.Add(fBlock);
         }
         public static void KillBlocks(List<MySlimBlock> blocks)
         {
-            Parallel.ForEach(blocks, block =>
+            foreach (var block in blocks)
             {
-                if (!(block.FatBlock is MyFunctionalBlock funcBlock) || funcBlock.Enabled == false) return;
-                if (!block.BlockDefinition.ContainsComputer())return;
-                Log.Info(
-                    $"Turned off {block.BlockDefinition.BlockPairName} from {block.CubeGrid.DisplayName}");
-
-                funcBlock.Enabled = false;
-            });
+                if (!(block.FatBlock is MyFunctionalBlock fBlock) || BlockSwitchPatch.KeepOffBlocks.Contains(fBlock)) continue;
+                BlockSwitchPatch.KeepOffBlocks.Add(fBlock);
+            }
         }
 
         public static bool IsWithinLimits(MyCubeBlockDefinition block, long playerId, MyObjectBuilder_CubeGrid grid = null)
@@ -208,7 +204,7 @@ namespace BlockLimiter.Utility
                 {
                     if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
                     if (GridCache.TryGetGridById(gridId, out var grid) &&
-                        MySession.Static.Players.IdentityIsNpc(grid.BigOwners.FirstOrDefault())) continue;
+                        MySession.Static.Players.IdentityIsNpc(GridCache.GetOwners(grid).FirstOrDefault())) continue;
                     
                 }
 
@@ -238,7 +234,7 @@ namespace BlockLimiter.Utility
                 {
                     if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
                     if (GridCache.TryGetGridById(gridId, out var grid) &&
-                        MySession.Static.Players.IdentityIsNpc(grid.BigOwners.FirstOrDefault())) continue;
+                        MySession.Static.Players.IdentityIsNpc(GridCache.GetOwners(grid).FirstOrDefault())) continue;
                     
                 }
 
@@ -358,7 +354,6 @@ namespace BlockLimiter.Utility
                             return;
                         case LimitItem.PunishmentType.ShutOffBlock:
                             KillBlock(block.FatBlock);
-                            log.Info($"{block.BlockDefinition} shut off from {block.CubeGrid.DisplayName}");
                             return;
                         case LimitItem.PunishmentType.Explode:
                             log.Info(

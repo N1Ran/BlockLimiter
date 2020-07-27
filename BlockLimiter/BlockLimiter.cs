@@ -136,8 +136,7 @@ namespace BlockLimiter
             {
                 Thread.Sleep(100);
                 var entity = MyEntities.GetEntityByName(grid.Name);
-                var newStateGrid = entity as MyCubeGrid;
-                if (newStateGrid == null) return;
+                if (!(entity is MyCubeGrid newStateGrid)) return;
                 UpdateLimits.GridLimit(newStateGrid);
             });
         }
@@ -145,9 +144,9 @@ namespace BlockLimiter
         private static void StaticOnClientJoined(ulong obj)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
-            var player = MySession.Static.Players.TryGetPlayerBySteamId(obj);
-            if (player == null)return;
-            UpdateLimits.PlayerLimit(player.Identity.IdentityId);
+            var identityId = Utilities.GetPlayerIdFromSteamId(obj);
+            if (identityId == 0)return;
+            UpdateLimits.PlayerLimit(identityId);
         }
 
 

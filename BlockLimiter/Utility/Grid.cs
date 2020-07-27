@@ -13,6 +13,13 @@ namespace BlockLimiter.Utility
 {
     public static class Grid
     {
+
+        public static bool IsOwner(MyCubeGrid grid, long id)
+        {
+            if (grid == null || id == 0) return false;
+            return GridCache.GetOwners(grid).Contains(id) || GridCache.GetBuilders(grid).Contains(id);
+        }
+
         public static bool IsSizeViolation(long id)
         {
             return GridCache.TryGetGridById(id, out var grid) && IsSizeViolation(grid,false, out _);
@@ -58,7 +65,7 @@ namespace BlockLimiter.Utility
             if (grid == null) return false;
 
 
-            if (grid.EntityId > 0 && Utilities.IsExcepted(grid.EntityId, new List<string>()) || grid.BigOwners.Any(x => Utilities.IsExcepted(x, new List<string>())))
+            if (grid.EntityId > 0 && Utilities.IsExcepted(grid.EntityId, new List<string>()) || GridCache.GetOwners(grid).Any(x => Utilities.IsExcepted(x, new List<string>())))
                 return false;
 
             var gridSize = grid.CubeBlocks.Count;
@@ -96,8 +103,8 @@ namespace BlockLimiter.Utility
             count = 0;
             if (grid1 == null || grid2 == null) return true;
 
-            if (grid1.BigOwners.Any(x => Utilities.IsExcepted(x, new List<string>())) ||
-                grid2.BigOwners.Any(x => Utilities.IsExcepted(x, new List<string>()))) return true;
+            if (GridCache.GetOwners(grid1).Any(x => Utilities.IsExcepted(x, new List<string>())) ||
+                GridCache.GetOwners(grid2).Any(x => Utilities.IsExcepted(x, new List<string>()))) return true;
             
             var blocksHash = new HashSet<MySlimBlock>(grid1.CubeBlocks);
             
@@ -174,7 +181,7 @@ namespace BlockLimiter.Utility
                         continue;
                 }
                 
-                if (grid.BigOwners.Count > 0 && grid.BigOwners.Any(x=> Utilities.IsExcepted(x, limit.Exceptions))) continue;
+                if (GridCache.GetOwners(grid).Any(x=> Utilities.IsExcepted(x, limit.Exceptions))) continue;
 
 
                 var matchingBlocks = new List<MySlimBlock>(grid.CubeBlocks.Where(x => Block.IsMatch(x.BlockDefinition, limit)));
