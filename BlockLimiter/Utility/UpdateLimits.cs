@@ -38,7 +38,7 @@ namespace BlockLimiter.Utility
                     return;
                 }
                 var limitedBlocks = playerBlocks.Count(x =>
-                    Block.IsMatch(x.BlockDefinition, limit));
+                    limit.IsMatch(x.BlockDefinition));
                 if (limitedBlocks == 0)
                 {
                     limit.FoundEntities.Remove(id);
@@ -71,13 +71,13 @@ namespace BlockLimiter.Utility
                     return;
                 }
                 
-                if (!Grid.IsGridType(grid,limit))
+                if (!limit.IsGridType(grid))
                 {
                     limit.FoundEntities.Remove(grid.EntityId);
                     return;
                 }
 
-                var limitedBlocks = blocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
+                var limitedBlocks = blocks.Count(x => limit.IsMatch(x.BlockDefinition));
 
                 if (limitedBlocks == 0)
                 {
@@ -120,7 +120,7 @@ namespace BlockLimiter.Utility
                     return;
                 }
 
-                var factionBlockCount = factionBlocks.Count(x => Block.IsMatch(x.BlockDefinition, limit));
+                var factionBlockCount = factionBlocks.Count(x => limit.IsMatch(x.BlockDefinition));
 
                 if (factionBlockCount == 0)
                 {

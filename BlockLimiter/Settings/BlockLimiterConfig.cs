@@ -38,7 +38,6 @@ namespace BlockLimiter.Settings
         {
             _limitItems = new MtObservableCollection<LimitItem>();
             _limitItems.CollectionChanged += ItemsCollectionChanged;
-            _limitItems.CollectionChanged += ItemsCollectionChanged;
         }
 
 

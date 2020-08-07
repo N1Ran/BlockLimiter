@@ -26,7 +26,7 @@ namespace BlockLimiter.Patch
         private static readonly Logger Log = BlockLimiter.Instance.Log;
 
         private static readonly MethodInfo NewBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.NonPublic | BindingFlags.Instance);
-       
+        private static readonly MethodInfo RemoveBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);
         
         public static void Patch(PatchContext ctx)
         {
@@ -86,12 +86,11 @@ namespace BlockLimiter.Patch
             if (player == null || projectedBlocks.Count == 0) return true;
             if (Utilities.IsExcepted(player.Identity.IdentityId, new List<string>())) return true;
 
-            var target = new EndpointId(remoteUserId);
             var playerId = player.Identity.IdentityId;
             if (Grid.IsSizeViolation(grid))
             {
                 proj.SendRemoveProjection();
-                Utilities.SendFailSound(remoteUserId);
+                NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod);
                 Utilities.ValidationFailed();
                 var msg1 = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{"Null"},grid.CubeBlocks.Count);
                 MyVisualScriptLogicProvider.SendChatMessage(msg1,BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
@@ -116,7 +115,7 @@ namespace BlockLimiter.Patch
             {
                 if (Utilities.IsExcepted(player.Identity.IdentityId, limit.Exceptions)|| Utilities.IsExcepted(proj.CubeGrid.EntityId,limit.Exceptions)) continue;
 
-                var pBlocks = new HashSet<MyObjectBuilder_CubeBlock>(projectedBlocks.Where(x => Block.IsMatch(Utilities.GetDefinition(x), limit)));
+                var pBlocks = new HashSet<MyObjectBuilder_CubeBlock>(projectedBlocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))));
                 
                 if (pBlocks.Count == 0) continue;
 
@@ -144,7 +143,7 @@ namespace BlockLimiter.Patch
             
             Log.Info($"Removed {count} blocks from projector set by {player.DisplayName} ");
 
-            proj.SendRemoveProjection();
+            NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod);
 
             try
             {

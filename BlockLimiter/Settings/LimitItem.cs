@@ -8,11 +8,15 @@ using System.Windows;
 using Torch;
 using Torch.Views;
 using System.Xml.Serialization;
+using Sandbox.Definitions;
+using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Collections;
 using VRage.Dedicated.Configurator;
+using VRage.Game;
 using VRage.Profiler;
 
 namespace BlockLimiter.Settings
@@ -181,6 +185,65 @@ namespace BlockLimiter.Settings
                 OnPropertyChanged();
             }
         }
+
+        public bool IsMatch(MyCubeBlockDefinition definition)
+        {
+            if (!BlockList.Any() || definition == null) return false;
+
+            if (GridTypeBlock != GridType.AllGrids)
+            {
+                switch (definition.CubeSize)
+                {
+                    case MyCubeSize.Small when (GridTypeBlock == GridType.LargeGridsOnly || GridTypeBlock == GridType.StationsOnly):
+                    case MyCubeSize.Large when (GridTypeBlock == GridType.SmallGridsOnly):
+                        return false;
+                }
+            }
+            return BlockList.Any(x =>
+                x.Equals(definition.ToString().Substring(16), StringComparison.OrdinalIgnoreCase) ||
+                   x.Equals(definition.Id.SubtypeId.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                   x.Equals(definition.BlockPairName, StringComparison.OrdinalIgnoreCase) ||
+                x.Equals(definition.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase));
+        }
+
+        public bool IsGridType(MyCubeGrid grid)
+        {
+            switch (GridTypeBlock)
+            {
+                case GridType.SmallGridsOnly:
+                    return grid.GridSizeEnum == MyCubeSize.Small;
+                case GridType.LargeGridsOnly:
+                    return grid.GridSizeEnum == MyCubeSize.Large;
+                case GridType.StationsOnly:
+                    return grid.IsStatic;
+                case GridType.ShipsOnly:
+                    return !grid.IsStatic;
+                case GridType.AllGrids:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public bool IsGridType(MyObjectBuilder_CubeGrid grid)
+        {
+            switch (GridTypeBlock)
+            {
+                case GridType.AllGrids:
+                    return true;
+                case GridType.SmallGridsOnly:
+                    return grid.GridSizeEnum == MyCubeSize.Small;
+                case GridType.LargeGridsOnly:
+                    return grid.GridSizeEnum == MyCubeSize.Large;
+                case GridType.StationsOnly:
+                    return grid.IsStatic;
+                case GridType.ShipsOnly:
+                    return !grid.IsStatic;
+                default:
+                    return false;
+            }
+        }
+
 
         public void Reset()
         {

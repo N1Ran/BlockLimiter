@@ -53,24 +53,14 @@ namespace BlockLimiter.Patch
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
 
-            if (__instance.MarkedForClose) return;
+            if (__instance.MarkedForClose || !(__instance is MyCubeBlock cubeBlock)) return;
 
-            switch (__instance)
+            if (cubeBlock.BuiltBy == cubeBlock.OwnerId)
+                Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
+            else
             {
-                case MyCubeBlock cubeBlock:
-                    if (cubeBlock.BuiltBy == cubeBlock.OwnerId)
-                        Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
-                    else
-                    {
-                        Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
-                        Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.OwnerId);
-                    }
-                    break;
-                case MyCubeGrid grid:
-                {
-                    GridCache.RemoveGrid(grid.EntityId);
-                    break;
-                }
+                Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
+                Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.OwnerId);
             }
 
 

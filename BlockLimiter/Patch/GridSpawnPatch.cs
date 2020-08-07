@@ -63,7 +63,7 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             var playerName = MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName;
 
-            grids.RemoveAll(x => Grid.IsSizeViolation(x));
+            grids.RemoveAll(Grid.IsSizeViolation);
 
             if (grids.Count == 0)
             {
@@ -91,7 +91,7 @@ namespace BlockLimiter.Patch
                     var fCount = 0;
 
                     if (Utilities.IsExcepted(playerId, limit.Exceptions)) continue;
-                    var matchBlocks = new HashSet<MyObjectBuilder_CubeBlock>(grid.CubeBlocks.Where(x => Block.IsMatch(Utilities.GetDefinition(x), limit)));
+                    var matchBlocks = new HashSet<MyObjectBuilder_CubeBlock>(grid.CubeBlocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))));
                     limit.FoundEntities.TryGetValue(playerId, out var pCount);
                     if (playerFaction != null)
                         limit.FoundEntities.TryGetValue(playerFaction.FactionId, out fCount);

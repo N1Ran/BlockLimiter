@@ -31,16 +31,12 @@ namespace BlockLimiter.Utility
         private static readonly FastResourceLock _builderLock = new FastResourceLock();
         private static readonly FastResourceLock _ownerLock = new FastResourceLock();
 
+        
         static GridCache()
         {
-            BlockOwnershipTransfer.SlimOwnerChanged += SlimOwnerChanged;
+
         }
 
-        private static void SlimOwnerChanged(MySlimBlock block, long newOwner)
-        {
-            _dirtyEntities.Add(block.CubeGrid);
-            UpdateGridBuilders(block.CubeGrid);
-        }
 
         public static void Update()
         {
@@ -74,27 +70,6 @@ namespace BlockLimiter.Utility
             }
         }
 
-        public static void RemoveGrid(long entityId)
-        {
-            
-            using(_entityLock.AcquireSharedUsing())
-            {
-                var entity = _gridCache.FirstOrDefault(e => e?.EntityId == entityId);
-
-                _gridCache.Remove(entity);
-            }
-        }
-
-        public static void AddGrid(long entityId)
-        {
-            using(_entityLock.AcquireSharedUsing())
-            {
-                var entity = MyEntities.GetEntityById(entityId);
-                if (!(entity is MyCubeGrid grid) || _gridCache.Contains(grid)) return;
-
-                _gridCache.Add(grid);
-            }
-        }
 
         public static void GetGrids(HashSet<MyCubeGrid> grids)
         {

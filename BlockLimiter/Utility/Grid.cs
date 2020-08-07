@@ -149,7 +149,7 @@ namespace BlockLimiter.Utility
 
                 if (Utilities.IsExcepted(grid1.EntityId, limit.Exceptions)|| Utilities.IsExcepted(grid2.EntityId, limit.Exceptions)) continue;
 
-                var matchingBlocks = new List<MySlimBlock>(blocksHash.Where(x=> Block.IsMatch(x.BlockDefinition,limit)));
+                var matchingBlocks = new List<MySlimBlock>(blocksHash.Where(x=> limit.IsMatch(x.BlockDefinition)));
                 
                 if (matchingBlocks.Count <= limit.Limit) continue;
                 count = Math.Abs(matchingBlocks.Count - limit.Limit);
@@ -184,7 +184,7 @@ namespace BlockLimiter.Utility
                 if (GridCache.GetOwners(grid).Any(x=> Utilities.IsExcepted(x, limit.Exceptions))) continue;
 
 
-                var matchingBlocks = new List<MySlimBlock>(grid.CubeBlocks.Where(x => Block.IsMatch(x.BlockDefinition, limit)));
+                var matchingBlocks = new List<MySlimBlock>(grid.CubeBlocks.Where(x => limit.IsMatch(x.BlockDefinition)));
 
                 if (matchingBlocks.Count <= limit.Limit)
                 {
@@ -199,43 +199,6 @@ namespace BlockLimiter.Utility
             return true;
         }
         
-        public static bool IsGridType(MyCubeGrid grid, LimitItem item)
-        {
-            switch (item.GridTypeBlock)
-            {
-                case LimitItem.GridType.SmallGridsOnly:
-                    return grid.GridSizeEnum == MyCubeSize.Small;
-                case LimitItem.GridType.LargeGridsOnly:
-                    return grid.GridSizeEnum == MyCubeSize.Large;
-                case LimitItem.GridType.StationsOnly:
-                    return grid.IsStatic;
-                case LimitItem.GridType.ShipsOnly:
-                    return !grid.IsStatic;
-                case LimitItem.GridType.AllGrids:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        public static bool IsGridType(MyObjectBuilder_CubeGrid grid, LimitItem item)
-        {
-            switch (item.GridTypeBlock)
-            {
-                case LimitItem.GridType.AllGrids:
-                    return true;
-                case LimitItem.GridType.SmallGridsOnly:
-                    return grid.GridSizeEnum == MyCubeSize.Small;
-                case LimitItem.GridType.LargeGridsOnly:
-                    return grid.GridSizeEnum == MyCubeSize.Large;
-                case LimitItem.GridType.StationsOnly:
-                    return grid.IsStatic;
-                case LimitItem.GridType.ShipsOnly:
-                    return !grid.IsStatic;
-                default:
-                    return false;
-            }
-        }
 
 
         public static bool CanSpawn(MyObjectBuilder_CubeGrid grid, long playerId)

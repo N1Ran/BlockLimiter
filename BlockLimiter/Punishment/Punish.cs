@@ -52,96 +52,93 @@ namespace BlockLimiter.Punishment
 
             var punishCount = 0;
 
-
-            foreach (var item in limitItems)
-            {
-                if (!item.FoundEntities.Any() ||
-                    item.Punishment == LimitItem.PunishmentType.None) continue;
-                
-                foreach (var (id,count) in item.FoundEntities)
+                foreach (var item in limitItems.Where(item => item.FoundEntities.Any() && item.Punishment != LimitItem.PunishmentType.None))
                 {
-                    if (id == 0 || Utilities.IsExcepted(id, item.Exceptions))
-                    {
-                        continue;
-                    }
 
-                    if (count <= item.Limit) continue;
-                    lock (_blockCache)
+                    var idsToRemove = new HashSet<long>();
+
+                    foreach (var (id,count) in item.FoundEntities)
                     {
-                        foreach (var block in _blockCache)
+                        if (id == 0 || Utilities.IsExcepted(id, item.Exceptions))
                         {
-                            if (block?.BuiltBy == null || block.CubeGrid.IsPreview)
+                            continue;
+                        }
+
+                        if (count <= item.Limit) continue;
+                            foreach (var block in _blockCache)
                             {
-                                _blockCache.Remove(block);
-                                continue;
-                            }
-
-                            if (!Block.IsMatch(block.BlockDefinition, item)) continue;
-
-                            var defBase = MyDefinitionManager.Static.GetDefinition(block.BlockDefinition.Id);
-
-                            if (defBase != null && !_firstCheckCompleted && !defBase.Context.IsBaseGame) continue;
-
-                            if (Math.Abs(punishCount - count) <= item.Limit)
-                            {
-                                break;
-                            }
-
-                            if (item.IgnoreNpcs)
-                            {
-                                if (MySession.Static.Players.IdentityIsNpc(block.FatBlock.BuiltBy) || MySession.Static.Players.IdentityIsNpc(block.FatBlock.OwnerId))
-
+                                if (block?.BuiltBy == null || block.CubeGrid.IsPreview)
                                 {
-                                    item.FoundEntities.Remove(id);
                                     continue;
                                 }
-                            }
 
-                            if (item.Punishment == LimitItem.PunishmentType.ShutOffBlock &&
-                                block.FatBlock is MyFunctionalBlock fBlock && !fBlock.Enabled)
-                            {
-                                punishCount++;
-                                continue;
-                            }
+                                if (!item.IsMatch(block.BlockDefinition)) continue;
 
-                            if (item.LimitGrids && block.CubeGrid.EntityId == id)
-                            {
-                                punishCount++;
-                                punishBlocks[block] = item.Punishment;
-                                continue;
-                            }
+                                var defBase = MyDefinitionManager.Static.GetDefinition(block.BlockDefinition.Id);
 
-                            if (item.LimitPlayers)
-                            {
-                                if (Block.IsOwner(block, id))
+                                if (defBase != null && !_firstCheckCompleted && !defBase.Context.IsBaseGame) continue;
+
+                                if (Math.Abs(punishCount - count) <= item.Limit)
+                                {
+                                    break;
+                                }
+
+                                if (item.IgnoreNpcs)
+                                {
+                                    if (MySession.Static.Players.IdentityIsNpc(block.FatBlock.BuiltBy) || MySession.Static.Players.IdentityIsNpc(block.FatBlock.OwnerId))
+
+                                    {
+                                        idsToRemove.Add(id);
+                                        continue;
+                                    }
+                                }
+
+                                if (item.Punishment == LimitItem.PunishmentType.ShutOffBlock &&
+                                    block.FatBlock is MyFunctionalBlock fBlock && (!fBlock.Enabled || block.FatBlock.MarkedForClose || block.FatBlock.Closed))
+                                {
+                                    punishCount++;
+                                    continue;
+                                }
+
+                                if (item.LimitGrids && block.CubeGrid.EntityId == id)
                                 {
                                     punishCount++;
                                     punishBlocks[block] = item.Punishment;
                                     continue;
                                 }
-                            }
 
-                            if (!item.LimitFaction) continue;
-                            var faction = MySession.Static.Factions.TryGetFactionById(id);
-                            if (faction == null || !block.FatBlock.GetOwnerFactionTag().Equals(faction.Tag)) continue;
-                            punishCount++;
-                            punishBlocks[block] = item.Punishment;
-                        }
-                    }
+                                if (item.LimitPlayers)
+                                {
+                                    if (Block.IsOwner(block, id))
+                                    {
+                                        punishCount++;
+                                        punishBlocks[block] = item.Punishment;
+                                        continue;
+                                    }
+                                }
+
+                                if (!item.LimitFaction) continue;
+                                var faction = MySession.Static.Factions.TryGetFactionById(id);
+                                if (faction == null || block.FatBlock.GetOwnerFactionTag()?.Equals(faction.Tag) == false) continue;
+                                punishCount++;
+                                punishBlocks[block] = item.Punishment;
+                            }
                     
 
+                    }
+
+
+                    idsToRemove.ForEach(x=>item.FoundEntities.Remove(x));
                 }
-                
-            }
+
             
             _blockCache.Clear();
 
             
-            if (!punishBlocks.Keys.Any())
+            if (!punishBlocks.Any())
             {
                 return;
             }
-
             _firstCheckCompleted = !_firstCheckCompleted;
             Block.Punish(punishBlocks);
         }

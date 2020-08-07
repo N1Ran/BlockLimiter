@@ -150,33 +150,33 @@ namespace BlockLimiter.Utility
         }
 
 
-        public static bool IsExcepted(long obj, List<string> exceptions)
+        public static bool IsExcepted(long id, List<string> exceptions)
         {
 
             var allExceptions = new HashSet<string>(exceptions);
             allExceptions.UnionWith(BlockLimiterConfig.Instance.GeneralException);
 
-            if (!allExceptions.Any()) return false;
+            if (allExceptions.Count == 0) return false;
 
-            if (allExceptions.Contains(obj.ToString()))
+            if (allExceptions.Contains(id.ToString()))
             {
                 return true;
             }
 
-            var faction = MySession.Static.Factions.TryGetFactionById(obj);
+            var faction = MySession.Static.Factions.TryGetFactionById(id);
 
             if (faction != null)
             {
                 return allExceptions.Contains(faction.Tag) || allExceptions.Contains(faction.FactionId.ToString()) || allExceptions.Contains(faction.Name);
             }
 
-            var identity = MySession.Static.Players.TryGetIdentity(obj);
+            var identity = MySession.Static.Players.TryGetIdentity(id);
 
             if (identity != null)
             {
                if (allExceptions.Contains(identity.DisplayName)) return true;
 
-               var identFaction = MySession.Static.Factions.GetPlayerFaction(obj);
+               var identFaction = MySession.Static.Factions.GetPlayerFaction(id);
 
                if (identFaction!= null && (allExceptions.Contains(identFaction.Tag) || allExceptions.Contains(identFaction.Name) ||
                    allExceptions.Contains(identFaction.FactionId.ToString()))) return true;
@@ -186,18 +186,16 @@ namespace BlockLimiter.Utility
                if (x > 0 && allExceptions.Contains(x.ToString())) return true;
             } 
 
-            if (!GridCache.TryGetGridById(obj, out var grid)) return false;
+            if (!GridCache.TryGetGridById(id, out var grid)) return false;
 
             if (allExceptions.Contains(grid.DisplayName)) return true;
 
             var gridFac = grid.CubeBlocks.Select(x => x.FatBlock?.GetOwnerFactionTag()).FirstOrDefault();
 
-            if (!string.IsNullOrEmpty(gridFac) && allExceptions.Contains(gridFac)) return true;
+            if (!string.IsNullOrEmpty(gridFac) && (allExceptions.Contains(gridFac) || allExceptions.Contains(MySession.Static.Factions.TryGetFactionByTag(gridFac)?.FactionId.ToString()))) return true;
 
-            var owners = new HashSet<long>(5);
+            var owners = new HashSet<long>(GridCache.GetOwners(grid));
             
-            owners.UnionWith(GridCache.GetOwners(grid));
-
             if (owners.Count == 0) return false;
 
             foreach (var ownerId in owners)

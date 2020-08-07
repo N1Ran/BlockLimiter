@@ -36,7 +36,6 @@ namespace BlockLimiter.Patch
                 Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(ChangeOwnersRequest), BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
         }
 
-        public static event Action<MySlimBlock, long> SlimOwnerChanged;
 
         /// <summary>
         /// Checks if ownership can be changed
@@ -66,13 +65,6 @@ namespace BlockLimiter.Patch
             var newOwner = requests[0].Owner;
 
 
-            if (newOwner == 0)
-            {
-                if (BlockLimiterConfig.Instance.KillNoOwnerBlocks)
-                    Block.KillBlocks(blocks.Where(x=>x.BlockDefinition.ContainsComputer()).ToList());
-                return true;
-            }
-
 
             if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
             {
@@ -94,6 +86,7 @@ namespace BlockLimiter.Patch
                     Utilities.SendFailSound(Utilities.GetSteamIdFromPlayerId(requestingPlayer));
                     return false;
                 }
+
                 foreach (var block in blocks)
                 {
                     block.TransferAuthorship(newOwner);
@@ -140,7 +133,6 @@ namespace BlockLimiter.Patch
             Block.IncreaseCount(block.BlockDefinition,newOwner);
             Block.DecreaseCount(block.BlockDefinition,oldId);
 
-            SlimOwnerChanged?.Invoke(__instance, newOwner);
             return true;
         }
 
@@ -159,29 +151,23 @@ namespace BlockLimiter.Patch
                 return true;
             }
 
-            
-            if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
+
+            if (!BlockLimiterConfig.Instance.BlockOwnershipTransfer) return true;
+            if (playerId == 0)
             {
-
-                if (playerId == 0)
-                {
-                    if (BlockLimiterConfig.Instance.KillNoOwnerBlocks)
-                        Block.KillBlock(block);
-                    return true;
-                }
-
-                if (!Block.IsWithinLimits(block.BlockDefinition, playerId, 0))
-                {
-                    Utilities.ValidationFailed();
-                        Log.Info($"Ownership blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
-
-                    return false;
-                }
-
-                block.ChangeOwner(playerId, MyOwnershipShareModeEnum.Faction);
-                block.SlimBlock.TransferAuthorship(playerId);
-
+                return true;
             }
+
+            if (!Block.IsWithinLimits(block.BlockDefinition, playerId, 0))
+            {
+                Utilities.ValidationFailed();
+                Log.Info($"Ownership blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
+
+                return false;
+            }
+
+            block.ChangeOwner(playerId, MyOwnershipShareModeEnum.Faction);
+            block.SlimBlock.TransferAuthorship(playerId);
 
             return true;
         }

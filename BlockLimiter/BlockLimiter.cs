@@ -120,7 +120,7 @@ namespace BlockLimiter
 
             if (!GridCache.TryGetGridById(grid.EntityId, out _))
             {
-                GridCache.AddGrid(grid.EntityId);
+                GridCache.Update();
                 return;
             }
             Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
@@ -258,11 +258,9 @@ namespace BlockLimiter
             base.Update();
             if (MyAPIGateway.Session == null|| !BlockLimiterConfig.Instance.EnableLimits)
                 return;
-            if (++_updateCounter % 100 == 0)
-            {
-                GridCache.Update();
-                MergeBlockPatch.MergeBlockCache.Clear();
-            }
+            GridCache.Update();
+            if (++_updateCounter % 100 != 0) return;
+            MergeBlockPatch.MergeBlockCache.Clear();
 
         }
 
@@ -406,8 +404,14 @@ namespace BlockLimiter
                 return false;
             }
 
+            foreach (var grid in grids)
+            {
+                if (Grid.CanSpawn(grid,id)) continue;
+                return true;
+            }
 
-            return !grids.Any(Grid.IsSizeViolation) && grids.Any(x=> !Grid.CanSpawn(x,id));
+            return false;
+
         }
 
         public static bool CanAdd(List<MySlimBlock> blocks, long id, out List<MySlimBlock> nonAllowedBlocks)
