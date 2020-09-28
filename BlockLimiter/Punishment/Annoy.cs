@@ -27,7 +27,14 @@ namespace BlockLimiter.Punishment
 
         public override void Handle()
         {
-            if (!BlockLimiterConfig.Instance.Annoy || !BlockLimiterConfig.Instance.EnableLimits)return;
+        if (!BlockLimiterConfig.Instance.Annoy || !BlockLimiterConfig.Instance.EnableLimits)return;
+
+            RunAnnoyance();
+        }
+
+        public static void RunAnnoyance()
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits)return;
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
 
             if (!limitItems.Any())

@@ -8,6 +8,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Graphics.GUI;
 using VRage.Game;
+using VRageRender.Messages;
 
 namespace BlockLimiter.Utility
 {
@@ -59,13 +60,13 @@ namespace BlockLimiter.Utility
             return false;
         }
 
-        public static bool IsSizeViolation(MyCubeGrid grid, bool converting, out int count)
+        private static bool IsSizeViolation(MyCubeGrid grid, bool converting, out int count)
         {
             count = 0;
             if (grid == null) return false;
 
-
-            if (grid.EntityId > 0 && Utilities.IsExcepted(grid.EntityId, new List<string>()) || GridCache.GetOwners(grid).Any(x => Utilities.IsExcepted(x, new List<string>())))
+            var owners = GridCache.GetOwners(grid);
+            if (grid.EntityId > 0 && Utilities.IsExcepted(grid.EntityId, new List<string>()) || owners.Any(x => Utilities.IsExcepted(x, new List<string>())))
                 return false;
 
             var gridSize = grid.CubeBlocks.Count;
@@ -93,12 +94,50 @@ namespace BlockLimiter.Utility
             if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid <= 0 || gridType != MyCubeSize.Small ||
                 gridSize < BlockLimiterConfig.Instance.MaxBlocksSmallGrid) return false;
             count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksSmallGrid);
+
             return  true;
 
         }
 
-        public static bool CanMerge(MyCubeGrid grid1, MyCubeGrid grid2, out List<string>blocks, out int count)
+
+        public static bool CountViolation(MyCubeBlockDefinition block, long owner)
         {
+            return CountViolation(block.CubeSize, owner);
+        }
+        public static bool CountViolation(MyObjectBuilder_CubeGrid grid, long owner)
+        {
+            return CountViolation(grid.GridSizeEnum, owner);
+        }
+
+        public static bool CountViolation(MyCubeGrid grid, long owner)
+        {
+            return CountViolation(grid.GridSizeEnum, owner);
+        }
+
+        private static bool CountViolation(MyCubeSize size, long owner)
+        {
+            if (owner == 0) return false;
+            var playerGrids = new HashSet<MyCubeGrid>();
+            GridCache.GetPlayerGrids(playerGrids,owner);
+            var smallGrids = playerGrids.Count(x => x.GridSizeEnum == MyCubeSize.Small);
+            var largeGrids = playerGrids.Count(x => x.GridSizeEnum == MyCubeSize.Large);
+            if (size == MyCubeSize.Large)
+            {
+                if (BlockLimiterConfig.Instance.MaxLargeGrids == 0) return false;
+                if (BlockLimiterConfig.Instance.MaxLargeGrids < 0) return true;
+                return largeGrids >= BlockLimiterConfig.Instance.MaxLargeGrids;
+            }
+
+            if (BlockLimiterConfig.Instance.MaxSmallGrids == 0) return false;
+
+            if (BlockLimiterConfig.Instance.MaxSmallGrids < 0) return true;
+            return smallGrids >= BlockLimiterConfig.Instance.MaxSmallGrids;
+
+        }
+
+        public static bool CanMerge(MyCubeGrid grid1, MyCubeGrid grid2, out List<string>blocks, out int count, out string limitName)
+        {
+            limitName = null;
             blocks = new List<string>();
             count = 0;
             if (grid1 == null || grid2 == null) return true;
@@ -120,24 +159,30 @@ namespace BlockLimiter.Utility
             if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
             {
                 count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeShips);
+                limitName = "MaxBlockSizeShips";
                 return  false;
             }
 
             if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
             {
                 count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeStations);
+                limitName = "MaxBlockSizeStations";
+
                 return  false;
             }
 
             if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridType == MyCubeSize.Large && gridSize >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
             {
                 count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksLargeGrid);
+                limitName = "MaxBlocksLargeGrid";
                 return  false;
             }
 
             if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && gridType == MyCubeSize.Small && gridSize >= BlockLimiterConfig.Instance.MaxBlocksSmallGrid)
             {
                 count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksSmallGrid);
+                limitName = "MaxBlocksSmallGrid";
+
                 return  false;
             }
 
@@ -145,6 +190,7 @@ namespace BlockLimiter.Utility
             count = 0;
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
+                limitName = limit.Name;
                 if (!limit.LimitGrids) continue;
 
                 if (Utilities.IsExcepted(grid1.EntityId, limit.Exceptions)|| Utilities.IsExcepted(grid2.EntityId, limit.Exceptions)) continue;
@@ -162,14 +208,15 @@ namespace BlockLimiter.Utility
 
         }
 
-        public static bool AllowConversion(MyCubeGrid grid, out List<string> blocks, out int count )
+        public static bool AllowConversion(MyCubeGrid grid, out List<string> blocks, out int count, out string limitName )
         {
-            blocks = new List<string>();
-            blocks.Add("All blocks - Size Violation");
+            limitName = null;
+            blocks = new List<string> {"All blocks - Size Violation"};
             if (IsSizeViolation(grid,true, out count)) return false;
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
+                limitName = limit.Name;
                 if (!limit.LimitGrids) continue;
                 switch (limit.GridTypeBlock)
                 {
@@ -195,7 +242,7 @@ namespace BlockLimiter.Utility
                 return false;
 
             }
-
+            limitName = null;
             return true;
         }
         

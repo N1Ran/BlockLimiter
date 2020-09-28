@@ -37,6 +37,14 @@ namespace BlockLimiter.Utility
 
         }
 
+        public static void AddGrid(MyCubeGrid grid)
+        {
+            if (grid == null || _gridCache.Contains(grid)) return;
+            using (_entityLock.AcquireExclusiveUsing())
+            {
+                _gridCache.Add(grid);
+            }
+        }
 
         public static void Update()
         {
@@ -47,13 +55,11 @@ namespace BlockLimiter.Utility
             {
                 var e = MyEntities.GetEntities();
                 
-                if (e.Count > 0)
-                {
-                    _gridCache.Clear();
-                    _gridCache.UnionWith(!BlockLimiterConfig.Instance.CountProjections
-                        ? e.OfType<MyCubeGrid>().Where(x => x.Projector == null)
-                        : e.OfType<MyCubeGrid>());
-                }
+                if (e.Count == 0) return;
+                _gridCache.Clear();
+                _gridCache.UnionWith(!BlockLimiterConfig.Instance.CountProjections
+                    ? e.OfType<MyCubeGrid>().Where(x => x.Projector == null)
+                    : e.OfType<MyCubeGrid>());
             }
 
             if (++_updateCounter % 100 != 0) return;
@@ -78,7 +84,15 @@ namespace BlockLimiter.Utility
                 grids.UnionWith(_gridCache);
             }
         }
-        
+
+        public static void GetPlayerGrids(HashSet<MyCubeGrid> grids,long owner)
+        {
+            using (_entityLock.AcquireSharedUsing())
+            {
+                grids.UnionWith(_gridCache.Where(g=>g.BigOwners.Contains(owner)));
+            }
+        }
+
         public static void GetBlocks(HashSet<MySlimBlock> entities)
         {
             using(_entityLock.AcquireSharedUsing())

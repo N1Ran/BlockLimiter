@@ -1,30 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Timers;
-using BlockLimiter.Patch;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Blocks;
-using Sandbox.Game.Entities.Character;
-using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
-using Torch;
-using Torch.Managers;
-using Torch.Mod;
-using Torch.Mod.Messages;
 using Torch.Utils;
-using VRage;
 using VRage.Collections;
-using VRage.Dedicated.Configurator;
 using VRage.Game;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Network;
 using VRage.Utils;
@@ -37,12 +23,12 @@ namespace BlockLimiter.Utility
         private static Action<bool, ulong> _spawnGridReply;
 
 
-        public static string GetMessage(string msg, List<string> blockList, int count = 1)
+        public static string GetMessage(string msg, List<string> blockList, string limitName, int count = 1)
         {
             var returnMsg = "";
 
 
-            returnMsg = msg.Replace("{BC}", count.ToString()).Replace("{BL}", string.Join("\n", blockList));
+            returnMsg = msg.Replace("{BC}", count.ToString()).Replace("{L}",limitName).Replace("{BL}", string.Join("\n", blockList));
 
 
             return returnMsg;

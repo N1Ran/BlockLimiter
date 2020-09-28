@@ -24,12 +24,12 @@ using Torch;
 using Torch.API;
 using Torch.API.Managers;
 using Torch.API.Session;
+using Torch.Managers;
 using Torch.Session;
 using Torch.Views;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Game.VisualScripting;
 using VRage.Network;
 using VRage.Profiler;
 using Grid = BlockLimiter.Utility.Grid;
@@ -43,15 +43,20 @@ namespace BlockLimiter
         private List<Thread> _processThreads;
         private static bool _running;
         public static BlockLimiter Instance { get; private set; }
+        public static string ChatName => Instance.Torch.Config.ChatName;
+        public static string ChatColor => Instance.Torch.Config.ChatColor;
         private TorchSessionManager _sessionManager;
         private List<ProcessHandlerBase> _limitHandlers;
         public readonly HashSet<LimitItem> VanillaLimits = new HashSet<LimitItem>();
-        
         private int _updateCounter;
+        public static IPluginManager PluginManager { get; private set; }
+        public static bool DPBInstalled;
+        public static ITorchPlugin DPBPlugin;
 
 
         private void DoInit()
         {
+            DPBInstalled = PluginManager.Plugins.TryGetValue(new Guid("b1307cc4-e307-4ec5-a0e0-732a624abfcc"), out DPBPlugin );
 
             _limitHandlers = new List<ProcessHandlerBase>
             {
@@ -62,7 +67,6 @@ namespace BlockLimiter
             _processThread = new Thread(PluginProcessing);
             _processThread.Start();
             
-            MyCubeGrid.OnSplitGridCreated += MyCubeGridOnOnSplitGridCreated;
             MyMultiplayer.Static.ClientJoined += StaticOnClientJoined;
             MyCubeGrids.BlockBuilt += MyCubeGridsOnBlockBuilt;
             MySession.Static.Factions.FactionStateChanged += FactionsOnFactionStateChanged;
@@ -120,7 +124,8 @@ namespace BlockLimiter
 
             if (!GridCache.TryGetGridById(grid.EntityId, out _))
             {
-                GridCache.Update();
+                GridCache.AddGrid(grid);
+                //GridCache.Update();
                 return;
             }
             Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
@@ -128,25 +133,22 @@ namespace BlockLimiter
 
         }
 
-        private static void MyCubeGridOnOnSplitGridCreated(MyCubeGrid grid)
-        {
-            if (grid == null || !BlockLimiterConfig.Instance.EnableLimits) return;
-            
-            Task.Run(() =>
-            {
-                Thread.Sleep(100);
-                var entity = MyEntities.GetEntityByName(grid.Name);
-                if (!(entity is MyCubeGrid newStateGrid)) return;
-                UpdateLimits.GridLimit(newStateGrid);
-            });
-        }
 
         private static void StaticOnClientJoined(ulong obj)
         {
+            if (obj == 0) return;
+            if (BlockLimiterConfig.Instance.PlayerTimes.Any(x=>x.Player == obj) == false)
+            {
+                Instance.Log.Warn($"{obj} logged to player time {DateTime.Now}");
+                var playerTime = new PlayerTime {Player = obj, Time = DateTime.Now};
+                BlockLimiterConfig.Instance.PlayerTimes.Add(playerTime);
+            }
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
             var identityId = Utilities.GetPlayerIdFromSteamId(obj);
             if (identityId == 0)return;
+            var playerFaction = MySession.Static.Factions.GetPlayerFaction(identityId);
             UpdateLimits.PlayerLimit(identityId);
+            if (playerFaction != null)UpdateLimits.PlayerLimit(playerFaction.FactionId);
         }
 
 
@@ -244,6 +246,7 @@ namespace BlockLimiter
         {
             base.Init(torch);
             Instance = this;
+            PluginManager = Torch.Managers.GetManager<PluginManager>();
             Load();
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)
@@ -258,8 +261,8 @@ namespace BlockLimiter
             base.Update();
             if (MyAPIGateway.Session == null|| !BlockLimiterConfig.Instance.EnableLimits)
                 return;
-            GridCache.Update();
             if (++_updateCounter % 100 != 0) return;
+            GridCache.Update();
             MergeBlockPatch.MergeBlockCache.Clear();
 
         }

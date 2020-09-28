@@ -14,10 +14,13 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.SessionComponents;
 using Sandbox.Game.World;
 using Torch;
+using Torch.API.Managers;
 using Torch.Managers;
+using Torch.Managers.ChatManager;
 using Torch.Managers.PatchManager;
 using VRage.Game;
 using VRage.Network;
+using VRageMath;
 
 namespace BlockLimiter.Patch
 {
@@ -51,7 +54,7 @@ namespace BlockLimiter.Patch
         /// <returns></returns>
         private static bool AttemptSpawn(MyCubeGrid.MyPasteGridParameters parameters)
         {
-            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+            if (!BlockLimiterConfig.Instance.EnableLimits  || !BlockLimiterConfig.Instance.EnableGridSpawnBlocking) return true;
             var grids = parameters.Entities;
 
             if (grids.Count == 0) return false;
@@ -63,8 +66,8 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             var playerName = MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName;
 
-            grids.RemoveAll(Grid.IsSizeViolation);
-
+            grids.RemoveAll(g=> Grid.IsSizeViolation(g) || Grid.CountViolation(g,playerId));
+            
             if (grids.Count == 0)
             {
                 Log.Info($"Blocked {playerName} from spawning a grid");
@@ -81,7 +84,7 @@ namespace BlockLimiter.Patch
             }
 
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
-
+            string limitName = null;
             var removalCount = 0;
             var removedList = new List<string>();
             foreach (var grid in grids)
@@ -105,6 +108,7 @@ namespace BlockLimiter.Patch
                         if (removedList.Contains(blockDef))
                             continue;
                         removedList.Add(blockDef);
+                        limitName = limit.Name;
                     }
 
                 }
@@ -116,38 +120,15 @@ namespace BlockLimiter.Patch
             parameters.Entities = grids;
 
 
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,removedList,removalCount);
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,removedList,limitName,removalCount);
 
-            MyVisualScriptLogicProvider.SendChatMessage($"{msg}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
+                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
 
 
             Log.Info($"Removed {removalCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
             return true;
-            /*
-            if (grids.All(x => Grid.CanSpawn(x, playerId)))
-            {
-                return true;
-            }
-
-            Log.Info($"Blocked {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName} from spawning a grid");
-            
-            MyVisualScriptLogicProvider.SendChatMessage($"{BlockLimiterConfig.Instance.DenyMessage}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
-
-            //This is needed to keep the wheel of misery away (staticEvent specifically)
-
-            if (remoteUserId > 0)
-            {
-                Task.Run(() =>
-                {
-                    Thread.Sleep(100);
-                    Utilities.ValidationFailed();
-                    Utilities.SendFailSound(remoteUserId);
-                    NetworkManager.RaiseStaticEvent(ShowPasteFailed, new EndpointId(remoteUserId), null);
-                });
-            }
-
-            return false;
-            */
         }
 
         /// <summary>
@@ -166,11 +147,12 @@ namespace BlockLimiter.Patch
                 return true;
             }
             
+
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var player = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId);
             var playerId = player.Identity.IdentityId;
 
-            if (Block.IsWithinLimits(block, playerId, null))
+            if (Block.IsWithinLimits(block, playerId, null,out var limitName) && !Grid.CountViolation(block,playerId))
             {
                 return true;
             }
@@ -181,8 +163,10 @@ namespace BlockLimiter.Patch
             Log.Info($"Blocked {p} from placing {block}");
 
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{block.ToString().Substring(16)});
-            MyVisualScriptLogicProvider.SendChatMessage($"{msg}", BlockLimiterConfig.Instance.ServerName, playerId, MyFontEnum.Red);
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{block.ToString().Substring(16)},limitName);
+            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
+                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
 
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();

@@ -12,6 +12,7 @@ using Sandbox.Definitions;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
+using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using Torch.API.Plugins;
@@ -415,6 +416,130 @@ namespace BlockLimiter.Commands
         }
 
 
+        #region ManualControl
+
+
+        [Command("annoy", "Runs the annoyance message")]
+        public void Annoy()
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                Context.Respond("Plugin disabled");
+                return;
+            }
+            Punishment.Annoy.RunAnnoyance();
+            Context.Respond("Annoyance messaging triggered");
+        }
+
+        [Command("punish", "runs punishment")]
+        public void Punish()
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                Context.Respond("Plugin disabled");
+                return;
+            }
+
+            var blocks = new HashSet<MySlimBlock>();
+            var punishmentTypes = new List<LimitItem.PunishmentType>();
+            int count;
+            if (Context.Args.Count == 0)
+            {
+                GridCache.GetBlocks(blocks);
+                count = Punishment.Punish.RunPunishment(blocks);
+                Context.Respond($"Punished {count} blocks");
+                return;
+            }
+
+            if (Context.Args.Count == 1 && Context.Args[0].StartsWith("-punishment"))
+            {
+                GridCache.GetBlocks(blocks);
+                if (!Enum.TryParse(Context.Args[0].Replace("-punishment=", ""), true, out LimitItem.PunishmentType punishment))
+                {
+                    Context.Respond("Punishment string error.  Use 'DeleteBlock', 'ShutOffBlock', or 'Explode' instead");
+                    return;
+                }
+                punishmentTypes.Add(punishment);
+                count = Punishment.Punish.RunPunishment(blocks, punishmentTypes);
+                Context.Respond($"Punished {count} blocks");
+                return;
+            }
+
+            var allOptionIsPunishment = true;
+
+            foreach (var arg in Context.Args)
+            {
+                if (arg.StartsWith("-punishment="))
+                {
+                    if (!Enum.TryParse(arg.Replace("-punishment=", ""), true, out LimitItem.PunishmentType punishment))
+                    {
+                        Context.Respond("Punishment string error.  Use 'DeleteBlock', 'ShutOffBlock', or 'Explode' instead");
+                        return;
+                    }
+                    if (punishmentTypes.Contains(punishment)) continue;
+                    punishmentTypes.Add(punishment);
+                    continue;
+                }
+
+                if (arg.StartsWith("-player="))
+                {
+                    allOptionIsPunishment = false;
+                    var name = arg.Replace("-player=", "");
+                    if (!Utilities.TryGetPlayerByNameOrId(name, out var identity))
+                    {
+                        Context.Respond($"Player {name} not found");
+                        return;
+                    }
+                    GridCache.GetPlayerBlocks(blocks,identity.IdentityId);
+                    continue;
+                }
+
+                if (arg.StartsWith("-grid="))
+                {
+                    allOptionIsPunishment = false;
+
+                    var gridName = arg.Replace("-grid=", "");
+
+                    if (!Utilities.TryGetEntityByNameOrId(gridName, out var entity))
+                    {
+                        
+                        Context.Respond($"No entity with the name {gridName} found");
+                        return;
+                    }
+
+                    if (!(entity is MyCubeGrid grid))
+                    {
+                        Context.Respond("No grid found");
+                        return;
+                    }
+
+                    blocks.UnionWith(grid.CubeBlocks);
+                    continue;
+
+                }
+
+                if (arg.StartsWith("-faction"))
+                {
+                    allOptionIsPunishment = false;
+
+                    var factionTag = arg.Replace("-faction=","");
+                    var faction = MySession.Static.Factions.TryGetFactionByTag(factionTag);
+                    if (faction == null)
+                    {
+                        Context.Respond($"{factionTag} was not found in factions.  Check spelling and case.");
+                        return;
+                    }
+                    GridCache.GetFactionBlocks(blocks,faction.FactionId);
+                }
+            }
+            if (allOptionIsPunishment && punishmentTypes.Count > 0)GridCache.GetBlocks(blocks);
+
+            count = Punishment.Punish.RunPunishment(blocks,punishmentTypes.Count >0 ?punishmentTypes:null);
+            Context.Respond($"Punished {count} blocks");
+        }
+
+
+        #endregion
 
     }
 }

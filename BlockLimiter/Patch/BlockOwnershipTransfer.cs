@@ -65,7 +65,6 @@ namespace BlockLimiter.Patch
             var newOwner = requests[0].Owner;
 
 
-
             if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
             {
                 if (newOwner == requestingPlayer)
@@ -121,7 +120,7 @@ namespace BlockLimiter.Patch
             
             if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
             {
-                if (!Block.IsWithinLimits(block.BlockDefinition, newOwner, 0))
+                if (!Block.IsWithinLimits(block.BlockDefinition, newOwner, 0,1, out _))
                 {
                     Utilities.ValidationFailed();
                         Log.Info($"Authorship transfer blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(newOwner)?.DisplayName}");
@@ -158,7 +157,7 @@ namespace BlockLimiter.Patch
                 return true;
             }
 
-            if (!Block.IsWithinLimits(block.BlockDefinition, playerId, 0))
+            if (!Block.IsWithinLimits(block.BlockDefinition, playerId, 0,1,out _))
             {
                 Utilities.ValidationFailed();
                 Log.Info($"Ownership blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");

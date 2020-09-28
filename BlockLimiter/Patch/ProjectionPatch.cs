@@ -16,7 +16,12 @@ using System.Threading.Tasks;
 using Sandbox.Game;
 using Sandbox.Game.World;
 using Torch;
+using Torch.API.Managers;
 using Torch.Managers;
+using Torch.Managers.ChatManager;
+using VRage.GameServices;
+using VRage.Serialization;
+using VRageMath;
 
 namespace BlockLimiter.Patch
 {
@@ -27,9 +32,10 @@ namespace BlockLimiter.Patch
 
         private static readonly MethodInfo NewBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly MethodInfo RemoveBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);
-        
+
         public static void Patch(PatchContext ctx)
         {
+
             ctx.GetPattern(typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.Instance | BindingFlags.NonPublic)).
                 Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixNewBlueprint), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
 
@@ -60,15 +66,33 @@ namespace BlockLimiter.Patch
         /// <returns></returns>
         private static bool PrefixNewBlueprint(MyProjectorBase __instance, ref List<MyObjectBuilder_CubeGrid> projectedGrids)
         {
-            if (!BlockLimiterConfig.Instance.EnableLimits)return true;
-
+            var remoteUserId = MyEventContext.Current.Sender.Value;
             var proj = __instance;
             if (proj == null)
             {
                 Log.Warn("No projector?");
                 return false;
             }
-            
+
+            bool changesMade = false;
+            if (BlockLimiter.DPBInstalled)
+            {
+                try
+                {
+                    var canProject = BlockLimiter.DPBPlugin?.GetType()
+                        .GetMethod("CanProject", BindingFlags.Public | BindingFlags.Static);
+                    object[] parameters = {projectedGrids, remoteUserId,null};
+                    canProject?.Invoke(null, parameters);
+                    changesMade = (bool) parameters[2];
+                }
+                catch (Exception e)
+                {
+                  Log.Warn(e,"DPB was unable to check projection");
+                }
+            }
+
+            if (changesMade) NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod, new EndpointId(remoteUserId));
+
             var grid = projectedGrids[0];
 
             if (grid == null)
@@ -76,24 +100,41 @@ namespace BlockLimiter.Patch
                 Log.Warn("Grid null in projectorPatch");
                 return false;
             }
-            
 
-            var remoteUserId = MyEventContext.Current.Sender.Value;
+
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                if (changesMade)NetworkManager.RaiseEvent(__instance, NewBlueprintMethod,new List<MyObjectBuilder_CubeGrid> {grid});
+                return true;
+            }
+
+           
+
             var player = MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId);
             
             var projectedBlocks = grid.CubeBlocks;
 
-            if (player == null || projectedBlocks.Count == 0) return true;
-            if (Utilities.IsExcepted(player.Identity.IdentityId, new List<string>())) return true;
+            if (player == null || projectedBlocks.Count == 0)
+            {
+                if (changesMade)NetworkManager.RaiseEvent(__instance, NewBlueprintMethod,new List<MyObjectBuilder_CubeGrid> {grid});
+                return true;
+            }
+
+            if (Utilities.IsExcepted(player.Identity.IdentityId, new List<string>()))
+            {
+                if (changesMade)NetworkManager.RaiseEvent(__instance, NewBlueprintMethod,new List<MyObjectBuilder_CubeGrid> {grid});
+                return true;
+            }
 
             var playerId = player.Identity.IdentityId;
-            if (Grid.IsSizeViolation(grid))
+            if (Grid.IsSizeViolation(grid) || BlockLimiterConfig.Instance.MaxBlockSizeProjections < 0 || (projectedBlocks.Count > BlockLimiterConfig.Instance.MaxBlockSizeProjections && BlockLimiterConfig.Instance.MaxBlockSizeProjections > 0) || Grid.CountViolation(grid,playerId))
             {
-                proj.SendRemoveProjection();
-                NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod);
+                NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod, new EndpointId(remoteUserId));
                 Utilities.ValidationFailed();
-                var msg1 = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{"Null"},grid.CubeBlocks.Count);
-                MyVisualScriptLogicProvider.SendChatMessage(msg1,BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+                var msg1 = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{"Null"},"SizeViolation",grid.CubeBlocks.Count);
+                if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(player.Identity.IdentityId))
+                    BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                        .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg1, Color.Red, remoteUserId);
                 
                 Log.Info($"Projection blocked from {player.DisplayName} due to size limit");
                 
@@ -105,11 +146,16 @@ namespace BlockLimiter.Patch
             
             limits.UnionWith(BlockLimiterConfig.Instance.AllLimits.Where(x=>x.RestrictProjection));
 
-            if (limits.Count == 0) return true;
+            if (limits.Count == 0)
+            {
+                if (changesMade)NetworkManager.RaiseEvent(__instance, NewBlueprintMethod,new List<MyObjectBuilder_CubeGrid> {grid});
+                return true;
+            }
             
             var count = 0;
 
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
+            string limitName = null;
             var removedList = new List<string>();
             foreach (var limit in limits)
             {
@@ -135,11 +181,12 @@ namespace BlockLimiter.Patch
                     var blockDef = Utilities.GetDefinition(block).ToString().Substring(16);
                     if (removedList.Contains(blockDef))continue;
                     removedList.Add(blockDef);
+                    limitName = limit.Name;
                 }
 
             }
 
-            if ( count < 1) return true;
+            if ( count == 0) return true;
             
             Log.Info($"Removed {count} blocks from projector set by {player.DisplayName} ");
 
@@ -149,16 +196,18 @@ namespace BlockLimiter.Patch
             {
                 
                 NetworkManager.RaiseEvent(__instance, NewBlueprintMethod,
-                    new List<MyObjectBuilder_CubeGrid> {grid});
+                    new List<MyObjectBuilder_CubeGrid> {grid}, new EndpointId(remoteUserId));
             }
             catch (Exception e)
             {
                 Log.Error(e);
             }
 
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.ProjectionDenyMessage,removedList, count);
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.ProjectionDenyMessage,removedList, limitName,count);
 
-            MyVisualScriptLogicProvider.SendChatMessage(msg, BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(player.Identity.IdentityId))
+                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
 
             return true;
 

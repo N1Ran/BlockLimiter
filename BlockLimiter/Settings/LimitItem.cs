@@ -8,6 +8,7 @@ using System.Windows;
 using Torch;
 using Torch.Views;
 using System.Xml.Serialization;
+using BlockLimiter.Utility;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
@@ -37,6 +38,9 @@ namespace BlockLimiter.Settings
         private int _limit;
         private bool _restrictProjection;
         private bool _ignoreNpc;
+        private FilterType _filterType;
+        private FilterOperator _limitOperator;
+        private int _filterValue;
 
 
         public LimitItem()
@@ -104,6 +108,8 @@ namespace BlockLimiter.Settings
             }
         }
 
+        #region Limits
+
         [Display(Name = "Limit Faction", GroupName = "Limits", Description = "Applies Limit to Factions")]
         public bool LimitFaction
         {
@@ -126,7 +132,7 @@ namespace BlockLimiter.Settings
                 OnPropertyChanged();
             }
         }
-        
+
         [Display(Name = "Limit Grids", GroupName = "Limits", Description = "Applies Limit to Grids")]
         public bool LimitGrids
         {
@@ -147,8 +153,9 @@ namespace BlockLimiter.Settings
                 OnPropertyChanged();
             }
         }
+        #endregion
+        #region Restrictions
 
-        
         [Display(Name = "PunishmentType", GroupName = "Restrictions", Description = "Set's what to do to extra blocks in violation of the limit")]
         public PunishmentType Punishment
         {
@@ -185,10 +192,48 @@ namespace BlockLimiter.Settings
                 OnPropertyChanged();
             }
         }
+        #endregion
+
+        #region Filter
+
+        [Display(Name = "Filter Type", GroupName = "Filter", Description = "Filters limit base on what is set")]
+        public FilterType LimitFilterType
+        {
+            get => _filterType;
+            set
+            {
+                _filterType = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [Display(Name = "Filter Operator", GroupName = "Filter", Description = "Filters limit base on what is set")]
+        public FilterOperator LimitFilterOperator
+        {
+            get => _limitOperator;
+            set
+            {
+                _limitOperator = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [Display(Name = "Filter Value", GroupName = "Filter", Description = "Filters limit base on what is set")]
+        public int FilterValue
+        {
+            get => _filterValue;
+            set
+            {
+                _filterValue = value;
+                OnPropertyChanged();
+            }
+        }
+        #endregion
 
         public bool IsMatch(MyCubeBlockDefinition definition)
         {
             if (!BlockList.Any() || definition == null) return false;
+
 
             if (GridTypeBlock != GridType.AllGrids)
             {
@@ -206,45 +251,140 @@ namespace BlockLimiter.Settings
                 x.Equals(definition.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase));
         }
 
+        public bool IsFilterType(MyCubeGrid grid)
+        {
+            if (LimitFilterType == FilterType.None) return true;
+            switch (LimitFilterType)
+            {
+                //Todo Create file for saving current logged player info (expand to saving limit info also)
+                case FilterType.PlayerPlayTime:
+                    var owners = GridCache.GetOwners(grid);
+                    if (owners.Count == 0) break;
+                    var player = MySession.Static.Players.TryGetIdentity(owners.FirstOrDefault());
+                    break;
+                case FilterType.GridBlockCount:
+                    if (LimitFilterOperator == FilterOperator.GreaterThan) return grid.BlocksCount > FilterValue;
+                    else
+                    {
+                        return grid.BlocksCount < FilterValue;
+                    }
+                case FilterType.FactionMemberCount:
+                    var owners1 = GridCache.GetOwners(grid);
+                    if (owners1.Count == 0) break;
+                    var ownerFaction = MySession.Static.Factions.GetPlayerFaction(owners1.FirstOrDefault());
+                    if (ownerFaction == null) break;
+                    if (LimitFilterOperator == FilterOperator.GreaterThan) return ownerFaction.Members.Count > FilterValue;
+                    else
+                    {
+                        return ownerFaction.Members.Count < FilterValue;
+                    }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            return false;
+        }
+        public bool IsFilterType(MyObjectBuilder_CubeGrid grid, long playerId = 0)
+        {
+            if (LimitFilterType == FilterType.None) return true;
+            switch (LimitFilterType)
+            {
+                //Todo Create file for saving current logged player info (expand to saving limit info also)
+                case FilterType.PlayerPlayTime:
+                    if (playerId == 0) break;
+                    var player = MySession.Static.Players.TryGetSteamId(playerId);
+                    if (player == 0) break;
+                    var playerTime = BlockLimiterConfig.Instance.PlayerTimes.FirstOrDefault(x => x.Player == player);
+                    if (playerTime == null) break;
+                    if (LimitFilterOperator == FilterOperator.GreaterThan) return (DateTime.Now - playerTime.Time).TotalDays > FilterValue;
+                    else
+                    {
+                        return (DateTime.Now - playerTime.Time).TotalDays < FilterValue;
+                    }
+                case FilterType.GridBlockCount:
+                    if (LimitFilterOperator == FilterOperator.GreaterThan) return grid.CubeBlocks.Count > FilterValue;
+                    else
+                    {
+                        return grid.CubeBlocks.Count < FilterValue;
+                    }
+                case FilterType.FactionMemberCount:
+                    if (playerId == 0)break;
+                    var ownerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
+                    if (ownerFaction == null) break;
+                    if (LimitFilterOperator == FilterOperator.GreaterThan) return ownerFaction.Members.Count > FilterValue;
+                    else
+                    {
+                        return ownerFaction.Members.Count < FilterValue;
+                    }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            return false;
+        }
         public bool IsGridType(MyCubeGrid grid)
         {
+            bool isGridType = false;
+            var isFilterType = IsFilterType(grid);
+
             switch (GridTypeBlock)
             {
                 case GridType.SmallGridsOnly:
-                    return grid.GridSizeEnum == MyCubeSize.Small;
+                    isGridType = grid.GridSizeEnum == MyCubeSize.Small;
+                    break;
                 case GridType.LargeGridsOnly:
-                    return grid.GridSizeEnum == MyCubeSize.Large;
+                    isGridType =  grid.GridSizeEnum == MyCubeSize.Large;
+                    break;
                 case GridType.StationsOnly:
-                    return grid.IsStatic;
+                    isGridType = grid.IsStatic;
+                    break;
                 case GridType.ShipsOnly:
-                    return !grid.IsStatic;
+                    isGridType = !grid.IsStatic;
+                    break;
                 case GridType.AllGrids:
-                    return true;
-                default:
-                    return false;
+                    isGridType = true;
+                    break;
             }
+
+            return isGridType && isFilterType;
         }
 
-        public bool IsGridType(MyObjectBuilder_CubeGrid grid)
+        public bool IsGridType(MyObjectBuilder_CubeGrid grid, long playerId = 0)
         {
+            bool isGridType = false;
+            var isFilterType = IsFilterType(grid,playerId);
+
             switch (GridTypeBlock)
             {
                 case GridType.AllGrids:
-                    return true;
+                    isGridType = true;
+                    break;
                 case GridType.SmallGridsOnly:
-                    return grid.GridSizeEnum == MyCubeSize.Small;
+                    isGridType = grid.GridSizeEnum == MyCubeSize.Small;
+                    break;
                 case GridType.LargeGridsOnly:
-                    return grid.GridSizeEnum == MyCubeSize.Large;
+                    isGridType = grid.GridSizeEnum == MyCubeSize.Large;
+                    break;
                 case GridType.StationsOnly:
-                    return grid.IsStatic;
+                    isGridType = grid.IsStatic;
+                    break;
                 case GridType.ShipsOnly:
-                    return !grid.IsStatic;
-                default:
-                    return false;
+                    isGridType = !grid.IsStatic;
+                    break;
             }
+
+            return isGridType && isFilterType;
         }
 
-
+        public void ClearEmptyEntities()
+        {
+            var foundEntities = FoundEntities;
+            if (foundEntities == null || foundEntities.Count == 0) return;
+            foreach (var entity in foundEntities)
+            {
+             if (entity.Value ==0) FoundEntities.Remove(entity.Key);
+            }
+        }
         public void Reset()
         {
             FoundEntities.Clear();
@@ -271,7 +411,21 @@ namespace BlockLimiter.Settings
             ShutOffBlock,
             Explode
         }
-        
+
+        public enum FilterType
+        {
+            None,
+            PlayerPlayTime,
+            GridBlockCount,
+            FactionMemberCount
+        }
+
+        public enum FilterOperator
+        {
+            LessThan,
+            GreaterThan
+        }
+
         public enum GridType
         {
             AllGrids,

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
@@ -12,12 +13,15 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Torch;
+using Torch.API.Managers;
 using Torch.Managers;
+using Torch.Managers.ChatManager;
 using Torch.Managers.PatchManager;
 using Torch.Utils;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Network;
+using VRageMath;
 
 namespace BlockLimiter.Patch
 {
@@ -38,9 +42,12 @@ namespace BlockLimiter.Patch
             ctx.GetPattern(ConvertToStationRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToStatic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             ctx.GetPattern(ConvertToShipRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToDynamic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             
-            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("CreateGridForSplit",  BindingFlags.NonPublic |  BindingFlags.Static)).
+            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("MoveBlocks",  BindingFlags.Static|BindingFlags.NonPublic)).Suffixes
+                .Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.NonPublic));
+            /*
+            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("AnnounceRemoveSplit",  BindingFlags.Public |  BindingFlags.Instance)).
                 Suffixes.Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.Instance |  BindingFlags.NonPublic));
-
+            */
         }
 
 
@@ -70,25 +77,35 @@ namespace BlockLimiter.Patch
         /// Updates limits on grid split
         /// </summary>
         /// <param name="originalGrid"></param>
-        private static void OnCreateSplit(MyCubeGrid originalGrid)
+        private static void OnCreateSplit(ref MyCubeGrid from, ref MyCubeGrid to)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
-            if (originalGrid == null) return;
-            Task.Run(() =>
+            foreach (var block in to.CubeBlocks)
             {
-                Thread.Sleep(100);
-                if (!GridCache.TryGetGridById(originalGrid.EntityId, out var newStateGrid)) return;
-                foreach (var block in newStateGrid.CubeBlocks)
+                if (block.BuiltBy == block.OwnerId)
+                    Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,from.EntityId);
+                else
                 {
-                    if (block.BuiltBy == block.OwnerId)
-                        Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,originalGrid.EntityId);
-                    else
-                    {
-                        Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,originalGrid.EntityId);
-                        Block.DecreaseCount(block.BlockDefinition,block.OwnerId);
-                    }
+                    Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,from.EntityId);
+                    Block.DecreaseCount(block.BlockDefinition,block.OwnerId);
                 }
-            });
+            }
+
+            if (Grid.CountViolation(from, from.BigOwners[0]))
+            {
+                if (from.BlocksCount > to.BlocksCount)
+                {
+                    to.SendGridCloseRequest();
+                    UpdateLimits.GridLimit(from);
+                }
+                else
+                {
+                    from.SendGridCloseRequest();
+                    UpdateLimits.GridLimit(to);
+                }
+                return;
+            }
+            UpdateLimits.GridLimit(to);
         }
 
         
@@ -115,7 +132,7 @@ namespace BlockLimiter.Patch
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
-            if (Grid.AllowConversion(grid,out var blocks, out var count) || remoteUserId == 0 || playerId == 0)
+            if (Grid.AllowConversion(grid,out var blocks, out var count, out var limitName) || remoteUserId == 0 || playerId == 0)
             {
                 var gridId = grid.EntityId;
                 Task.Run(()=>
@@ -127,9 +144,11 @@ namespace BlockLimiter.Patch
                 });
                 return true;
             }
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,count);
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
 
-            MyVisualScriptLogicProvider.SendChatMessage(msg,BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
+                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
             Utilities.SendFailSound(remoteUserId);
@@ -153,7 +172,7 @@ namespace BlockLimiter.Patch
             }
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
-            if (Grid.AllowConversion(grid, out var blocks, out var count) || remoteUserId == 0 || playerId == 0)
+            if (Grid.AllowConversion(grid, out var blocks, out var count,out var limitName) || remoteUserId == 0 || playerId == 0)
             {
                 var gridId = grid.EntityId;
                 Task.Run(()=>
@@ -165,9 +184,11 @@ namespace BlockLimiter.Patch
                 });
                 return true;
             }
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,count);
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
 
-            MyVisualScriptLogicProvider.SendChatMessage(msg,BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
+                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
             Utilities.SendFailSound(remoteUserId);

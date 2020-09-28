@@ -1,21 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using BlockLimiter.Patch;
 using BlockLimiter.Settings;
-using NLog;
 using Sandbox;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
-using Sandbox.ModAPI;
+using Torch.API.Managers;
+using Torch.Managers.ChatManager;
 using VRage.Collections;
 using VRage.Game;
-using VRage.Game.ModAPI;
+using VRageMath;
 
 namespace BlockLimiter.Utility
 {
@@ -24,7 +22,7 @@ namespace BlockLimiter.Utility
         private static readonly HashSet<LimitItem> Limits = BlockLimiterConfig.Instance.AllLimits;
 
 
-        public static void KillBlock(MyCubeBlock block)
+        private static void KillBlock(MyCubeBlock block)
         {
             if (!(block is MyFunctionalBlock fBlock) || BlockSwitchPatch.KeepOffBlocks.Contains(fBlock))return;
             BlockSwitchPatch.KeepOffBlocks.Add(fBlock);
@@ -38,9 +36,9 @@ namespace BlockLimiter.Utility
             }
         }
 
-        public static bool IsWithinLimits(MyCubeBlockDefinition block, long playerId, MyObjectBuilder_CubeGrid grid = null)
+        public static bool IsWithinLimits(MyCubeBlockDefinition block, long playerId, MyObjectBuilder_CubeGrid grid, out string limitName)
         {
-            
+            limitName = null;
             var allow = true;
             if (block == null) return true;
             var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
@@ -49,6 +47,7 @@ namespace BlockLimiter.Utility
 
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
+                limitName = item.Name;
                 if (!item.BlockList.Any() || !item.IsMatch(block)) continue;
                 
                 if ((Utilities.IsExcepted(playerId,item.Exceptions) || (grid != null && Utilities.IsExcepted(grid.EntityId,item.Exceptions))))
@@ -62,7 +61,7 @@ namespace BlockLimiter.Utility
                     return false;
                 }
 
-                if (grid != null && item.IsGridType(grid))
+                if (grid != null && item.IsGridType(grid,playerId))
                 {
                     var gridId = grid.EntityId;
 
@@ -109,8 +108,9 @@ namespace BlockLimiter.Utility
             
         }
 
-        public static bool IsWithinLimits(MyCubeBlockDefinition def, long ownerId, long gridId, int count = 1)
+        public static bool IsWithinLimits(MyCubeBlockDefinition def, long ownerId, long gridId, int count, out string limit)
         {
+            limit = null;
             if (def == null || Math.Abs(ownerId + gridId) < 1) return true;
 
 
@@ -125,6 +125,7 @@ namespace BlockLimiter.Utility
 
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
+                limit = item.Name;
                 if (!item.IsMatch(def)) continue;
                 
                 if ((ownerId > 0 && Utilities.IsExcepted(ownerId,item.Exceptions)) || (gridId > 0 && Utilities.IsExcepted(gridId,item.Exceptions)))
@@ -212,6 +213,7 @@ namespace BlockLimiter.Utility
 
                 if (limit.LimitPlayers && playerId > 0)
                     limit.FoundEntities.AddOrUpdate(playerId, amount, (l, i) => i+amount);
+
                 if (limit.LimitGrids && gridId > 0)
                     limit.FoundEntities.AddOrUpdate(gridId, amount, (l, i) => i+amount);
 
@@ -249,7 +251,7 @@ namespace BlockLimiter.Utility
                     limit.FoundEntities.AddOrUpdate(gridId, 0, (l, i) => Math.Max(0,i - amount));
                 if (limit.LimitFaction && faction != null)
                     limit.FoundEntities.AddOrUpdate(faction.FactionId, 0, (l, i) => Math.Max(0,i - amount));
-
+                limit.ClearEmptyEntities();
             }
 
         }
@@ -314,7 +316,8 @@ namespace BlockLimiter.Utility
         {
             if (removalCollection.Count == 0) return;
             var log = BlockLimiter.Instance.Log;
-
+            if (!BlockLimiterConfig.Instance.EnableLimits) return;
+            var chatManager = BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>();
             lock (removalCollection)
             {
                 Task.Run(() =>
@@ -322,7 +325,10 @@ namespace BlockLimiter.Utility
                     Parallel.ForEach(removalCollection, collective =>
                     {
                         var (block, punishment) = collective;
+                        var ownerSteamId = MySession.Static.Players.TryGetSteamId(block.OwnerId);
                         if (block.IsDestroyed || block.FatBlock.Closed || block.FatBlock.MarkedForClose) return;
+                        Color color = Color.Yellow;
+
                         switch (punishment)
                         {
                             case LimitItem.PunishmentType.None:
@@ -334,21 +340,25 @@ namespace BlockLimiter.Utility
                                 },"BlockLimiter");
                                 log.Info(
                                     $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
-                                return;
+                                break;
                             case LimitItem.PunishmentType.ShutOffBlock:
                                 KillBlock(block.FatBlock);
-                                return;
+                                break;
                             case LimitItem.PunishmentType.Explode:
                                 log.Info(
                                     $"Destroyed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
                                 MySandboxGame.Static.Invoke(() =>
                                 {
-                                    block.DoDamage(block.BlockDefinition.MaxIntegrity * 10, MyDamageType.Explosion);
+                                    block.DoDamage(block.BlockDefinition.MaxIntegrity, MyDamageType.Fire);
                                 },"BlockLimiter");
-                                return;
+                                break;
                             default:
                                 return;
                         }
+
+                       if (ownerSteamId != 0 && MySession.Static.Players.IsPlayerOnline(block.OwnerId)) 
+                           chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid.DisplayName} with {punishment}",color,ownerSteamId);
+
                     });
                 });
             }

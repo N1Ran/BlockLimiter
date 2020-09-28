@@ -16,7 +16,9 @@ using Sandbox.ModAPI;
 using SpaceEngineers.Game.Entities.Blocks;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using Torch;
+using Torch.API.Managers;
 using Torch.Managers;
+using Torch.Managers.ChatManager;
 using Torch.Managers.PatchManager;
 using Torch.Mod;
 using Torch.Mod.Messages;
@@ -24,6 +26,7 @@ using Torch.Utils;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Network;
+using VRageMath;
 
 namespace BlockLimiter.Patch
 {
@@ -54,18 +57,16 @@ namespace BlockLimiter.Patch
 
             var mergeBlock = __instance;
 
-            if (mergeBlock?.Other == null || MergeBlockCache.Contains(mergeBlock.CubeGrid.EntityId))
+            if (mergeBlock?.Other == null || MergeBlockCache.Contains(mergeBlock.CubeGrid.EntityId) || MergeBlockCache.Contains(mergeBlock.Other.CubeGrid.EntityId)
+                || !mergeBlock.Enabled || !mergeBlock.Other.Enabled || mergeBlock.IsLocked || !mergeBlock.IsFunctional || !mergeBlock.Other.IsFunctional || mergeBlock.CubeGrid == mergeBlock.Other.CubeGrid)
 
             {
                 return true;
             }
 
 
-            
-            if (mergeBlock.IsLocked || !mergeBlock.IsFunctional || !mergeBlock.Other.IsFunctional || mergeBlock.CubeGrid == mergeBlock.Other.CubeGrid) return true;
 
-
-            if (Grid.CanMerge(mergeBlock.CubeGrid, mergeBlock.Other.CubeGrid, out var blocks, out var count))
+            if (Grid.CanMerge(mergeBlock.CubeGrid, mergeBlock.Other.CubeGrid, out var blocks, out var count, out var limitName))
             {
                 if (!MergeBlockCache.Contains(mergeBlock.CubeGrid.EntityId))
                 {
@@ -75,12 +76,15 @@ namespace BlockLimiter.Patch
                 return true;
             }
 
+            mergeBlock.Enabled = false;
+
             if (DateTime.Now - _lastLogTime < TimeSpan.FromSeconds(1)) return false;
             _lastLogTime = DateTime.Now;
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,count);
-            var remoteUserId = MyEventContext.Current.Sender.Value;
-            var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
-            MyVisualScriptLogicProvider.SendChatMessage(msg,BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
+            var remoteUserId = MySession.Static.Players.TryGetSteamId(mergeBlock.OwnerId);
+            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(mergeBlock.OwnerId))
+                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             Utilities.SendFailSound(remoteUserId);
 
             Log.Info($"Blocked merger between {mergeBlock.CubeGrid?.DisplayName} and {mergeBlock.Other?.CubeGrid?.DisplayName}");

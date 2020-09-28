@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
 using BlockLimiter.Settings;
-using BlockLimiter.Utility;
 using NLog;
-using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Cube;
+using Sandbox.ModAPI;
+using SpaceEngineers.Game.Entities.Blocks;
 using Torch.Managers.PatchManager;
-using VRage.Game.Entity;
-using VRage.ModAPI;
 
 namespace BlockLimiter.Patch
 {
@@ -28,7 +26,7 @@ namespace BlockLimiter.Patch
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
             var block = __instance;
-            if (block == null || block.Enabled == false) return;
+            if (block == null || block.Enabled == false || block is MyParachute || block is MyButtonPanel || block is IMyPowerProducer) return;
             if ((!BlockLimiterConfig.Instance.KillNoOwnerBlocks || block.BlockDefinition?.ContainsComputer() == false || block.OwnerId != 0) && !KeepOffBlocks.Contains(block)) return;
             block.Enabled = false;
             Log.Info(

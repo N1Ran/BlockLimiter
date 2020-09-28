@@ -1,33 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using BlockLimiter;
-using BlockLimiter.ProcessHandlers;
 using Sandbox.Game.Entities;
 using BlockLimiter.Utility;
 using Sandbox.Game.World;
 using Torch.Managers.PatchManager;
 using BlockLimiter.Settings;
-using Torch;
 using VRage.Network;
-using NLog;
-using Sandbox;
 using Sandbox.Definitions;
-using Sandbox.Game;
-using Sandbox.Game.Entities.Blocks;
-using Sandbox.Game.Entities.Character;
-using Sandbox.Game.Entities.Cube;
-using Sandbox.ModAPI;
-using Torch.Mod;
-using Torch.Mod.Messages;
+using Torch.API.Managers;
+using Torch.Managers.ChatManager;
 using VRage.Game;
-using VRage.Game.ModAPI;
-using VRage.Scripting;
-using VRageRender;
+using VRageMath;
 
 
 namespace BlockLimiter.Patch
@@ -70,25 +54,18 @@ namespace BlockLimiter.Patch
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
+            if (Block.IsWithinLimits(def, playerId, grid.EntityId, blocksToBuild, out var limitName)) return true;
+            BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
 
-            
-            if (!Block.IsWithinLimits(def, playerId, grid.EntityId, blocksToBuild))
-            {
-                    BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>(){def.ToString().Substring(16)},limitName);
 
-                    var mi = new List<string>(){"test"};
-                //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-                var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>(){def.ToString().Substring(16)});
+            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
+                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
+            Utilities.SendFailSound(remoteUserId);
+            Utilities.ValidationFailed();
 
-                MyVisualScriptLogicProvider.SendChatMessage($"{msg}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
-                Utilities.SendFailSound(remoteUserId);
-                Utilities.ValidationFailed();
-
-                return false;
-            }
-            
-            
-            return true;
+            return false;
 
 
         }
@@ -121,19 +98,17 @@ namespace BlockLimiter.Patch
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
+            if (Block.IsWithinLimits(def, playerId, grid.EntityId,1, out var limitName)) return true;
+            BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {def.ToString().Substring(16)},limitName);
+            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
+                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
+            Utilities.SendFailSound(remoteUserId);
+            Utilities.ValidationFailed();
+            return false;
 
-            if (!Block.IsWithinLimits(def, playerId, grid.EntityId))
-            {
-                    BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
-                    var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>(){def.ToString().Substring(16)});
-                MyVisualScriptLogicProvider.SendChatMessage($"{msg}",BlockLimiterConfig.Instance.ServerName,playerId,MyFontEnum.Red);
-                Utilities.SendFailSound(remoteUserId);
-                Utilities.ValidationFailed();
-                return false;
-            }
-            
-            return true;
-            }
+        }
             
 
     }
