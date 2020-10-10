@@ -8,7 +8,6 @@ using Torch;
 using Torch.Views;
 using NLog;
 using Sandbox.ModAPI;
-using SharpDX.Toolkit.Collections;
 
 namespace BlockLimiter.Settings
 {
@@ -134,8 +133,8 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 6, Name = "Max SmallGrids", GroupName = "General Count Limit",
-            Description = "Max allowed small grid type per player")]
+        [Display(Order = 6, Name = "SmallGrids Allowed", GroupName = "General Count Limit",
+            Description = "Max allowed small grid per player")]
         public int MaxSmallGrids
         {
             get => _maxSmallGrids;
@@ -146,8 +145,8 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 7, Name = "Max LargeGrid", GroupName = "General Count Limit",
-            Description = "Max allowed large grid type per player")]
+        [Display(Order = 7, Name = "LargeGrids Allowed", GroupName = "General Count Limit",
+            Description = "Max allowed large grid per player")]
         public int MaxLargeGrids
         {
             get => _maxLargeGrids;

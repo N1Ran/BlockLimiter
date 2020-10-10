@@ -65,8 +65,7 @@ namespace BlockLimiter.Utility
             count = 0;
             if (grid == null) return false;
 
-            var owners = GridCache.GetOwners(grid);
-            if (grid.EntityId > 0 && Utilities.IsExcepted(grid.EntityId, new List<string>()) || owners.Any(x => Utilities.IsExcepted(x, new List<string>())))
+            if (Utilities.IsExcepted(grid))
                 return false;
 
             var gridSize = grid.CubeBlocks.Count;
@@ -117,6 +116,7 @@ namespace BlockLimiter.Utility
         private static bool CountViolation(MyCubeSize size, long owner)
         {
             if (owner == 0) return false;
+            if (Utilities.IsExcepted(owner)) return false;
             var playerGrids = new HashSet<MyCubeGrid>();
             GridCache.GetPlayerGrids(playerGrids,owner);
             var smallGrids = playerGrids.Count(x => x.GridSizeEnum == MyCubeSize.Small);
@@ -142,8 +142,8 @@ namespace BlockLimiter.Utility
             count = 0;
             if (grid1 == null || grid2 == null) return true;
 
-            if (GridCache.GetOwners(grid1).Any(x => Utilities.IsExcepted(x, new List<string>())) ||
-                GridCache.GetOwners(grid2).Any(x => Utilities.IsExcepted(x, new List<string>()))) return true;
+            if (Utilities.IsExcepted(GridCache.GetOwners(grid1)) ||
+                Utilities.IsExcepted(GridCache.GetOwners(grid2))) return true;
             
             var blocksHash = new HashSet<MySlimBlock>(grid1.CubeBlocks);
             
@@ -193,7 +193,7 @@ namespace BlockLimiter.Utility
                 limitName = limit.Name;
                 if (!limit.LimitGrids) continue;
 
-                if (Utilities.IsExcepted(grid1.EntityId, limit.Exceptions)|| Utilities.IsExcepted(grid2.EntityId, limit.Exceptions)) continue;
+                if (Utilities.IsExcepted(grid1)|| Utilities.IsExcepted(grid2)) continue;
 
                 var matchingBlocks = new List<MySlimBlock>(blocksHash.Where(x=> limit.IsMatch(x.BlockDefinition)));
                 
@@ -216,6 +216,8 @@ namespace BlockLimiter.Utility
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
+                if (Utilities.IsExcepted(grid,limit)) continue;
+
                 limitName = limit.Name;
                 if (!limit.LimitGrids) continue;
                 switch (limit.GridTypeBlock)
@@ -228,8 +230,6 @@ namespace BlockLimiter.Utility
                         continue;
                 }
                 
-                if (GridCache.GetOwners(grid).Any(x=> Utilities.IsExcepted(x, limit.Exceptions))) continue;
-
 
                 var matchingBlocks = new List<MySlimBlock>(grid.CubeBlocks.Where(x => limit.IsMatch(x.BlockDefinition)));
 
@@ -250,7 +250,7 @@ namespace BlockLimiter.Utility
 
         public static bool CanSpawn(MyObjectBuilder_CubeGrid grid, long playerId)
         {
-            if (Utilities.IsExcepted(playerId, new List<string>())) return true;
+            if (Utilities.IsExcepted(playerId)) return true;
 
             if (grid == null || IsSizeViolation(grid)) return false;
 

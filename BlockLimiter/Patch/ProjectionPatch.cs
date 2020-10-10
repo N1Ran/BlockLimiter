@@ -79,10 +79,8 @@ namespace BlockLimiter.Patch
             {
                 try
                 {
-                    var canProject = BlockLimiter.DPBPlugin?.GetType()
-                        .GetMethod("CanProject", BindingFlags.Public | BindingFlags.Static);
                     object[] parameters = {projectedGrids, remoteUserId,null};
-                    canProject?.Invoke(null, parameters);
+                    BlockLimiter.DPBCanAdd?.Invoke(null, parameters);
                     changesMade = (bool) parameters[2];
                 }
                 catch (Exception e)
@@ -120,7 +118,7 @@ namespace BlockLimiter.Patch
                 return true;
             }
 
-            if (Utilities.IsExcepted(player.Identity.IdentityId, new List<string>()))
+            if (Utilities.IsExcepted(player))
             {
                 if (changesMade)NetworkManager.RaiseEvent(__instance, NewBlueprintMethod,new List<MyObjectBuilder_CubeGrid> {grid});
                 return true;
@@ -159,7 +157,7 @@ namespace BlockLimiter.Patch
             var removedList = new List<string>();
             foreach (var limit in limits)
             {
-                if (Utilities.IsExcepted(player.Identity.IdentityId, limit.Exceptions)|| Utilities.IsExcepted(proj.CubeGrid.EntityId,limit.Exceptions)) continue;
+                if (Utilities.IsExcepted(player, limit)|| Utilities.IsExcepted(proj.CubeGrid,limit)) continue;
 
                 var pBlocks = new HashSet<MyObjectBuilder_CubeBlock>(projectedBlocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))));
                 

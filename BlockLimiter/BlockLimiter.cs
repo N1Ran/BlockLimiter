@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -12,8 +11,6 @@ using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
-using Sandbox;
-using Sandbox.Definitions;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
@@ -30,8 +27,6 @@ using Torch.Views;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Network;
-using VRage.Profiler;
 using Grid = BlockLimiter.Utility.Grid;
 
 namespace BlockLimiter
@@ -52,11 +47,16 @@ namespace BlockLimiter
         public static IPluginManager PluginManager { get; private set; }
         public static bool DPBInstalled;
         public static ITorchPlugin DPBPlugin;
+        public static MethodInfo DPBCanAdd;
 
 
         private void DoInit()
         {
-            DPBInstalled = PluginManager.Plugins.TryGetValue(new Guid("b1307cc4-e307-4ec5-a0e0-732a624abfcc"), out DPBPlugin );
+            PluginManager.Plugins.TryGetValue(new Guid("b1307cc4-e307-4ec5-a0e0-732a624abfcc"), out DPBPlugin );
+
+            DPBCanAdd = DPBPlugin?.GetType()
+                .GetMethod("CanProject", BindingFlags.Public | BindingFlags.Static);
+            DPBInstalled = DPBCanAdd != null;
 
             _limitHandlers = new List<ProcessHandlerBase>
             {
@@ -402,7 +402,7 @@ namespace BlockLimiter
         
         public static bool CheckLimits_future(MyObjectBuilder_CubeGrid[] grids, long id = 0)
         {
-            if (grids.Length == 0 ||!BlockLimiterConfig.Instance.EnableLimits || Utilities.IsExcepted(id, new List<string>()))
+            if (grids.Length == 0 ||!BlockLimiterConfig.Instance.EnableLimits || Utilities.IsExcepted(id))
             {
                 return false;
             }

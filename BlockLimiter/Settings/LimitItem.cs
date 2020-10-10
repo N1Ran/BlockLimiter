@@ -2,23 +2,16 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Linq;
-using System.Windows;
 using Torch;
 using Torch.Views;
 using System.Xml.Serialization;
 using BlockLimiter.Utility;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
-using VRage;
-using VRage.Collections;
-using VRage.Dedicated.Configurator;
 using VRage.Game;
-using VRage.Profiler;
 
 namespace BlockLimiter.Settings
 {

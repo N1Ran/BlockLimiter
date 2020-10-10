@@ -56,11 +56,11 @@ namespace BlockLimiter.Punishment
 
                 foreach (var item in limitItems)
                 {
-                    if (Utilities.IsExcepted(player.Identity.IdentityId, item.Exceptions)) continue;
+                    if (Utilities.IsExcepted(player, item)) continue;
 
                     foreach (var (id,count) in item.FoundEntities)
                     {
-                        if (id == 0 || Utilities.IsExcepted(id, item.Exceptions))continue;
+                        if (id == 0 || Utilities.IsExcepted(id, item))continue;
 
                         if (id == player.Identity.IdentityId && count > item.Limit)
                         {

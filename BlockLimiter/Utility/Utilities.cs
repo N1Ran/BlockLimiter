@@ -136,69 +136,112 @@ namespace BlockLimiter.Utility
         }
 
 
-        public static bool IsExcepted(long id, List<string> exceptions)
+        public static bool IsExcepted(object target, LimitItem limit = null)
         {
-
-            var allExceptions = new HashSet<string>(exceptions);
+            if (target == null) return false;
+            
+            HashSet<string> allExceptions = new HashSet<string>();
+            if (limit != null) allExceptions = new HashSet<string>(limit.Exceptions);
             allExceptions.UnionWith(BlockLimiterConfig.Instance.GeneralException);
 
             if (allExceptions.Count == 0) return false;
 
-            if (allExceptions.Contains(id.ToString()))
+            MyIdentity identity = null;
+            MyFaction faction = null;
+            long identityId = 0;
+            string displayName = "";
+            HashSet<long> gridOwners = new HashSet<long>();
+
+            switch (target)
             {
-                return true;
+                case HashSet<long> owners:
+                    gridOwners.UnionWith(owners);
+                    break;
+                case ulong steamId:
+                    if (steamId == 0) return false;
+                    if (allExceptions.Contains(steamId.ToString())) return true;
+                    identityId = GetPlayerIdFromSteamId(steamId);
+                    if (identityId > 0)
+                    {
+                        if (allExceptions.Contains(identityId.ToString())) return true;
+                        identity = MySession.Static.Players.TryGetIdentity(identityId);
+                        displayName = identity.DisplayName;
+                    }
+                    break;
+                case string name:
+                    if (allExceptions.Contains(name)) return true;
+                    if (TryGetPlayerByNameOrId(name, out identity) &&
+                        (allExceptions.Contains(identity.DisplayName) 
+                         || allExceptions.Contains(identity.IdentityId.ToString()))) return true;
+                    break;
+                case long id:
+                    if (id == 0) return false;
+                    identityId = id;
+                    identity = MySession.Static.Players.TryGetIdentity(id);
+                    if (identity != null)
+                    {
+                        faction = MySession.Static.Factions.GetPlayerFaction(id);
+                        displayName = identity.DisplayName;
+                    }
+                    else
+                    {
+                        faction = (MyFaction) MySession.Static.Factions.TryGetFactionById(id);
+                    }
+                    if (MyEntities.TryGetEntityById(id, out var entity))
+                    {
+                        if (allExceptions.Contains(entity.DisplayName)) return true;
+                    }
+
+                    if (GridCache.TryGetGridById(id, out var foundGrid))
+                    {
+                        gridOwners.UnionWith(GridCache.GetOwners(foundGrid));
+                        if (allExceptions.Contains(foundGrid.DisplayName)) return true;
+                    }
+                    break;
+                case MyFaction targetFaction:
+                    if (allExceptions.Contains(targetFaction.Tag) ||
+                        allExceptions.Contains(targetFaction.FactionId.ToString()))
+                        return true;
+                    break;
+                case MyPlayer player:
+                    var playerSteamId = player.Character.ControlSteamId;
+                    if (playerSteamId == 0) return false;
+                    if (allExceptions.Contains(playerSteamId.ToString())) return true;
+                    identityId = GetPlayerIdFromSteamId(playerSteamId);
+                    if (identityId > 0)
+                    {
+                        if (allExceptions.Contains(identityId.ToString())) return true;
+                        identity = MySession.Static.Players.TryGetIdentity(identityId);
+                        displayName = identity.DisplayName;
+                    }
+                    break;
+                case MyCubeGrid grid:
+                {
+                    if (allExceptions.Contains(grid.DisplayName) || allExceptions.Contains(grid.EntityId.ToString()))
+                        return true;
+                    var owners = GridCache.GetOwners(grid);
+                    if (owners.Count == 0) break;
+                    gridOwners.UnionWith(owners);
+                    break;
+                }
             }
 
-            var faction = MySession.Static.Factions.TryGetFactionById(id);
-
-            if (faction != null)
+            foreach (var owner in gridOwners)
             {
-                return allExceptions.Contains(faction.Tag) || allExceptions.Contains(faction.FactionId.ToString()) || allExceptions.Contains(faction.Name);
+                if (owner == 0) continue;
+                if (allExceptions.Contains(owner.ToString())) return true;
+                identity = MySession.Static.Players.TryGetIdentity(owner);
+                if (identity != null && allExceptions.Contains(identity.DisplayName)) return true;
+                faction = MySession.Static.Factions.GetPlayerFaction(owner);
+                if (faction != null && (allExceptions.Contains(faction.Tag) ||
+                                        allExceptions.Contains(faction.FactionId.ToString()))) return true;
             }
 
-            var identity = MySession.Static.Players.TryGetIdentity(id);
-
-            if (identity != null)
-            {
-               if (allExceptions.Contains(identity.DisplayName)) return true;
-
-               var identFaction = MySession.Static.Factions.GetPlayerFaction(id);
-
-               if (identFaction!= null && (allExceptions.Contains(identFaction.Tag) || allExceptions.Contains(identFaction.Name) ||
-                   allExceptions.Contains(identFaction.FactionId.ToString()))) return true;
-
-               var x = MySession.Static.Players.TryGetSteamId(identity.IdentityId);
-
-               if (x > 0 && allExceptions.Contains(x.ToString())) return true;
-            } 
-
-            if (!GridCache.TryGetGridById(id, out var grid)) return false;
-
-            if (allExceptions.Contains(grid.DisplayName)) return true;
-
-            var gridFac = grid.CubeBlocks.Select(x => x.FatBlock?.GetOwnerFactionTag()).FirstOrDefault();
-
-            if (!string.IsNullOrEmpty(gridFac) && (allExceptions.Contains(gridFac) || allExceptions.Contains(MySession.Static.Factions.TryGetFactionByTag(gridFac)?.FactionId.ToString()))) return true;
-
-            var owners = new HashSet<long>(GridCache.GetOwners(grid));
-            
-            if (owners.Count == 0) return false;
-
-            foreach (var ownerId in owners)
-            {
-                if (allExceptions.Contains(ownerId.ToString())) return true;
-
-                var ownerIdent = MySession.Static.Players.TryGetIdentity(ownerId);
-
-                if (ownerIdent != null && allExceptions.Contains(ownerIdent.DisplayName)) return true;
-
-                var ownerSteamId = MySession.Static.Players.TryGetSteamId(ownerId);
-
-                if (ownerSteamId > 0 && allExceptions.Contains(ownerSteamId.ToString())) return true;
-            }
-
+            if (identityId > 0 && allExceptions.Contains(identityId.ToString())) return true;
+            if (identity != null && allExceptions.Contains(identity.DisplayName)) return true;
+            if (faction != null && (allExceptions.Contains(faction.Tag)|| allExceptions.Contains(faction.FactionId.ToString()))) return true;
+            if (!string.IsNullOrEmpty(displayName) && allExceptions.Contains(displayName)) return true;
             return false;
-
         }
 
 

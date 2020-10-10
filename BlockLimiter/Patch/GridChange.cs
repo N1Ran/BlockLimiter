@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -80,7 +81,16 @@ namespace BlockLimiter.Patch
         private static void OnCreateSplit(ref MyCubeGrid from, ref MyCubeGrid to)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
-            foreach (var block in to.CubeBlocks)
+
+            var toBlocks = new HashSet<MySlimBlock>(to.CubeBlocks);
+
+            if (toBlocks.Count == 0)
+            {
+                Log.Error("Not updated breakage");
+                return;
+            }
+
+            foreach (var block in toBlocks)
             {
                 if (block.BuiltBy == block.OwnerId)
                     Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,from.EntityId);
@@ -91,21 +101,28 @@ namespace BlockLimiter.Patch
                 }
             }
 
-            if (Grid.CountViolation(from, from.BigOwners[0]))
+
+            var grid = from;
+            if (grid == null) return;
+            if (!from.BigOwners.Any(x => Grid.CountViolation(grid, x))) return;
+
+            var grid1 = from;
+            var grid2 = to;
+            BlockLimiter.Instance.Torch.InvokeAsync(() =>
             {
-                if (from.BlocksCount > to.BlocksCount)
+                Thread.Sleep(100);
+                if (grid1.BlocksCount > grid2.BlocksCount)
                 {
-                    to.SendGridCloseRequest();
-                    UpdateLimits.GridLimit(from);
+
+                    grid2.SendGridCloseRequest();
+                    UpdateLimits.GridLimit(grid1);
                 }
                 else
                 {
-                    from.SendGridCloseRequest();
-                    UpdateLimits.GridLimit(to);
+                    grid1.SendGridCloseRequest();
+                    UpdateLimits.GridLimit(grid2);
                 }
-                return;
-            }
-            UpdateLimits.GridLimit(to);
+            });
         }
 
         

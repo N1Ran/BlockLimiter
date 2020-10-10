@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Specialized;
-using Sandbox.ModAPI;
 using Torch;
 
 namespace BlockLimiter.Settings

@@ -50,7 +50,7 @@ namespace BlockLimiter.Utility
                 limitName = item.Name;
                 if (!item.BlockList.Any() || !item.IsMatch(block)) continue;
                 
-                if ((Utilities.IsExcepted(playerId,item.Exceptions) || (grid != null && Utilities.IsExcepted(grid.EntityId,item.Exceptions))))
+                if ((Utilities.IsExcepted(playerId,item) || (grid != null && Utilities.IsExcepted(grid.EntityId,item))))
                     continue;
 
 
@@ -128,7 +128,7 @@ namespace BlockLimiter.Utility
                 limit = item.Name;
                 if (!item.IsMatch(def)) continue;
                 
-                if ((ownerId > 0 && Utilities.IsExcepted(ownerId,item.Exceptions)) || (gridId > 0 && Utilities.IsExcepted(gridId,item.Exceptions)))
+                if ((ownerId > 0 && Utilities.IsExcepted(ownerId,item)) || (gridId > 0 && Utilities.IsExcepted(gridId,item)))
                     continue;
 
                 var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
@@ -236,11 +236,19 @@ namespace BlockLimiter.Utility
 
                 var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
 
-                if (foundGrid && !limit.IsGridType(grid)) continue;
+                if (foundGrid && !limit.IsGridType(grid))
+                {
+                    limit.FoundEntities.Remove(gridId);
+                    continue;
+                }
 
                 if (limit.IgnoreNpcs)
                 {
-                    if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
+                    if (MySession.Static.Players.IdentityIsNpc(playerId))
+                    {
+                        limit.FoundEntities.Remove(playerId);
+                        continue;
+                    }
                     if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetOwners(grid).FirstOrDefault())) continue;
                     
                 }
@@ -272,7 +280,7 @@ namespace BlockLimiter.Utility
                 }
 
                 limit.FoundEntities.TryGetValue(id, out var currentCount);
-                if(Utilities.IsExcepted(id, limit.Exceptions)) continue;
+                if(Utilities.IsExcepted(id, limit)) continue;
                 var affectedBlocks = blocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))).ToList();
                 if (affectedBlocks.Count <= limit.Limit - currentCount ) continue;
                 var take = affectedBlocks.Count - (limit.Limit - currentCount);
@@ -299,7 +307,7 @@ namespace BlockLimiter.Utility
                     if (MySession.Static.Players.IdentityIsNpc(id)) continue;
                 }
 
-                if(Utilities.IsExcepted(id, limit.Exceptions)) continue;
+                if(Utilities.IsExcepted(id, limit)) continue;
                 if (!limit.FoundEntities.TryGetValue(id, out var currentCount)) continue;
                 var affectedBlocks = blocks.Where(x => limit.IsMatch(x.BlockDefinition)).ToList();
                 if (affectedBlocks.Count <= limit.Limit - currentCount ) continue;

@@ -93,7 +93,7 @@ namespace BlockLimiter.Patch
                 {
                     var fCount = 0;
 
-                    if (Utilities.IsExcepted(playerId, limit.Exceptions)) continue;
+                    if (Utilities.IsExcepted(playerId, limit)) continue;
                     var matchBlocks = new HashSet<MyObjectBuilder_CubeBlock>(grid.CubeBlocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))));
                     limit.FoundEntities.TryGetValue(playerId, out var pCount);
                     if (playerFaction != null)
