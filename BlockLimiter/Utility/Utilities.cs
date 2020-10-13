@@ -149,6 +149,7 @@ namespace BlockLimiter.Utility
             MyIdentity identity = null;
             MyFaction faction = null;
             long identityId = 0;
+            ulong playerSteamId = 0;
             string displayName = "";
             HashSet<long> gridOwners = new HashSet<long>();
 
@@ -159,14 +160,10 @@ namespace BlockLimiter.Utility
                     break;
                 case ulong steamId:
                     if (steamId == 0) return false;
-                    if (allExceptions.Contains(steamId.ToString())) return true;
+                    playerSteamId = steamId;
                     identityId = GetPlayerIdFromSteamId(steamId);
-                    if (identityId > 0)
-                    {
-                        if (allExceptions.Contains(identityId.ToString())) return true;
-                        identity = MySession.Static.Players.TryGetIdentity(identityId);
-                        displayName = identity.DisplayName;
-                    }
+                    identity = MySession.Static.Players.TryGetIdentity(identityId);
+                    displayName = identity.DisplayName;
                     break;
                 case string name:
                     if (allExceptions.Contains(name)) return true;
@@ -182,6 +179,8 @@ namespace BlockLimiter.Utility
                     {
                         faction = MySession.Static.Factions.GetPlayerFaction(id);
                         displayName = identity.DisplayName;
+                        playerSteamId = GetSteamIdFromPlayerId(id);
+
                     }
                     else
                     {
@@ -204,7 +203,7 @@ namespace BlockLimiter.Utility
                         return true;
                     break;
                 case MyPlayer player:
-                    var playerSteamId = player.Character.ControlSteamId;
+                    playerSteamId = player.Character.ControlSteamId;
                     if (playerSteamId == 0) return false;
                     if (allExceptions.Contains(playerSteamId.ToString())) return true;
                     identityId = GetPlayerIdFromSteamId(playerSteamId);
@@ -231,12 +230,18 @@ namespace BlockLimiter.Utility
                 if (owner == 0) continue;
                 if (allExceptions.Contains(owner.ToString())) return true;
                 identity = MySession.Static.Players.TryGetIdentity(owner);
-                if (identity != null && allExceptions.Contains(identity.DisplayName)) return true;
+                playerSteamId = GetSteamIdFromPlayerId(owner);
+                if (playerSteamId > 0 && allExceptions.Contains(playerSteamId.ToString())) return true;
+                if (identity != null)
+                {
+                    if (allExceptions.Contains(identity.DisplayName)) return true;
+                }
                 faction = MySession.Static.Factions.GetPlayerFaction(owner);
                 if (faction != null && (allExceptions.Contains(faction.Tag) ||
                                         allExceptions.Contains(faction.FactionId.ToString()))) return true;
             }
 
+            if (playerSteamId > 0 && allExceptions.Contains(playerSteamId.ToString())) return true;
             if (identityId > 0 && allExceptions.Contains(identityId.ToString())) return true;
             if (identity != null && allExceptions.Contains(identity.DisplayName)) return true;
             if (faction != null && (allExceptions.Contains(faction.Tag)|| allExceptions.Contains(faction.FactionId.ToString()))) return true;
