@@ -164,12 +164,17 @@ namespace BlockLimiter.Utility
                     identityId = GetPlayerIdFromSteamId(steamId);
                     identity = MySession.Static.Players.TryGetIdentity(identityId);
                     displayName = identity.DisplayName;
+                    faction = MySession.Static.Factions.GetPlayerFaction(identityId);
                     break;
                 case string name:
                     if (allExceptions.Contains(name)) return true;
-                    if (TryGetPlayerByNameOrId(name, out identity) &&
-                        (allExceptions.Contains(identity.DisplayName) 
-                         || allExceptions.Contains(identity.IdentityId.ToString()))) return true;
+                    if (TryGetPlayerByNameOrId(name, out identity))
+                    {
+                        identityId = identity.IdentityId;
+                        faction = MySession.Static.Factions.GetPlayerFaction(identityId);
+                        displayName = identity.DisplayName;
+                        playerSteamId = GetSteamIdFromPlayerId(identityId);
+                    }
                     break;
                 case long id:
                     if (id == 0) return false;
