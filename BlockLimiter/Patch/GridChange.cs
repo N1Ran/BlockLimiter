@@ -45,10 +45,6 @@ namespace BlockLimiter.Patch
             
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("MoveBlocks",  BindingFlags.Static|BindingFlags.NonPublic)).Suffixes
                 .Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.NonPublic));
-            /*
-            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("AnnounceRemoveSplit",  BindingFlags.Public |  BindingFlags.Instance)).
-                Suffixes.Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.Instance |  BindingFlags.NonPublic));
-            */
         }
 
 
@@ -104,8 +100,20 @@ namespace BlockLimiter.Patch
 
             var grid = from;
             if (grid == null) return;
-            if (!from.BigOwners.Any(x => Grid.CountViolation(grid, x))) return;
 
+            var removeSmallestGrid = false;
+
+            var owners = GridCache.GetOwners(from);
+
+            if (owners == null || owners.Count == 0) return;
+            foreach (var owner in owners)
+            {
+                if (!Grid.CountViolation(grid, owner))continue;
+                removeSmallestGrid = true;
+                break;
+            }
+
+            if (!removeSmallestGrid) return;
             var grid1 = from;
             var grid2 = to;
             BlockLimiter.Instance.Torch.InvokeAsync(() =>

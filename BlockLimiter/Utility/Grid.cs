@@ -119,8 +119,9 @@ namespace BlockLimiter.Utility
             if (Utilities.IsExcepted(owner)) return false;
             var playerGrids = new HashSet<MyCubeGrid>();
             GridCache.GetPlayerGrids(playerGrids,owner);
-            var smallGrids = playerGrids.Count(x => x.GridSizeEnum == MyCubeSize.Small);
-            var largeGrids = playerGrids.Count(x => x.GridSizeEnum == MyCubeSize.Large);
+            var smallGrids = playerGrids.Count(x => x.GridSizeEnum == MyCubeSize.Small && IsBiggestGridInGroup(x));
+
+            var largeGrids = playerGrids.Count(x => x.GridSizeEnum == MyCubeSize.Large && IsBiggestGridInGroup(x));
             if (size == MyCubeSize.Large)
             {
                 if (BlockLimiterConfig.Instance.MaxLargeGrids == 0) return false;
@@ -133,6 +134,13 @@ namespace BlockLimiter.Utility
             if (BlockLimiterConfig.Instance.MaxSmallGrids < 0) return true;
             return smallGrids >= BlockLimiterConfig.Instance.MaxSmallGrids;
 
+        }
+
+        private static bool IsBiggestGridInGroup(MyCubeGrid grid)
+        {
+            var biggestGrid = grid?.GetBiggestGridInGroup();
+            if (biggestGrid == null || biggestGrid != grid) return false;
+            return true;
         }
 
         public static bool CanMerge(MyCubeGrid grid1, MyCubeGrid grid2, out List<string>blocks, out int count, out string limitName)
