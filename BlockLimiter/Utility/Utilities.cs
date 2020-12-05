@@ -274,9 +274,9 @@ namespace BlockLimiter.Utility
         {
             
             var sb = new StringBuilder();
+            sb.AppendLine("Ain't find shit");
             if (playerId == 0)
             {
-                sb.AppendLine("Player not found");
                 return sb;
             }
 
@@ -284,10 +284,10 @@ namespace BlockLimiter.Utility
             
             if (limitItems.Count < 1)
             {
-                sb.AppendLine("No limit found");
                 return sb;
             }
-            
+
+            sb.Clear();
 
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
 

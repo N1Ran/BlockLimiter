@@ -458,7 +458,7 @@ namespace BlockLimiter.Settings
                     isGridType =  grid.GridSizeEnum == MyCubeSize.Large;
                     break;
                 case GridType.StationsOnly:
-                    isGridType = grid.IsStatic;
+                    isGridType = grid.IsStatic && grid.IsUnsupportedStation;
                     break;
                 case GridType.ShipsOnly:
                     isGridType = !grid.IsStatic;
@@ -466,7 +466,7 @@ namespace BlockLimiter.Settings
                 case GridType.AllGrids:
                     isGridType = true;
                     break;
-                case GridType.AttachedToVoxelOnly:
+                case GridType.SupportedStationsOnly:
                     isGridType = !grid.IsUnsupportedStation;
                     break;
             }
@@ -558,7 +558,7 @@ namespace BlockLimiter.Settings
             LargeGridsOnly,
             StationsOnly,
             ShipsOnly,
-            AttachedToVoxelOnly
+            SupportedStationsOnly
         }
     }
 }
