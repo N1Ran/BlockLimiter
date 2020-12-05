@@ -38,7 +38,7 @@ namespace BlockLimiter.Punishment
             
             var totalBlocksPunished = 0;
 
-            if (!blocks.Any() || !BlockLimiterConfig.Instance.EnableLimits)
+            if (blocks.Count == 0 || !BlockLimiterConfig.Instance.EnableLimits)
             {
                 return 0;
             }
@@ -60,7 +60,7 @@ namespace BlockLimiter.Punishment
 
                 foreach (var (id,count) in item.FoundEntities)
                 {
-                    if (id == 0 || Utilities.IsExcepted(id, item))
+                    if (id == 0 || item.IsExcepted(id))
                     {
                         idsToRemove.Add(id);
                         continue;
@@ -69,10 +69,11 @@ namespace BlockLimiter.Punishment
                     if (count <= item.Limit) continue;
                     foreach (var block in blocks)
                     {
-                        if (block?.BuiltBy == null || block.CubeGrid.IsPreview)
+                        if (block.CubeGrid.IsPreview)
                         {
                             continue;
                         }
+
                         if (!item.IsMatch(block.BlockDefinition)) continue;
 
                         var defBase = MyDefinitionManager.Static.GetDefinition(block.BlockDefinition.Id);

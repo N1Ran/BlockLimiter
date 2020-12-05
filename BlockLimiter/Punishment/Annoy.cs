@@ -27,7 +27,8 @@ namespace BlockLimiter.Punishment
 
         public override void Handle()
         {
-        if (!BlockLimiterConfig.Instance.Annoy || !BlockLimiterConfig.Instance.EnableLimits)return;
+            if (BlockLimiterConfig.Instance.AnnoyInterval < 1) return;
+            if (!BlockLimiterConfig.Instance.Annoy || !BlockLimiterConfig.Instance.EnableLimits)return;
 
             RunAnnoyance();
         }
@@ -51,16 +52,21 @@ namespace BlockLimiter.Punishment
             foreach (var player in onlinePlayers)
             {
                 var steamId = MySession.Static.Players.TryGetSteamId(player.Identity.IdentityId);
-                
+               
                 if (annoyList.Contains(steamId)) continue;
+
+                var playerGridIds = new HashSet<long>(player.Grids);
+
+                var playerFaction = MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId);
+
 
                 foreach (var item in limitItems)
                 {
-                    if (Utilities.IsExcepted(player, item)) continue;
+                    if (item.IsExcepted(player)) continue;
 
                     foreach (var (id,count) in item.FoundEntities)
                     {
-                        if (id == 0 || Utilities.IsExcepted(id, item))continue;
+                        if (annoyList.Contains(steamId)) break;
 
                         if (id == player.Identity.IdentityId && count > item.Limit)
                         {
@@ -68,14 +74,12 @@ namespace BlockLimiter.Punishment
                             break;
                         }
 
-                        if (player.Grids.Any(x => x == id))
+                        if (playerGridIds.Count > 0 && playerGridIds.Contains(id))
                         {
                             annoyList.Add(steamId);
                             break;
                         }
                         
-
-                        var playerFaction = MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId);
                         if (playerFaction == null || id != playerFaction.FactionId) continue;
                         annoyList.Add(steamId);
                         break;

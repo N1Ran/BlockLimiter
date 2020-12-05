@@ -65,18 +65,12 @@ namespace BlockLimiter.Utility
 
             Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, limit =>
             {
-                if (!limit.LimitGrids)
+                if (!limit.LimitGrids || !limit.IsGridType(grid))
                 {
                     limit.FoundEntities.Remove(grid.EntityId);
                     return;
                 }
                 
-                if (!limit.IsGridType(grid))
-                {
-                    limit.FoundEntities.Remove(grid.EntityId);
-                    return;
-                }
-
                 var limitedBlocks = blocks.Count(x => limit.IsMatch(x.BlockDefinition));
 
                 if (limitedBlocks == 0)

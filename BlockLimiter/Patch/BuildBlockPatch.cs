@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Policy;
 using Sandbox.Game.Entities;
 using BlockLimiter.Utility;
 using Sandbox.Game.World;
@@ -8,6 +9,8 @@ using Torch.Managers.PatchManager;
 using BlockLimiter.Settings;
 using VRage.Network;
 using Sandbox.Definitions;
+using Sandbox.Game.Entities.Blocks;
+using Sandbox.Game.Entities.Cube;
 using Torch.API.Managers;
 using Torch.Managers.ChatManager;
 using VRage.Game;
@@ -27,6 +30,10 @@ namespace BlockLimiter.Patch
             ctx.GetPattern(aMethod).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlocksRequest),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             var bMethod = t.GetMethod("BuildBlocksAreaRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             ctx.GetPattern(bMethod).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlocksArea),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+
+            ctx.GetPattern(typeof(MyProjectorBase).GetMethod("BuildInternal", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance))
+                .Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(Build),
+                    BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
         }
      
 
@@ -107,6 +114,38 @@ namespace BlockLimiter.Patch
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
             return false;
+
+        }
+
+        private static bool Build(MyProjectorBase __instance, Vector3I cubeBlockPosition, long owner, long builder, bool requestInstant = true, long builtBy = 0)
+        {
+            if (__instance == null) return false;
+
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+
+            var grid = __instance.CubeGrid;
+
+            MySlimBlock cubeBlock = __instance.ProjectedGrid.GetCubeBlock(cubeBlockPosition);
+
+            var def = cubeBlock?.BlockDefinition;
+
+            if (def == null) return false;
+
+            if (owner + builder == 0) return false;
+
+            var remoteUserId = MySession.Static.Players.TryGetSteamId(owner);
+
+            if (Block.IsWithinLimits(def, owner, grid.EntityId, 1, out var limitName) &&
+                Block.IsWithinLimits(def, builder, grid.EntityId, 1, out limitName)) return true;
+            BlockLimiter.Instance.Log.Info($"Blocked  welding of {def.ToString().Substring(16)} owned by {Utilities.GetPlayerNameFromSteamId(remoteUserId)}");
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {def.ToString().Substring(16)},limitName);
+            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(owner))
+                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
+            Utilities.SendFailSound(remoteUserId);
+            Utilities.ValidationFailed();
+            return false;
+
 
         }
             

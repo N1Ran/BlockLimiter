@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,6 +7,7 @@ using BlockLimiter.Settings;
 using Sandbox.Definitions;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using Torch.Utils;
@@ -136,13 +138,11 @@ namespace BlockLimiter.Utility
         }
 
 
-        public static bool IsExcepted(object target, LimitItem limit = null)
+        public static bool IsExcepted(object target)
         {
             if (target == null) return false;
             
-            HashSet<string> allExceptions = new HashSet<string>();
-            if (limit != null) allExceptions = new HashSet<string>(limit.Exceptions);
-            allExceptions.UnionWith(BlockLimiterConfig.Instance.GeneralException);
+            var allExceptions =  new HashSet<string>(BlockLimiterConfig.Instance.GeneralException);
 
             if (allExceptions.Count == 0) return false;
 
@@ -208,6 +208,7 @@ namespace BlockLimiter.Utility
                         return true;
                     break;
                 case MyPlayer player:
+                    if (player.IsBot || player.IsWildlifeAgent) return true;
                     playerSteamId = player.Character.ControlSteamId;
                     if (playerSteamId == 0) return false;
                     if (allExceptions.Contains(playerSteamId.ToString())) return true;
@@ -290,8 +291,11 @@ namespace BlockLimiter.Utility
 
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
 
+            var playerBlocks = new HashSet<MySlimBlock>();
 
-            
+            if (playerId > 0)
+                GridCache.GetPlayerBlocks(playerBlocks,playerId);
+
             foreach (var item in limitItems)
             {
                 if (item.BlockList.Count == 0 || item.FoundEntities.Count == 0) continue;
@@ -302,15 +306,44 @@ namespace BlockLimiter.Utility
 
                 if (item.LimitPlayers && item.FoundEntities.TryGetValue(playerId, out var pCount))
                 {
-                    if (pCount < 1) continue;
-                    sb.AppendLine($"Player Limit = {pCount}/{item.Limit}");
+                    if (pCount > 1)
+
+                    {
+                        var dictionary = new ConcurrentDictionary<long, double>();
+
+                        sb.AppendLine($"Player Limit = {pCount}/{item.Limit}");
+
+                        if (playerBlocks.Count > 0)
+                        {
+                            foreach (var block in playerBlocks)
+                            {
+                                if (!item.IsMatch(block.BlockDefinition)) continue;
+                                dictionary.AddOrUpdate(block.CubeGrid.EntityId, 1, (l, i) => i + 1);
+                            }
+
+                            foreach (var (gridId,amount) in dictionary)
+                            {
+                                if (!GridCache.TryGetGridById(gridId, out var grid) && Grid.IsOwner(grid, playerId))
+                                {
+                                    sb.Append($"[UnknownGrid] = {amount}");
+                                    continue;
+                                }
+
+                                sb.Append($"{grid.DisplayName} = {amount}");
+                            }
+
+                            sb.AppendLine();
+
+                        }
+                    }
+                    
                 }
 
                 if (item.LimitFaction && playerFaction != null &&
                     item.FoundEntities.TryGetValue(playerFaction.FactionId, out var fCount))
                 {
-                    if (fCount < 1) continue;
-                    sb.AppendLine($"Faction Limit = {fCount}/{item.Limit} ");
+                    if (fCount > 1) 
+                        sb.AppendLine($"Faction Limit = {fCount}/{item.Limit} ");
                 }
 
                 if (!item.LimitGrids || (!item.FoundEntities.Any(x =>

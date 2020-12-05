@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using BlockLimiter.Settings;
 using NLog;
@@ -27,11 +28,29 @@ namespace BlockLimiter.Patch
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
             var block = __instance;
             if (block == null || block.Enabled == false || block is MyParachute || block is MyButtonPanel || block is IMyPowerProducer) return;
-            if ((!BlockLimiterConfig.Instance.KillNoOwnerBlocks || block.BlockDefinition?.ContainsComputer() == false || block.OwnerId != 0) && !KeepOffBlocks.Contains(block)) return;
+
+            if ((!BlockLimiterConfig.Instance.KillNoOwnerBlocks || block.BlockDefinition?.ContainsComputer() == false || block.OwnerId != 0)) return;
+
+            lock (KeepOffBlocks)
+            {
+                if (KeepOffBlocks.Count > 0)
+                {
+                    lock (KeepOffBlocks)
+                    {
+                        try
+                        {
+                            if (!KeepOffBlocks.Contains(block)) return;
+                        }
+                        catch (Exception e)
+                        {
+                            //ignore
+                        }
+                    }
+                }
+            }
             block.Enabled = false;
             Log.Info(
                 $"Turned off {block.BlockDefinition?.BlockPairName} from {block.CubeGrid?.DisplayName}");
-
         }
     }
 }

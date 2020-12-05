@@ -6,6 +6,7 @@ using BlockLimiter.Patch;
 using BlockLimiter.Settings;
 using Sandbox;
 using Sandbox.Definitions;
+using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
@@ -21,24 +22,15 @@ namespace BlockLimiter.Utility
     {
         private static readonly HashSet<LimitItem> Limits = BlockLimiterConfig.Instance.AllLimits;
 
-
         private static void KillBlock(MyCubeBlock block)
         {
             if (!(block is MyFunctionalBlock fBlock) || BlockSwitchPatch.KeepOffBlocks.Contains(fBlock))return;
             BlockSwitchPatch.KeepOffBlocks.Add(fBlock);
         }
-        public static void KillBlocks(List<MySlimBlock> blocks)
-        {
-            foreach (var block in blocks)
-            {
-                if (!(block.FatBlock is MyFunctionalBlock fBlock) || BlockSwitchPatch.KeepOffBlocks.Contains(fBlock)) continue;
-                BlockSwitchPatch.KeepOffBlocks.Add(fBlock);
-            }
-        }
 
         public static bool IsWithinLimits(MyCubeBlockDefinition block, long playerId, MyObjectBuilder_CubeGrid grid, out string limitName)
         {
-            limitName = null;
+            limitName = string.Empty;
             var allow = true;
             if (block == null) return true;
             var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
@@ -48,9 +40,9 @@ namespace BlockLimiter.Utility
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
                 limitName = item.Name;
-                if (!item.BlockList.Any() || !item.IsMatch(block)) continue;
+                if (item.BlockList.Count == 0 || !item.IsMatch(block)) continue;
                 
-                if ((Utilities.IsExcepted(playerId,item) || (grid != null && Utilities.IsExcepted(grid.EntityId,item))))
+                if (item.IsExcepted(playerId) || (grid != null && item.IsExcepted(grid.EntityId)))
                     continue;
 
 
@@ -110,7 +102,7 @@ namespace BlockLimiter.Utility
 
         public static bool IsWithinLimits(MyCubeBlockDefinition def, long ownerId, long gridId, int count, out string limit)
         {
-            limit = null;
+            limit = string.Empty;
             if (def == null || Math.Abs(ownerId + gridId) < 1) return true;
 
 
@@ -128,7 +120,8 @@ namespace BlockLimiter.Utility
                 limit = item.Name;
                 if (!item.IsMatch(def)) continue;
                 
-                if ((ownerId > 0 && Utilities.IsExcepted(ownerId,item)) || (gridId > 0 && Utilities.IsExcepted(gridId,item)))
+                if ((ownerId > 0 && item.IsExcepted(ownerId)) ||
+                    gridId > 0 && item.IsExcepted(gridId))
                     continue;
 
                 var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
@@ -280,7 +273,7 @@ namespace BlockLimiter.Utility
                 }
 
                 limit.FoundEntities.TryGetValue(id, out var currentCount);
-                if(Utilities.IsExcepted(id, limit)) continue;
+                if(limit.IsExcepted(id)) continue;
                 var affectedBlocks = blocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))).ToList();
                 if (affectedBlocks.Count <= limit.Limit - currentCount ) continue;
                 var take = affectedBlocks.Count - (limit.Limit - currentCount);
@@ -307,7 +300,7 @@ namespace BlockLimiter.Utility
                     if (MySession.Static.Players.IdentityIsNpc(id)) continue;
                 }
 
-                if(Utilities.IsExcepted(id, limit)) continue;
+                if(limit.IsExcepted(id)) continue;
                 if (!limit.FoundEntities.TryGetValue(id, out var currentCount)) continue;
                 var affectedBlocks = blocks.Where(x => limit.IsMatch(x.BlockDefinition)).ToList();
                 if (affectedBlocks.Count <= limit.Limit - currentCount ) continue;
@@ -322,9 +315,9 @@ namespace BlockLimiter.Utility
 
         public static void Punish(MyConcurrentDictionary<MySlimBlock, LimitItem.PunishmentType> removalCollection)
         {
-            if (removalCollection.Count == 0) return;
+
+            if (removalCollection.Count == 0 || !BlockLimiterConfig.Instance.EnableLimits) return;
             var log = BlockLimiter.Instance.Log;
-            if (!BlockLimiterConfig.Instance.EnableLimits) return;
             var chatManager = BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>();
             lock (removalCollection)
             {
@@ -332,6 +325,7 @@ namespace BlockLimiter.Utility
                 {
                     Parallel.ForEach(removalCollection, collective =>
                     {
+
                         var (block, punishment) = collective;
                         var ownerSteamId = MySession.Static.Players.TryGetSteamId(block.OwnerId);
                         if (block.IsDestroyed || block.FatBlock.Closed || block.FatBlock.MarkedForClose) return;
@@ -342,9 +336,9 @@ namespace BlockLimiter.Utility
                             case LimitItem.PunishmentType.None:
                                 return;
                             case LimitItem.PunishmentType.DeleteBlock:
-                                MySandboxGame.Static.Invoke(()=>
+                                BlockLimiter.Instance.Torch.InvokeAsync(() =>
                                 {
-                                    block.CubeGrid.RemoveBlock(block);
+                                    block.CubeGrid?.RemoveBlock(block);
                                 },"BlockLimiter");
                                 log.Info(
                                     $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
@@ -355,7 +349,7 @@ namespace BlockLimiter.Utility
                             case LimitItem.PunishmentType.Explode:
                                 log.Info(
                                     $"Destroyed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
-                                MySandboxGame.Static.Invoke(() =>
+                                BlockLimiter.Instance.Torch.InvokeAsync(() =>
                                 {
                                     block.DoDamage(block.BlockDefinition.MaxIntegrity, MyDamageType.Fire);
                                 },"BlockLimiter");
@@ -388,6 +382,7 @@ namespace BlockLimiter.Utility
                     if (block == null  || !block.BlockDefinition.ContainsComputer()) return;
 
                     if (block.OwnerId == block.BuiltBy) return;
+                    
                     if (block.OwnerId == 0 && block.BuiltBy > 0)
                     {
                         block.FatBlock.ChangeBlockOwnerRequest(block.BuiltBy,MyOwnershipShareModeEnum.Faction);

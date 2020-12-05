@@ -147,6 +147,7 @@ namespace BlockLimiter.Settings
             }
         }
         #endregion
+       
         #region Restrictions
 
         [Display(Name = "PunishmentType", GroupName = "Restrictions", Description = "Set's what to do to extra blocks in violation of the limit")]
@@ -223,25 +224,154 @@ namespace BlockLimiter.Settings
         }
         #endregion
 
+        public bool IsExcepted(object target)
+        {
+            if (target == null) return false;
+            var allExceptions = new HashSet<string>(Exceptions);
+            allExceptions.UnionWith(BlockLimiterConfig.Instance.GeneralException);
+
+            if (allExceptions.Count == 0) return false;
+
+            MyIdentity identity = null;
+            MyFaction faction = null;
+            long identityId = 0;
+            ulong playerSteamId = 0;
+            string displayName = "";
+            HashSet<long> gridOwners = new HashSet<long>();
+
+            switch (target)
+            {
+                case HashSet<long> owners:
+                    gridOwners.UnionWith(owners);
+                    break;
+                case ulong steamId:
+                    if (steamId == 0) return false;
+                    playerSteamId = steamId;
+                    identityId = Utilities.GetPlayerIdFromSteamId(steamId);
+                    identity = MySession.Static.Players.TryGetIdentity(identityId);
+                    displayName = identity.DisplayName;
+                    faction = MySession.Static.Factions.GetPlayerFaction(identityId);
+                    break;
+                case string name:
+                    if (allExceptions.Contains(name)) return true;
+                    if (Utilities.TryGetPlayerByNameOrId(name, out identity))
+                    {
+                        identityId = identity.IdentityId;
+                        faction = MySession.Static.Factions.GetPlayerFaction(identityId);
+                        displayName = identity.DisplayName;
+                        playerSteamId = Utilities.GetSteamIdFromPlayerId(identityId);
+                    }
+                    break;
+                case long id:
+                    if (id == 0) return false;
+                    identityId = id;
+                    identity = MySession.Static.Players.TryGetIdentity(id);
+                    if (identity != null)
+                    {
+                        faction = MySession.Static.Factions.GetPlayerFaction(id);
+                        displayName = identity.DisplayName;
+                        playerSteamId = Utilities.GetSteamIdFromPlayerId(id);
+
+                    }
+                    else
+                    {
+                        faction = (MyFaction) MySession.Static.Factions.TryGetFactionById(id);
+                    }
+                    if (MyEntities.TryGetEntityById(id, out var entity))
+                    {
+                        if (allExceptions.Contains(entity.DisplayName)) return true;
+                    }
+
+                    if (GridCache.TryGetGridById(id, out var foundGrid))
+                    {
+                        gridOwners.UnionWith(GridCache.GetOwners(foundGrid));
+                        if (allExceptions.Contains(foundGrid.DisplayName)) return true;
+                    }
+                    break;
+                case MyFaction targetFaction:
+                    if (allExceptions.Contains(targetFaction.Tag) ||
+                        allExceptions.Contains(targetFaction.FactionId.ToString()))
+                        return true;
+                    break;
+                case MyPlayer player:
+                    if (player.IsBot || player.IsWildlifeAgent) return true;
+                    playerSteamId = player.Character.ControlSteamId;
+                    if (playerSteamId == 0) return false;
+                    if (allExceptions.Contains(playerSteamId.ToString())) return true;
+                    identityId = Utilities.GetPlayerIdFromSteamId(playerSteamId);
+                    if (identityId > 0)
+                    {
+                        if (allExceptions.Contains(identityId.ToString())) return true;
+                        identity = MySession.Static.Players.TryGetIdentity(identityId);
+                        displayName = identity.DisplayName;
+                    }
+                    break;
+                case MyCubeGrid grid:
+                {
+                    if (allExceptions.Contains(grid.DisplayName) || allExceptions.Contains(grid.EntityId.ToString()))
+                        return true;
+                    var owners = GridCache.GetOwners(grid);
+                    if (owners.Count == 0) break;
+                    gridOwners.UnionWith(owners);
+                    break;
+                }
+            }
+
+            foreach (var owner in gridOwners)
+            {
+                if (owner == 0) continue;
+                if (allExceptions.Contains(owner.ToString())) return true;
+                identity = MySession.Static.Players.TryGetIdentity(owner);
+                playerSteamId = Utilities.GetSteamIdFromPlayerId(owner);
+                if (playerSteamId > 0 && allExceptions.Contains(playerSteamId.ToString())) return true;
+                if (identity != null)
+                {
+                    if (allExceptions.Contains(identity.DisplayName)) return true;
+                }
+                faction = MySession.Static.Factions.GetPlayerFaction(owner);
+                if (faction != null && (allExceptions.Contains(faction.Tag) ||
+                                        allExceptions.Contains(faction.FactionId.ToString()))) return true;
+            }
+
+            if (playerSteamId > 0 && allExceptions.Contains(playerSteamId.ToString())) return true;
+            if (identityId > 0 && allExceptions.Contains(identityId.ToString())) return true;
+            if (identity != null && allExceptions.Contains(identity.DisplayName)) return true;
+            if (faction != null && (allExceptions.Contains(faction.Tag)|| allExceptions.Contains(faction.FactionId.ToString()))) return true;
+            if (!string.IsNullOrEmpty(displayName) && allExceptions.Contains(displayName)) return true;
+            return false;
+        }
+
         public bool IsMatch(MyCubeBlockDefinition definition)
         {
-            if (!BlockList.Any() || definition == null) return false;
+            var blockList = new HashSet<string>(BlockList);
+            if (blockList.Count == 0 || definition == null) return false;
 
 
             if (GridTypeBlock != GridType.AllGrids)
             {
                 switch (definition.CubeSize)
                 {
-                    case MyCubeSize.Small when (GridTypeBlock == GridType.LargeGridsOnly || GridTypeBlock == GridType.StationsOnly):
+                    case MyCubeSize.Small when (GridTypeBlock == GridType.LargeGridsOnly ||
+                                                GridTypeBlock == GridType.StationsOnly):
                     case MyCubeSize.Large when (GridTypeBlock == GridType.SmallGridsOnly):
                         return false;
                 }
             }
-            return BlockList.Any(x =>
-                x.Equals(definition.ToString().Substring(16), StringComparison.OrdinalIgnoreCase) ||
-                   x.Equals(definition.Id.SubtypeId.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                   x.Equals(definition.BlockPairName, StringComparison.OrdinalIgnoreCase) ||
-                x.Equals(definition.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase));
+
+            var found = false;
+
+            foreach (var block in blockList)
+            {
+                if (!block.Equals(definition.Id.ToString().Substring(16), StringComparison.OrdinalIgnoreCase)
+                    && !block.Equals(definition.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase)
+                    && !block.Equals(definition.Id.SubtypeId.ToString(), StringComparison.OrdinalIgnoreCase)
+                    && !block.Equals(definition.BlockPairName, StringComparison.OrdinalIgnoreCase)) continue;
+
+                found = true;
+                break;
+            }
+
+            return found;
         }
 
         public bool IsFilterType(MyCubeGrid grid)
@@ -272,7 +402,7 @@ namespace BlockLimiter.Settings
                         return ownerFaction.Members.Count < FilterValue;
                     }
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    return false;
             }
 
             return false;
@@ -282,7 +412,6 @@ namespace BlockLimiter.Settings
             if (LimitFilterType == FilterType.None) return true;
             switch (LimitFilterType)
             {
-                //Todo Create file for saving current logged player info (expand to saving limit info also)
                 case FilterType.PlayerPlayTime:
                     if (playerId == 0) break;
                     var player = MySession.Static.Players.TryGetSteamId(playerId);
@@ -310,7 +439,7 @@ namespace BlockLimiter.Settings
                         return ownerFaction.Members.Count < FilterValue;
                     }
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    return false;
             }
 
             return false;
@@ -336,6 +465,9 @@ namespace BlockLimiter.Settings
                     break;
                 case GridType.AllGrids:
                     isGridType = true;
+                    break;
+                case GridType.AttachedToVoxelOnly:
+                    isGridType = !grid.IsUnsupportedStation;
                     break;
             }
 
@@ -425,7 +557,8 @@ namespace BlockLimiter.Settings
             SmallGridsOnly,
             LargeGridsOnly,
             StationsOnly,
-            ShipsOnly
+            ShipsOnly,
+            AttachedToVoxelOnly
         }
     }
 }

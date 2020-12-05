@@ -134,12 +134,12 @@ namespace BlockLimiter
         }
 
 
-        private static void StaticOnClientJoined(ulong obj)
+        private static void StaticOnClientJoined(ulong obj, string playerName)
         {
             if (obj == 0) return;
             if (BlockLimiterConfig.Instance.PlayerTimes.Any(x=>x.Player == obj) == false)
             {
-                Instance.Log.Warn($"{obj} logged to player time {DateTime.Now}");
+                Instance.Log.Warn($"{playerName} logged to player time {DateTime.Now}");
                 var playerTime = new PlayerTime {Player = obj, Time = DateTime.Now};
                 BlockLimiterConfig.Instance.PlayerTimes.Add(playerTime);
             }
@@ -263,7 +263,7 @@ namespace BlockLimiter
                 return;
             if (++_updateCounter % 100 != 0) return;
             GridCache.Update();
-            MergeBlockPatch.MergeBlockCache.Clear();
+            MergeBlockPatch.MergeBlockCache?.Clear();
 
         }
 
@@ -322,10 +322,18 @@ namespace BlockLimiter
 
         public override void Dispose()
         {
-            base.Dispose();
-            foreach (var thread in _processThreads)
-                thread.Abort();
-            _processThread.Abort();
+            try
+            {
+                base.Dispose();
+                foreach (var thread in _processThreads)
+                    thread.Abort();
+                _processThread.Abort();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("Session Error",e);
+
+            }
         }
 
 

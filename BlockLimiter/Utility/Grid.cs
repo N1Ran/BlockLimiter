@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
+using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Graphics.GUI;
@@ -138,8 +139,17 @@ namespace BlockLimiter.Utility
 
         private static bool IsBiggestGridInGroup(MyCubeGrid grid)
         {
-            var biggestGrid = grid?.GetBiggestGridInGroup();
-            if (biggestGrid == null || biggestGrid != grid) return false;
+            if (grid == null) return false;
+            try
+            {
+                var biggestGrid = grid?.GetBiggestGridInGroup();
+                if (biggestGrid == null || biggestGrid != grid) return false;
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+
             return true;
         }
 
@@ -224,7 +234,7 @@ namespace BlockLimiter.Utility
 
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
-                if (Utilities.IsExcepted(grid,limit)) continue;
+                if (limit.IsExcepted(grid)) continue;
 
                 limitName = limit.Name;
                 if (!limit.LimitGrids) continue;

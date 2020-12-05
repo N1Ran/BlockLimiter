@@ -78,6 +78,7 @@ namespace BlockLimiter.Patch
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
 
+
             var toBlocks = new HashSet<MySlimBlock>(to.CubeBlocks);
 
             if (toBlocks.Count == 0)

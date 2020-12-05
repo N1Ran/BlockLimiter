@@ -157,7 +157,7 @@ namespace BlockLimiter.Patch
             var removedList = new List<string>();
             foreach (var limit in limits)
             {
-                if (Utilities.IsExcepted(player, limit)|| Utilities.IsExcepted(proj.CubeGrid,limit)) continue;
+                if (limit.IsExcepted(player)|| limit.IsExcepted(proj.CubeGrid)) continue;
 
                 var pBlocks = new HashSet<MyObjectBuilder_CubeBlock>(projectedBlocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))));
                 

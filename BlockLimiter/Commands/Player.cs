@@ -61,7 +61,7 @@ namespace BlockLimiter.Commands
             var diff = DateTime.Now - lastRun;
             if (diff.TotalMinutes < 5)
             {
-                var totalRemaining = TimeSpan.FromMinutes(5) - diff;
+                var totalRemaining = TimeSpan.FromSeconds(60) - diff;
                 Context.Respond($"Cooldown in effect.  Try again in {totalRemaining.TotalSeconds:N0} seconds");
                 return;
             }
