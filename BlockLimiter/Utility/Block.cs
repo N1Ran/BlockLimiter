@@ -200,7 +200,7 @@ namespace BlockLimiter.Utility
                 if (limit.IgnoreNpcs)
                 {
                     if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
-                    if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetOwners(grid).FirstOrDefault())) continue;
+                    if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
                     
                 }
 
@@ -242,7 +242,7 @@ namespace BlockLimiter.Utility
                         limit.FoundEntities.Remove(playerId);
                         continue;
                     }
-                    if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetOwners(grid).FirstOrDefault())) continue;
+                    if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
                     
                 }
 

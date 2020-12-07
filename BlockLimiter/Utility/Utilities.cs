@@ -199,6 +199,7 @@ namespace BlockLimiter.Utility
                     if (GridCache.TryGetGridById(id, out var foundGrid))
                     {
                         gridOwners.UnionWith(GridCache.GetOwners(foundGrid));
+                        gridOwners.UnionWith(GridCache.GetBuilders(foundGrid));
                         if (allExceptions.Contains(foundGrid.DisplayName)) return true;
                     }
                     break;
@@ -225,7 +226,9 @@ namespace BlockLimiter.Utility
                     if (allExceptions.Contains(grid.DisplayName) || allExceptions.Contains(grid.EntityId.ToString()))
                         return true;
                     var owners = GridCache.GetOwners(grid);
+                    owners.UnionWith(GridCache.GetBuilders(grid));
                     if (owners.Count == 0) break;
+                    owners.ForEach(x=> BlockLimiter.Instance.Log.Warn(x));
                     gridOwners.UnionWith(owners);
                     break;
                 }

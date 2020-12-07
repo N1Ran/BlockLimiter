@@ -104,9 +104,10 @@ namespace BlockLimiter.Patch
 
             var removeSmallestGrid = false;
 
-            var owners = GridCache.GetOwners(from);
+            var owners = new HashSet<long>(GridCache.GetOwners(from));
+            owners.UnionWith(GridCache.GetBuilders(grid));
 
-            if (owners == null || owners.Count == 0) return;
+            if (owners.Count == 0) return;
             foreach (var owner in owners)
             {
                 if (!Grid.CountViolation(grid, owner))continue;

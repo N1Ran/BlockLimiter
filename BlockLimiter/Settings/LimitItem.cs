@@ -266,6 +266,7 @@ namespace BlockLimiter.Settings
                     break;
                 case long id:
                     if (id == 0) return false;
+                    if (allExceptions.Contains(id.ToString())) return true;
                     identityId = id;
                     identity = MySession.Static.Players.TryGetIdentity(id);
                     if (identity != null)
@@ -279,15 +280,13 @@ namespace BlockLimiter.Settings
                     {
                         faction = (MyFaction) MySession.Static.Factions.TryGetFactionById(id);
                     }
-                    if (MyEntities.TryGetEntityById(id, out var entity))
-                    {
-                        if (allExceptions.Contains(entity.DisplayName)) return true;
-                    }
 
                     if (GridCache.TryGetGridById(id, out var foundGrid))
                     {
-                        gridOwners.UnionWith(GridCache.GetOwners(foundGrid));
                         if (allExceptions.Contains(foundGrid.DisplayName)) return true;
+                        var owners = GridCache.GetOwners(foundGrid);
+                        if (owners.Count == 0) break;
+                        gridOwners.UnionWith(owners);
                     }
                     break;
                 case MyFaction targetFaction:
@@ -312,7 +311,8 @@ namespace BlockLimiter.Settings
                 {
                     if (allExceptions.Contains(grid.DisplayName) || allExceptions.Contains(grid.EntityId.ToString()))
                         return true;
-                    var owners = GridCache.GetOwners(grid);
+                    var owners = new HashSet<long>(GridCache.GetOwners(grid));
+                    owners.UnionWith(GridCache.GetBuilders(grid));
                     if (owners.Count == 0) break;
                     gridOwners.UnionWith(owners);
                     break;
@@ -383,7 +383,8 @@ namespace BlockLimiter.Settings
             {
                 //Todo Create file for saving current logged player info (expand to saving limit info also)
                 case FilterType.PlayerPlayTime:
-                    var owners = GridCache.GetOwners(grid);
+                    var owners = new HashSet<long>(GridCache.GetOwners(grid));
+                    owners.UnionWith(GridCache.GetBuilders(grid));
                     if (owners.Count == 0) break;
                     var player = MySession.Static.Players.TryGetIdentity(owners.FirstOrDefault());
                     break;
@@ -394,7 +395,8 @@ namespace BlockLimiter.Settings
                         return grid.BlocksCount < FilterValue;
                     }
                 case FilterType.FactionMemberCount:
-                    var owners1 = GridCache.GetOwners(grid);
+                    var owners1 = new HashSet<long>(GridCache.GetOwners(grid));
+                    owners1.UnionWith(GridCache.GetBuilders(grid));
                     if (owners1.Count == 0) break;
                     var ownerFaction = MySession.Static.Factions.GetPlayerFaction(owners1.FirstOrDefault());
                     if (ownerFaction == null) break;

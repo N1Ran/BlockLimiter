@@ -161,8 +161,8 @@ namespace BlockLimiter.Utility
             count = 0;
             if (grid1 == null || grid2 == null) return true;
 
-            if (Utilities.IsExcepted(GridCache.GetOwners(grid1)) ||
-                Utilities.IsExcepted(GridCache.GetOwners(grid2))) return true;
+            if (Utilities.IsExcepted(grid1) ||
+                Utilities.IsExcepted(grid2)) return true;
             
             var blocksHash = new HashSet<MySlimBlock>(grid1.CubeBlocks);
             

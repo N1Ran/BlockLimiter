@@ -128,7 +128,7 @@ namespace BlockLimiter.Utility
             using(_entityLock.AcquireSharedUsing())
             using (_ownerLock.AcquireSharedUsing())
             {
-                rem.UnionWith(from e in _bigBuilders where _gridCache.All(en => en?.EntityId != e.Key) select e.Key);
+                rem.UnionWith(from e in _bigOwners where _gridCache.All(en => en?.EntityId != e.Key) select e.Key);
             }
             using (_ownerLock.AcquireExclusiveUsing())
             {
@@ -169,6 +169,8 @@ namespace BlockLimiter.Utility
             return bigs;
         } 
         
+        //TODO: fix GetOwners.  Method returning nothing for block ownership.
+
         public static HashSet<long> GetOwners(MyCubeGrid grid)
         {
             HashSet<long> l;
