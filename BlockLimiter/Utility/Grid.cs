@@ -29,6 +29,7 @@ namespace BlockLimiter.Utility
 
         public static bool IsSizeViolation(MyObjectBuilder_CubeGrid grid)
         {
+            if (Utilities.IsExcepted(grid)) return false;
 
             if (grid == null)
             {
@@ -211,7 +212,7 @@ namespace BlockLimiter.Utility
                 limitName = limit.Name;
                 if (!limit.LimitGrids) continue;
 
-                if (Utilities.IsExcepted(grid1)|| Utilities.IsExcepted(grid2)) continue;
+                if (limit.IsExcepted(grid1) || limit.IsExcepted(grid2)) continue;
 
                 var matchingBlocks = new List<MySlimBlock>(blocksHash.Where(x=> limit.IsMatch(x.BlockDefinition)));
                 

@@ -224,6 +224,8 @@ namespace BlockLimiter.Settings
         }
         #endregion
 
+        #region Utilities
+
         public bool IsExcepted(object target)
         {
             if (target == null) return false;
@@ -407,6 +409,7 @@ namespace BlockLimiter.Settings
 
             return false;
         }
+        
         public bool IsFilterType(MyObjectBuilder_CubeGrid grid, long playerId = 0)
         {
             if (LimitFilterType == FilterType.None) return true;
@@ -444,6 +447,7 @@ namespace BlockLimiter.Settings
 
             return false;
         }
+        
         public bool IsGridType(MyCubeGrid grid)
         {
             bool isGridType = false;
@@ -510,6 +514,7 @@ namespace BlockLimiter.Settings
              if (entity.Value ==0) FoundEntities.Remove(entity.Key);
             }
         }
+        
         public void Reset()
         {
             FoundEntities.Clear();
@@ -521,14 +526,17 @@ namespace BlockLimiter.Settings
             return $"{useName} - [{BlockList.Count} : {Limit}]";
         }
         
-
-
         private void Save()
         {
             Reset();
             BlockLimiterConfig.Instance.Save();
         }
-        
+
+
+        #endregion
+
+        #region Enum
+
         public enum PunishmentType
         {
             None,
@@ -560,5 +568,8 @@ namespace BlockLimiter.Settings
             ShipsOnly,
             SupportedStationsOnly
         }
+
+
+        #endregion
     }
 }

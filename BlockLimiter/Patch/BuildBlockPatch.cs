@@ -123,9 +123,11 @@ namespace BlockLimiter.Patch
 
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
 
-            var grid = __instance.CubeGrid;
+            var grid = __instance?.CubeGrid;
 
-            MySlimBlock cubeBlock = __instance.ProjectedGrid.GetCubeBlock(cubeBlockPosition);
+            if (grid == null) return false;
+
+            MySlimBlock cubeBlock = __instance?.ProjectedGrid?.GetCubeBlock(cubeBlockPosition);
 
             var def = cubeBlock?.BlockDefinition;
 
