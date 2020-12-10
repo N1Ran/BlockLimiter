@@ -44,7 +44,6 @@ namespace BlockLimiter.Settings
         private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             OnPropertyChanged();
-            //BlockLimiter.ResetLimits();
             if (MyAPIGateway.Session != null)Reset();
             Save();
         }
@@ -267,6 +266,15 @@ namespace BlockLimiter.Settings
                 case long id:
                     if (id == 0) return false;
                     if (allExceptions.Contains(id.ToString())) return true;
+                    if (GridCache.TryGetGridById(id, out var foundGrid))
+                    {
+                        if (allExceptions.Contains(foundGrid.DisplayName)) return true;
+                        var owners = GridCache.GetOwners(foundGrid);
+                        owners.UnionWith(GridCache.GetBuilders(foundGrid));
+                        if (owners.Count == 0) break;
+                        gridOwners.UnionWith(owners);
+                        break;
+                    }
                     identityId = id;
                     identity = MySession.Static.Players.TryGetIdentity(id);
                     if (identity != null)
@@ -281,13 +289,6 @@ namespace BlockLimiter.Settings
                         faction = (MyFaction) MySession.Static.Factions.TryGetFactionById(id);
                     }
 
-                    if (GridCache.TryGetGridById(id, out var foundGrid))
-                    {
-                        if (allExceptions.Contains(foundGrid.DisplayName)) return true;
-                        var owners = GridCache.GetOwners(foundGrid);
-                        if (owners.Count == 0) break;
-                        gridOwners.UnionWith(owners);
-                    }
                     break;
                 case MyFaction targetFaction:
                     if (allExceptions.Contains(targetFaction.Tag) ||
@@ -339,8 +340,7 @@ namespace BlockLimiter.Settings
             if (identityId > 0 && allExceptions.Contains(identityId.ToString())) return true;
             if (identity != null && allExceptions.Contains(identity.DisplayName)) return true;
             if (faction != null && (allExceptions.Contains(faction.Tag)|| allExceptions.Contains(faction.FactionId.ToString()))) return true;
-            if (!string.IsNullOrEmpty(displayName) && allExceptions.Contains(displayName)) return true;
-            return false;
+            return !string.IsNullOrEmpty(displayName) && allExceptions.Contains(displayName);
         }
 
         public bool IsMatch(MyCubeBlockDefinition definition)
@@ -381,7 +381,6 @@ namespace BlockLimiter.Settings
             if (LimitFilterType == FilterType.None) return true;
             switch (LimitFilterType)
             {
-                //Todo Create file for saving current logged player info (expand to saving limit info also)
                 case FilterType.PlayerPlayTime:
                     var owners = new HashSet<long>(GridCache.GetOwners(grid));
                     owners.UnionWith(GridCache.GetBuilders(grid));
@@ -467,13 +466,14 @@ namespace BlockLimiter.Settings
                     isGridType = grid.IsStatic && grid.IsUnsupportedStation;
                     break;
                 case GridType.ShipsOnly:
-                    isGridType = !grid.IsStatic;
+                    if (!grid.IsStatic)
+                        isGridType = true;
                     break;
                 case GridType.AllGrids:
                     isGridType = true;
                     break;
                 case GridType.SupportedStationsOnly:
-                    isGridType = !grid.IsUnsupportedStation;
+                    isGridType = grid.IsStatic && !grid.IsUnsupportedStation;
                     break;
             }
 

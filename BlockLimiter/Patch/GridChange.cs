@@ -73,7 +73,8 @@ namespace BlockLimiter.Patch
         /// <summary>
         /// Updates limits on grid split
         /// </summary>
-        /// <param name="originalGrid"></param>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
         private static void OnCreateSplit(ref MyCubeGrid from, ref MyCubeGrid to)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
@@ -83,7 +84,7 @@ namespace BlockLimiter.Patch
 
             if (toBlocks.Count == 0)
             {
-                Log.Error("Not updated breakage");
+                Log.Warn("Could not update count after grid separation");
                 return;
             }
 

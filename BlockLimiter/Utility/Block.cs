@@ -195,7 +195,11 @@ namespace BlockLimiter.Utility
 
                 var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
 
-                if (foundGrid && !limit.IsGridType(grid)) continue;
+                if (foundGrid && !limit.IsGridType(grid))
+                {
+                    limit.FoundEntities.Remove(gridId);
+                    continue;
+                }
 
                 if (limit.IgnoreNpcs)
                 {

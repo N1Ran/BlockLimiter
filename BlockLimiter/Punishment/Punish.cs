@@ -7,6 +7,7 @@ using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
 using Sandbox.Definitions;
+using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using VRage.Collections;
@@ -53,6 +54,8 @@ namespace BlockLimiter.Punishment
 
             var punishCount = 0;
 
+            var gridsToSkip = new HashSet<MyCubeGrid>();
+
             foreach (var item in limitItems.Where(item => item.FoundEntities.Count > 0 && item.Punishment != LimitItem.PunishmentType.None))
             {
                 if (punishmentTypes != null && !punishmentTypes.Contains(item.Punishment)) continue;
@@ -67,14 +70,14 @@ namespace BlockLimiter.Punishment
                     }
 
                     if (count <= item.Limit) continue;
+
                     foreach (var block in blocks)
                     {
-                        if (block.CubeGrid.IsPreview)
+                        if (block.CubeGrid.IsPreview || !item.IsMatch(block.BlockDefinition))
                         {
                             continue;
                         }
 
-                        if (!item.IsMatch(block.BlockDefinition)) continue;
 
                         var defBase = MyDefinitionManager.Static.GetDefinition(block.BlockDefinition.Id);
 

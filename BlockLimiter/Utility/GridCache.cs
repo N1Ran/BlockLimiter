@@ -63,8 +63,8 @@ namespace BlockLimiter.Utility
             }
 
             if (++_updateCounter % 100 != 0) return;
-            UpdateBuilders();
             UpdateOwners();
+            UpdateBuilders();
         }
 
         public static bool TryGetGridById(long entityId, out MyCubeGrid entity)
@@ -136,8 +136,8 @@ namespace BlockLimiter.Utility
                     _bigOwners.Remove(r);
             }
         }
-        
-        public static HashSet<long> UpdateGridOwners(MyCubeGrid grid)
+
+        private static HashSet<long> UpdateGridOwners(MyCubeGrid grid)
         {
             var owners = new Dictionary<long, int>();
             foreach (var block in grid.CubeBlocks)
@@ -151,6 +151,7 @@ namespace BlockLimiter.Utility
 
             foreach (var b in owners)
             {
+                if (b.Key == 0) continue;
                 if (b.Value > max)
                 {
                     max = b.Value;
@@ -218,6 +219,7 @@ namespace BlockLimiter.Utility
 
             foreach (var b in builders)
             {
+                if (b.Key == 0) continue;
                 if (b.Value > max)
                 {
                     max = b.Value;

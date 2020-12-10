@@ -328,14 +328,13 @@ namespace BlockLimiter.Utility
                             {
                                 if (!GridCache.TryGetGridById(gridId, out var grid) && Grid.IsOwner(grid, playerId))
                                 {
-                                    sb.Append($"[UnknownGrid] = {amount}");
+                                    sb.AppendLine($"[UnknownGrid] = {amount}");
                                     continue;
                                 }
 
-                                sb.Append($"{grid.DisplayName} = {amount}");
+                                sb.AppendLine($"{grid.DisplayName} = {amount}");
                             }
 
-                            sb.AppendLine();
 
                         }
                     }
@@ -349,16 +348,25 @@ namespace BlockLimiter.Utility
                         sb.AppendLine($"Faction Limit = {fCount}/{item.Limit} ");
                 }
 
-                if (!item.LimitGrids || (!item.FoundEntities.Any(x =>
-                    GridCache.TryGetGridById(x.Key, out var grid) && Grid.IsOwner(grid,playerId)))) continue;
-
-                sb.AppendLine("Grid Limits:");
-
+                if (!item.LimitGrids) continue;
+                var gridDictionary = new Dictionary<string,int>();
                 foreach (var (id,gCount) in item.FoundEntities)
                 {
                     if (!GridCache.TryGetGridById(id, out var grid) || !Grid.IsOwner(grid,playerId)) continue;
+                    if (!item.IsGridType(grid))
+                    {
+                        item.FoundEntities.Remove(id);
+                        continue;
+                    }
                     if (gCount < 1) continue;
-                    sb.AppendLine($"->{grid.DisplayName} = {gCount} / {item.Limit}");
+                    gridDictionary[grid.DisplayName] = gCount;
+                }
+                if (gridDictionary.Count == 0)continue;
+                sb.AppendLine("Grid Limits:");
+
+                foreach (var (name,gCount) in gridDictionary)
+                {
+                    sb.AppendLine($"->{name} = {gCount} / {item.Limit}");
                 }
             }
             
