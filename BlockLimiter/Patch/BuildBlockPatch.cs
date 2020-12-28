@@ -145,7 +145,7 @@ namespace BlockLimiter.Patch
                 BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed();
+            Utilities.ValidationFailed(remoteUserId);
             return false;
 
 

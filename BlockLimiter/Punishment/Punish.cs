@@ -54,8 +54,6 @@ namespace BlockLimiter.Punishment
 
             var punishCount = 0;
 
-            var gridsToSkip = new HashSet<MyCubeGrid>();
-
             foreach (var item in limitItems.Where(item => item.FoundEntities.Count > 0 && item.Punishment != LimitItem.PunishmentType.None))
             {
                 if (punishmentTypes != null && !punishmentTypes.Contains(item.Punishment)) continue;

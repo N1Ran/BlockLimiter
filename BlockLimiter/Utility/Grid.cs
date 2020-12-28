@@ -273,6 +273,7 @@ namespace BlockLimiter.Utility
 
             if (grid == null || IsSizeViolation(grid)) return false;
 
+            
             return playerId == 0 || Block.CanAdd(grid.CubeBlocks, playerId, out _);
         }
 

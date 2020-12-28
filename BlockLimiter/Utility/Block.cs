@@ -269,6 +269,7 @@ namespace BlockLimiter.Utility
                 nonAllowedBlocks = newList;
                 return true;
             }
+            
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
                 if (limit.IgnoreNpcs)
@@ -277,10 +278,15 @@ namespace BlockLimiter.Utility
                 }
 
                 limit.FoundEntities.TryGetValue(id, out var currentCount);
+                
                 if(limit.IsExcepted(id)) continue;
+                
                 var affectedBlocks = blocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))).ToList();
+                
                 if (affectedBlocks.Count <= limit.Limit - currentCount ) continue;
+                
                 var take = affectedBlocks.Count - (limit.Limit - currentCount);
+                
                 newList.AddRange(affectedBlocks.Where(x=>!newList.Contains(x)).Take(take));
             }
 

@@ -46,7 +46,7 @@ namespace BlockLimiter.Commands
         public void UpdateLimits()
         {
             var time = DateTime.Now - _lastRun;
-            if (time.TotalMinutes < 1)
+            if (time.TotalSeconds < 60)
             {
                 var timeRemaining = TimeSpan.FromMinutes(1) - time;
                 Context.Respond($"Cooldown in effect.  Try again in {timeRemaining.TotalSeconds:N0} seconds");
@@ -222,6 +222,54 @@ namespace BlockLimiter.Commands
                 
             }
             */
+            
+                var grids = new HashSet<MyCubeGrid>();
+                GridCache.GetGrids(grids);
+
+                if (grids.Count > 0)
+                {
+                    if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0)
+                    {
+                        sb.AppendLine($"Ship Limits");
+                        foreach (var grid in grids.Where(x=> x.BlocksCount > BlockLimiterConfig.Instance.MaxBlockSizeShips && !x.IsStatic))
+                        {
+                            sb.AppendLine(
+                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlockSizeShips}");
+                        }
+                    }
+                    
+                    if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0)
+                    {
+                        sb.AppendLine($"Station Limits");
+                        foreach (var grid in grids.Where(x=> x.BlocksCount > BlockLimiterConfig.Instance.MaxBlockSizeStations && x.IsStatic))
+                        {
+                            sb.AppendLine(
+                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlockSizeStations}");
+                        }
+                    }
+                    
+                    if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0)
+                    {
+                        sb.AppendLine($"Large Grid Block Limits");
+                        foreach (var grid in grids.Where(x=> x.BlocksCount > BlockLimiterConfig.Instance.MaxBlocksLargeGrid  && x.GridSizeEnum == MyCubeSize.Large))
+                        {
+                            sb.AppendLine(
+                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlocksLargeGrid}");
+                        }
+                    }
+                    
+                    if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0)
+                    {
+                        sb.AppendLine($"Small Grid Block Limits");
+                        foreach (var grid in grids.Where(x=> x.BlocksCount > BlockLimiterConfig.Instance.MaxBlocksSmallGrid && x.GridSizeEnum == MyCubeSize.Small))
+                        {
+                            sb.AppendLine(
+                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlocksSmallGrid}");
+                        }
+                    }
+                    
+                }
+
             
             foreach (var item in limitItems)
             {

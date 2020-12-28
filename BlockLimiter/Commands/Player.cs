@@ -59,7 +59,7 @@ namespace BlockLimiter.Commands
             }
 
             var diff = DateTime.Now - lastRun;
-            if (diff.TotalMinutes < 5)
+            if (diff.TotalSeconds < 300)
             {
                 var totalRemaining = TimeSpan.FromSeconds(60) - diff;
                 Context.Respond($"Cooldown in effect.  Try again in {totalRemaining.TotalSeconds:N0} seconds");
@@ -130,15 +130,20 @@ namespace BlockLimiter.Commands
                 return;
             }
 
-            sb.AppendLine($"Found {limiterLimits.Where(x=>x.BlockList.Any()).ToList().Count()} items");
-            foreach (var item in limiterLimits.Where(x=>x.BlockList.Any()))
+            sb.AppendLine($"Found {limiterLimits.Count(x=>x.BlockList.Any())} items");
+            foreach (var item in limiterLimits)
             {
+                if (item.BlockList.Count == 0) continue;
                 var name = string.IsNullOrEmpty(item.Name) ? "No Name" : item.Name;
                 sb.AppendLine();
                 sb.AppendLine(name);
                 item.BlockList.ForEach(x=>sb.Append($"[{x}] "));
                 sb.AppendLine();
                 sb.AppendLine($"GridType: {item.GridTypeBlock}");
+                if (item.LimitFilterType > LimitItem.FilterType.None)
+                {
+                    sb.AppendLine($"FilterType : {item.LimitFilterType} {item.LimitFilterOperator} {item.FilterValue}");
+                }
                 sb.AppendLine($"Limits:       {item.Limit}");
                 sb.AppendLine($"PlayerLimit:  {item.LimitPlayers}");
                 sb.AppendLine($"FactionLimit: {item.LimitFaction}");

@@ -118,9 +118,9 @@ namespace BlockLimiter.Utility
 
 
 
-        public static void ValidationFailed()
+        public static void ValidationFailed(ulong id = 0)
         {
-            var user = MyEventContext.Current.Sender.Value;
+            var user = id > 0 ? id : MyEventContext.Current.Sender.Value;
             if (user == 0) return;
             ((MyMultiplayerServerBase)MyMultiplayer.Static).ValidationFailed(user);
         }
@@ -297,7 +297,68 @@ namespace BlockLimiter.Utility
             var playerBlocks = new HashSet<MySlimBlock>();
 
             if (playerId > 0)
+                
+            {
                 GridCache.GetPlayerBlocks(playerBlocks,playerId);
+                var grids = new HashSet<MyCubeGrid>();
+                GridCache.GetPlayerGrids(grids,playerId);
+
+                if (grids.Count > 0)
+                {
+                    if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0)
+                    {
+                        sb.AppendLine($"Ship Limits");
+                        foreach (var grid in grids.Where(x=> x.BlocksCount > 0 && !x.IsStatic))
+                        {
+                            sb.AppendLine(
+                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlockSizeShips}");
+                        }
+                    }
+                    
+                    if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0)
+                    {
+                        sb.AppendLine($"Station Limits");
+                        foreach (var grid in grids.Where(x=> x.BlocksCount > 0 && x.IsStatic))
+                        {
+                            sb.AppendLine(
+                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlockSizeStations}");
+                        }
+                    }
+                    
+                    if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0)
+                    {
+                        sb.AppendLine($"Large Grid Block Limits");
+                        foreach (var grid in grids.Where(x=> x.BlocksCount > 0 && x.GridSizeEnum == MyCubeSize.Large))
+                        {
+                            sb.AppendLine(
+                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlocksLargeGrid}");
+                        }
+                    }
+                    
+                    if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0)
+                    {
+                        sb.AppendLine($"Small Grid Block Limits");
+                        foreach (var grid in grids.Where(x=> x.BlocksCount > 0 && x.GridSizeEnum == MyCubeSize.Small))
+                        {
+                            sb.AppendLine(
+                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlocksSmallGrid}");
+                        }
+                    }
+                    
+                    if (BlockLimiterConfig.Instance.MaxSmallGrids > 0)
+                    {
+                        sb.AppendLine($"Small Grids Limits: {grids.Count(x=>x.GridSizeEnum == MyCubeSize.Small)}/{BlockLimiterConfig.Instance.MaxSmallGrids}");
+                    }
+                    
+                    if (BlockLimiterConfig.Instance.MaxLargeGrids > 0)
+                    {
+                        sb.AppendLine($"Large Grid Limits: {grids.Count(x=>x.GridSizeEnum == MyCubeSize.Large)}/{BlockLimiterConfig.Instance.MaxLargeGrids}");
+                    }
+                }
+            }
+            
+            
+            
 
             foreach (var item in limitItems)
             {
