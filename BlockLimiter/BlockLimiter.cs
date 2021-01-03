@@ -284,7 +284,6 @@ namespace BlockLimiter
                     }
                     break;
                 case TorchSessionState.Unloading:
-                    Dispose();
                     break;
                 default:
                     return;
@@ -322,16 +321,16 @@ namespace BlockLimiter
 
         public override void Dispose()
         {
+            base.Dispose();
             try
             {
-                base.Dispose();
                 foreach (var thread in _processThreads)
                     thread.Abort();
                 _processThread.Abort();
             }
             catch (Exception e)
             {
-                Log.Warn("Session Error",e);
+                Log.Warn("Session failed to load.  Check world for corruption",e);
 
             }
         }

@@ -124,9 +124,50 @@ namespace BlockLimiter.Commands
 
             var sb = new StringBuilder();
             var limiterLimits = BlockLimiterConfig.Instance.AllLimits.ToList();
+            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0)
+            {
+                sb.AppendLine($"Ship Size Limit = {BlockLimiterConfig.Instance.MaxBlockSizeShips} Blocks");
+            }
+            
+            if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0)
+            {
+                sb.AppendLine($"Station Size Limit = {BlockLimiterConfig.Instance.MaxBlockSizeStations} blocks");
+            }
+            
+            if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0)
+            {
+                sb.AppendLine($"Large Grid Size Limit = {BlockLimiterConfig.Instance.MaxBlocksLargeGrid} blocks");
+            }
+            
+            if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0)
+            {
+                sb.AppendLine($"Small Grid Size Limits = {BlockLimiterConfig.Instance.MaxBlocksSmallGrid} blocks");
+            }
+            
+            if (BlockLimiterConfig.Instance.MaxSmallGrids > 0)
+            {
+                sb.AppendLine($"Small Grids Limit = {BlockLimiterConfig.Instance.MaxSmallGrids} small grids per player");
+            }
+            
+            if (BlockLimiterConfig.Instance.MaxLargeGrids > 0)
+            {
+                sb.AppendLine($"Large Grids Limit = {BlockLimiterConfig.Instance.MaxLargeGrids} large grids per player");
+            }
+
             if (!limiterLimits.Any())
             {
-                Context.Respond("No limit item found");
+                if (sb.Length == 0)
+                    Context.Respond("No block limits found");
+                else
+                {
+                    if (Context.Player == null || Context.Player.IdentityId == 0)
+                    {
+                        Context.Respond(sb.ToString());
+                        return;
+                    }
+
+                    ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of Limits",sb.ToString()),Context.Player.SteamUserId);
+                }
                 return;
             }
 
