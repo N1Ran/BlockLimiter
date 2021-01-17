@@ -85,13 +85,20 @@ namespace BlockLimiter
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
 
             if (!(entity is MyCubeGrid grid)) return;
+            
             if (!BlockLimiterConfig.Instance.CountProjections && (grid.Projector != null||grid.IsPreview)) return;
+
+            var biggestGrid = Grid.GetBiggestGridInGroup(grid);
 
             var blocks = grid.CubeBlocks;
 
             foreach (var block in blocks)
             {
                 Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1,grid.EntityId);
+                if (biggestGrid != null && biggestGrid != grid)
+                {
+                    Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1,biggestGrid.EntityId);
+                }
             }
 
 
@@ -330,7 +337,7 @@ namespace BlockLimiter
             }
             catch (Exception e)
             {
-                Log.Warn("Session failed to load.  Check world for corruption",e);
+                Log.Warn(e,"Session failed to load.  Check world for corruption");
 
             }
         }

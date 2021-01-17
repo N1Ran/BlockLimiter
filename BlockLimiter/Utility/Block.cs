@@ -181,8 +181,6 @@ namespace BlockLimiter.Utility
             return block.BuiltBy == playerId || block.OwnerId == playerId;
         }
 
-
-
         public static void IncreaseCount(MyCubeBlockDefinition def, long playerId, int amount = 1, long gridId = 0)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
@@ -216,7 +214,6 @@ namespace BlockLimiter.Utility
 
                 if (limit.LimitFaction && faction != null)
                     limit.FoundEntities.AddOrUpdate(faction.FactionId, amount, (l, i) => i+amount);
-
 
             }
 
@@ -322,12 +319,12 @@ namespace BlockLimiter.Utility
             return nonAllowedBlocks.Count == 0;
         }
 
-
         public static void Punish(MyConcurrentDictionary<MySlimBlock, LimitItem.PunishmentType> removalCollection)
         {
 
             if (removalCollection.Count == 0 || !BlockLimiterConfig.Instance.EnableLimits) return;
             var log = BlockLimiter.Instance.Log;
+            log.Info($"Punishing {removalCollection.Count} blocks");
             var chatManager = BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>();
             lock (removalCollection)
             {

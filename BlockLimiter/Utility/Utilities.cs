@@ -228,7 +228,6 @@ namespace BlockLimiter.Utility
                     var owners = GridCache.GetOwners(grid);
                     owners.UnionWith(GridCache.GetBuilders(grid));
                     if (owners.Count == 0) break;
-                    owners.ForEach(x=> BlockLimiter.Instance.Log.Warn(x));
                     gridOwners.UnionWith(owners);
                     break;
                 }

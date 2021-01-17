@@ -61,7 +61,9 @@ namespace BlockLimiter.Patch
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
+
             if (Block.IsWithinLimits(def, playerId, grid.EntityId, blocksToBuild, out var limitName)) return true;
+
             BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
 
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>(){def.ToString().Substring(16)},limitName);
@@ -111,6 +113,7 @@ namespace BlockLimiter.Patch
             if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
                 BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
+
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
             return false;

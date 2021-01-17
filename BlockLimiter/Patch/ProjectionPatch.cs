@@ -70,7 +70,7 @@ namespace BlockLimiter.Patch
             var proj = __instance;
             if (proj == null)
             {
-                Log.Warn("No projector?");
+                Log.Warn("No projector? Fuck this game");
                 return false;
             }
 

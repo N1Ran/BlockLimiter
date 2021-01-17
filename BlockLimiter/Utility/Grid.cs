@@ -9,6 +9,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Graphics.GUI;
 using VRage.Game;
+using VRage.Groups;
 using VRageRender.Messages;
 
 namespace BlockLimiter.Utility
@@ -100,11 +101,11 @@ namespace BlockLimiter.Utility
 
         }
 
-
         public static bool CountViolation(MyCubeBlockDefinition block, long owner)
         {
             return CountViolation(block.CubeSize, owner);
         }
+
         public static bool CountViolation(MyObjectBuilder_CubeGrid grid, long owner)
         {
             return CountViolation(grid.GridSizeEnum, owner);
@@ -138,20 +139,27 @@ namespace BlockLimiter.Utility
 
         }
 
-        private static bool IsBiggestGridInGroup(MyCubeGrid grid)
+        public static bool IsBiggestGridInGroup(MyCubeGrid grid)
         {
-            if (grid == null) return false;
-            try
-            {
-                var biggestGrid = grid?.GetBiggestGridInGroup();
-                if (biggestGrid == null || biggestGrid != grid) return false;
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
+            var biggestGrid = GetBiggestGridInGroup(grid);
+            if (biggestGrid == null) return false;
+            return grid == biggestGrid;
+        }
 
-            return true;
+        public static MyCubeGrid GetBiggestGridInGroup(MyCubeGrid grid)
+        {
+            var biggestGrid = grid;
+            double num = 0.0;
+            foreach (MyGroups<MyCubeGrid, MyGridMechanicalGroupData>.Node node in MyCubeGridGroups.Static.Mechanical.GetGroup(grid).Nodes)
+            {
+                double volume = node.NodeData.PositionComp.WorldAABB.Size.Volume;
+                if (volume > num)
+                {
+                    num = volume;
+                    biggestGrid = node.NodeData;
+                }
+            }
+            return biggestGrid;
         }
 
         public static bool CanMerge(MyCubeGrid grid1, MyCubeGrid grid2, out List<string>blocks, out int count, out string limitName)
@@ -265,8 +273,6 @@ namespace BlockLimiter.Utility
             return true;
         }
         
-
-
         public static bool CanSpawn(MyObjectBuilder_CubeGrid grid, long playerId)
         {
             if (Utilities.IsExcepted(playerId)) return true;
@@ -276,7 +282,6 @@ namespace BlockLimiter.Utility
             
             return playerId == 0 || Block.CanAdd(grid.CubeBlocks, playerId, out _);
         }
-
 
     }
 }

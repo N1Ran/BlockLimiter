@@ -141,7 +141,6 @@ namespace BlockLimiter.Punishment
 
             totalBlocksPunished = punishBlocks.Count;
             _firstCheckCompleted = !_firstCheckCompleted;
-            Log.Info($"Punishing {totalBlocksPunished} blocks");
             Block.Punish(punishBlocks);
             return totalBlocksPunished;
 
