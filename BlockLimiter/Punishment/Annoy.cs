@@ -68,13 +68,15 @@ namespace BlockLimiter.Punishment
                     {
                         if (annoyList.Contains(steamId)) break;
 
-                        if (id == player.Identity.IdentityId && count > item.Limit)
+                        if (count <= item.Limit) continue;
+
+                        if (id == player.Identity.IdentityId)
                         {
                             annoyList.Add(steamId);
                             break;
                         }
 
-                        if (playerGridIds.Count > 0 && playerGridIds.Contains(id))
+                        if (playerGridIds.Contains(id))
                         {
                             annoyList.Add(steamId);
                             break;

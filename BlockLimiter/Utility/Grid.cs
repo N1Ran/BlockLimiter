@@ -141,6 +141,7 @@ namespace BlockLimiter.Utility
 
         public static bool IsBiggestGridInGroup(MyCubeGrid grid)
         {
+            if (grid == null) return true;
             var biggestGrid = GetBiggestGridInGroup(grid);
             if (biggestGrid == null) return false;
             return grid == biggestGrid;
@@ -148,17 +149,22 @@ namespace BlockLimiter.Utility
 
         public static MyCubeGrid GetBiggestGridInGroup(MyCubeGrid grid)
         {
+            if (grid == null) return null;
             var biggestGrid = grid;
             double num = 0.0;
-            foreach (MyGroups<MyCubeGrid, MyGridMechanicalGroupData>.Node node in MyCubeGridGroups.Static.Mechanical.GetGroup(grid).Nodes)
-            {
-                double volume = node.NodeData.PositionComp.WorldAABB.Size.Volume;
-                if (volume > num)
+            var nodes = MyCubeGridGroups.Static.Mechanical
+                .GetGroup(grid)?.Nodes;
+            if (nodes != null)
+                foreach (MyGroups<MyCubeGrid, MyGridMechanicalGroupData>.Node node in nodes)
                 {
-                    num = volume;
-                    biggestGrid = node.NodeData;
+                    double volume = node.NodeData.PositionComp.WorldAABB.Size.Volume;
+                    if (volume > num)
+                    {
+                        num = volume;
+                        biggestGrid = node.NodeData;
+                    }
                 }
-            }
+
             return biggestGrid;
         }
 

@@ -134,13 +134,13 @@ namespace BlockLimiter.Punishment
                 idsToRemove.ForEach(x=>item.FoundEntities.Remove(x));
             }
 
-            if (punishBlocks.Count == 0)
+            totalBlocksPunished = punishBlocks.Count;
+            _firstCheckCompleted = !_firstCheckCompleted;
+            if (totalBlocksPunished == 0)
             {
                 return totalBlocksPunished;
             }
 
-            totalBlocksPunished = punishBlocks.Count;
-            _firstCheckCompleted = !_firstCheckCompleted;
             Block.Punish(punishBlocks);
             return totalBlocksPunished;
 

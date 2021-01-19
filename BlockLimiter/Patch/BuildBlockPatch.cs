@@ -79,7 +79,6 @@ namespace BlockLimiter.Patch
 
         }
 
-
         /// <summary>
         /// Checks blocks being placed on grids.
         /// </summary>
