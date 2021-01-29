@@ -221,17 +221,6 @@ namespace BlockLimiter.Settings
             }
         }
         
-        [Display(Order = 6, GroupName = "*Main Settings", Name = "Count Projections",
-            Description = "Adds projected blocks to block counts.  Recommended to avoid exploits")]
-        public bool CountProjections
-        {
-            get => _countProjection;
-            set
-            {
-                _countProjection = value;
-                Changed();
-            }
-        }
 
         [Display(Order = 7, GroupName = "*Main Settings", Name = "ShutOff UnOwned Blocks", Description = "Turns off any blocks that becomes UnOwned except power blocks, button panels and parachutes")]
         public bool KillNoOwnerBlocks

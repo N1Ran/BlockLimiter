@@ -86,7 +86,7 @@ namespace BlockLimiter
 
             if (!(entity is MyCubeGrid grid)) return;
             
-            if (!BlockLimiterConfig.Instance.CountProjections && (grid.Projector != null||grid.IsPreview)) return;
+            if (grid.Projector != null||grid.IsPreview) return;
 
             var biggestGrid = Grid.GetBiggestGridInGroup(grid);
 

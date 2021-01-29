@@ -57,9 +57,7 @@ namespace BlockLimiter.Utility
                 
                 if (e.Count == 0) return;
                 _gridCache.Clear();
-                _gridCache.UnionWith(!BlockLimiterConfig.Instance.CountProjections
-                    ? e.OfType<MyCubeGrid>().Where(x => x.Projector == null)
-                    : e.OfType<MyCubeGrid>());
+                _gridCache.UnionWith(e.OfType<MyCubeGrid>().Where(x => x.Projector == null));
             }
 
             if (++_updateCounter % 100 != 0) return;
