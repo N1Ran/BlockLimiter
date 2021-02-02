@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using BlockLimiter.Settings;
@@ -14,20 +15,22 @@ namespace BlockLimiter.Utility
     public static class UpdateLimits
     {
 
-        public static void PlayerLimit(long id)
+        public static bool PlayerLimit(long id)
         {
-            if (id == 0) return;
+            if (id == 0) return false;
             var playerBlocks = new HashSet<MySlimBlock>();
 
             GridCache.GetPlayerBlocks(playerBlocks,id);
-            
+
+            var limits = BlockLimiterConfig.Instance.AllLimits;
+            if (limits?.Count == 0) return false;
             if (playerBlocks.Count == 0)
             {
                 foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
                 {
                     limit.FoundEntities.Remove(id);
                 }
-                return;
+                return false;
             }
 
             Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, limit =>
@@ -50,7 +53,7 @@ namespace BlockLimiter.Utility
 
             });
 
-
+            return true;
         }
 
         
@@ -85,9 +88,9 @@ namespace BlockLimiter.Utility
         }
 
         
-        public static void FactionLimit(long id)
+        public static bool FactionLimit(long id)
         {
-            if (id == 0) return;
+            if (id == 0) return false;
             var factionBlocks = new HashSet<MySlimBlock>();
             var limits = BlockLimiterConfig.Instance.AllLimits;
 
@@ -99,12 +102,12 @@ namespace BlockLimiter.Utility
                 {
                     limit.FoundEntities.Remove(id);  
                 }
-                return;
+                return false;
             }
 
 
             var faction = MySession.Static.Factions.TryGetFactionById(id);
-            if (faction == null) return;
+            if (faction == null) return false;
 
             Parallel.ForEach(limits, limit =>
             {
@@ -125,7 +128,7 @@ namespace BlockLimiter.Utility
                 limit.FoundEntities[id] = factionBlockCount;
 
             });
-
+            return true;
         }
         
     }

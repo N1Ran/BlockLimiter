@@ -5,6 +5,7 @@ using System.Text;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using Sandbox.Definitions;
+using Sandbox.Game.World;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using Torch.Mod;
@@ -31,11 +32,21 @@ namespace BlockLimiter.Commands
 
             var steamId = Context.Player.SteamUserId;
 
+            var playerFaction = MySession.Static.Factions.GetPlayerFaction(Context.Player.IdentityId);
+
             if (!_updateCommandTimeout.TryGetValue(steamId, out var lastRun))
             {
                 _updateCommandTimeout[steamId] = DateTime.Now;
 
-                Utility.UpdateLimits.PlayerLimit(Context.Player.IdentityId);
+                if (playerFaction != null && !Utility.UpdateLimits.FactionLimit(playerFaction.FactionId))
+                {
+                    Context.Respond("Faction limit not updated");
+                }
+                if (!Utility.UpdateLimits.PlayerLimit(Context.Player.IdentityId))
+                {
+                    Context.Respond("Unable to update limits");
+                    return;
+                };
                 Context.Respond("Limits Updated");
                 return;
 
@@ -50,8 +61,17 @@ namespace BlockLimiter.Commands
             }
 
             _updateCommandTimeout[steamId] = DateTime.Now;
+            
+            if (playerFaction != null && !Utility.UpdateLimits.FactionLimit(playerFaction.FactionId))
+            {
+                Context.Respond("Faction limit not updated");
+            }
 
-            Utility.UpdateLimits.PlayerLimit(Context.Player.IdentityId);
+            if (!Utility.UpdateLimits.PlayerLimit(Context.Player.IdentityId))
+            {
+                Context.Respond("Unable to update limits");
+                return;
+            };
             Context.Respond("Limits Updated");
 
 

@@ -398,7 +398,6 @@ namespace BlockLimiter
             {
                 Task.Run(() =>
                 {
-                    Thread.Sleep(100);
                     Parallel.ForEach(MySession.Static.Factions, factionInfo =>
                     {
                         var (id, faction) = factionInfo;
