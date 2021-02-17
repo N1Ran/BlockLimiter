@@ -297,16 +297,19 @@ namespace BlockLimiter.Settings
                     break;
                 case MyPlayer player:
                     if (player.IsBot || player.IsWildlifeAgent) return true;
-                    playerSteamId = player.Character.ControlSteamId;
+                    var playerIdentity = player.Identity;
+                    if (playerIdentity == null) return false;
+                    if (playerIdentity.IdentityId > 0)
+                    {
+                        if (allExceptions.Contains(playerIdentity.IdentityId.ToString())) return true;
+                        displayName = playerIdentity.DisplayName;
+                        identityId = playerIdentity.IdentityId;
+                    }
+
+                    playerSteamId = Utilities.GetSteamIdFromPlayerId(playerIdentity.IdentityId);
+
                     if (playerSteamId == 0) return false;
                     if (allExceptions.Contains(playerSteamId.ToString())) return true;
-                    identityId = Utilities.GetPlayerIdFromSteamId(playerSteamId);
-                    if (identityId > 0)
-                    {
-                        if (allExceptions.Contains(identityId.ToString())) return true;
-                        identity = MySession.Static.Players.TryGetIdentity(identityId);
-                        displayName = identity.DisplayName;
-                    }
                     break;
                 case MyCubeGrid grid:
                 {

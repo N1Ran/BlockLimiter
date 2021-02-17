@@ -49,7 +49,7 @@ namespace BlockLimiter.Settings
             data.Player = player.Name;
             var lastLogout = MySession.Static.Players.TryGetIdentity(Utilities.GetPlayerIdFromSteamId(steamId))?.LastLoginTime;
             if (lastLogout != null && DateTime.Now > lastLogout)
-                data.FirstLogTime = DateTime.Now;
+                data.FirstLogTime = (DateTime) lastLogout;
             else
             {
                 data.FirstLogTime = DateTime.Now;
