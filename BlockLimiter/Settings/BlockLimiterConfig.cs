@@ -27,8 +27,6 @@ namespace BlockLimiter.Settings
             _limitItems = new MtObservableCollection<LimitItem>();
             _limitItems.CollectionChanged += ItemsCollectionChanged;
 
-            _playerTimes = new MtObservableCollection<PlayerTime>();
-            _playerTimes.CollectionChanged += ItemsCollectionChanged;
         }
 
 
@@ -63,7 +61,6 @@ namespace BlockLimiter.Settings
         private bool _gridSpawnBlocking;
         private bool _blockOwnershipTransfer;
         private MtObservableCollection<LimitItem> _limitItems;
-        private MtObservableCollection<PlayerTime> _playerTimes ;
         private string _denyMessage = "Limit reached \n{BC} blocks denied \nBlockNames: \n{BL}";
         private string _projectionDenyMessage = "{BC} blocks removed from Projection. \nBlockNames = \n{BL}";
         private bool _mergerBlocking;
@@ -366,21 +363,6 @@ namespace BlockLimiter.Settings
 
         #endregion
 
-        #region PlayerTimes
-
-        [Display(Visible = false)]
-        public MtObservableCollection<PlayerTime> PlayerTimes
-        {
-            get => _playerTimes;
-            set
-            {
-                _playerTimes = value;
-                OnPropertyChanged();
-                Save();
-            }
-        }
-
-        #endregion
 
         #region Loading and Saving
 

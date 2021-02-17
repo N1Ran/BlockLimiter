@@ -420,12 +420,12 @@ namespace BlockLimiter.Settings
                     if (playerId == 0) break;
                     var player = MySession.Static.Players.TryGetSteamId(playerId);
                     if (player == 0) break;
-                    var playerTime = BlockLimiterConfig.Instance.PlayerTimes.FirstOrDefault(x => x.Player == player);
+                    var playerTime = PlayerTimeModule.GetTime(player);
                     if (playerTime == null) break;
-                    if (LimitFilterOperator == FilterOperator.GreaterThan) return (DateTime.Now - playerTime.Time).TotalDays > FilterValue;
+                    if (LimitFilterOperator == FilterOperator.GreaterThan) return (DateTime.Now - playerTime).TotalDays > FilterValue;
                     else
                     {
-                        return (DateTime.Now - playerTime.Time).TotalDays < FilterValue;
+                        return (DateTime.Now - playerTime).TotalDays < FilterValue;
                     }
                 case FilterType.GridBlockCount:
                     if (LimitFilterOperator == FilterOperator.GreaterThan) return grid.CubeBlocks.Count > FilterValue;

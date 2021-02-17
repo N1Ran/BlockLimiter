@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -10,6 +11,7 @@ using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
+using Newtonsoft.Json;
 using NLog;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
@@ -45,18 +47,12 @@ namespace BlockLimiter
         public readonly HashSet<LimitItem> VanillaLimits = new HashSet<LimitItem>();
         private int _updateCounter;
         public static IPluginManager PluginManager { get; private set; }
-        public static bool DPBInstalled;
-        public static ITorchPlugin DPBPlugin;
-        public static MethodInfo DPBCanAdd;
+        public PlayerTimeModule timeModule = new PlayerTimeModule();
 
+        public string timeDataPath = "";
 
         private void DoInit()
         {
-            PluginManager.Plugins.TryGetValue(new Guid("b1307cc4-e307-4ec5-a0e0-732a624abfcc"), out DPBPlugin );
-
-            DPBCanAdd = DPBPlugin?.GetType()
-                .GetMethod("CanProject", BindingFlags.Public | BindingFlags.Static);
-            DPBInstalled = DPBCanAdd != null;
 
             _limitHandlers = new List<ProcessHandlerBase>
             {
@@ -132,7 +128,6 @@ namespace BlockLimiter
             if (!GridCache.TryGetGridById(grid.EntityId, out _))
             {
                 GridCache.AddGrid(grid);
-                //GridCache.Update();
                 return;
             }
             Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
@@ -144,12 +139,6 @@ namespace BlockLimiter
         private static void StaticOnClientJoined(ulong obj, string playerName)
         {
             if (obj == 0) return;
-            if (BlockLimiterConfig.Instance.PlayerTimes.Any(x=>x.Player == obj) == false)
-            {
-                Instance.Log.Warn($"{playerName} logged to player time {DateTime.Now}");
-                var playerTime = new PlayerTime {Player = obj, Time = DateTime.Now};
-                BlockLimiterConfig.Instance.PlayerTimes.Add(playerTime);
-            }
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
             var identityId = Utilities.GetPlayerIdFromSteamId(obj);
             if (identityId == 0)return;
@@ -258,7 +247,7 @@ namespace BlockLimiter
             _sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (_sessionManager != null)
                 _sessionManager.SessionStateChanged += SessionChanged;
-            
+
         }
 
 
@@ -280,7 +269,24 @@ namespace BlockLimiter
             _running = state == TorchSessionState.Loaded;
             switch (state)
             {
+                case TorchSessionState.Loading:
+                    timeDataPath = Path.Combine(Torch.CurrentSession.KeenSession.CurrentPath, "BLPlayerTime.json");
+                    if (!File.Exists(timeDataPath)) File.Create(timeDataPath);
+
+                    break;
+
                 case TorchSessionState.Loaded:
+
+                    var data = File.ReadAllText(timeDataPath);
+                    if (!string.IsNullOrEmpty(data))
+                    {
+                        PlayerTimeModule.PlayerTimes =
+                            JsonConvert.DeserializeObject<List<PlayerTimeModule.PlayerTimeData>>(
+                                File.ReadAllText(timeDataPath));
+                    }
+
+                    Torch.CurrentSession.Managers.GetManager<IMultiplayerManagerServer>().PlayerJoined +=
+                        PlayerTimeModule.LogTime;
                     DoInit();
                     EnableControl();
                     GetVanillaLimits();
