@@ -22,7 +22,7 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class BuildBlockPatch
     {
-
+     
         public static void Patch(PatchContext ctx)
         {
             var t = typeof(MyCubeGrid);
@@ -35,7 +35,7 @@ namespace BlockLimiter.Patch
                 .Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(Build),
                     BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
         }
-
+     
 
         /// <summary>
         /// Checks blocks being built in creative with multiblock placement.
@@ -87,7 +87,7 @@ namespace BlockLimiter.Patch
         /// <returns></returns>
         private static bool BuildBlocksRequest(MyCubeGrid __instance, HashSet<MyCubeGrid.MyBlockLocation> locations)
         {
-
+            
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
 
             var grid = __instance;
@@ -101,8 +101,8 @@ namespace BlockLimiter.Patch
             var def = MyDefinitionManager.Static.GetCubeBlockDefinition(locations.FirstOrDefault().BlockDefinition);
 
             if (def == null) return true;
-
-
+            
+           
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
@@ -156,7 +156,7 @@ namespace BlockLimiter.Patch
 
 
         }
-
+            
 
     }
 }
