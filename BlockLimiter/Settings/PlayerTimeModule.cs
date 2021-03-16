@@ -33,6 +33,7 @@ namespace BlockLimiter.Settings
 
         public static void LogTime(Torch.API.IPlayer player)
         {
+            if (player == null) return;
             ulong steamId = player.SteamId;
             PlayerTimeData data = new PlayerTimeData();
             bool found = false;

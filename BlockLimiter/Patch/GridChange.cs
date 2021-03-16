@@ -116,7 +116,7 @@ namespace BlockLimiter.Patch
                 break;
             }
 
-            if (!removeSmallestGrid) return;
+            if (!removeSmallestGrid || BlockLimiterConfig.Instance.BlockType != BlockLimiterConfig.BlockingType.Hard) return;
             var grid1 = from;
             var grid2 = to;
             BlockLimiter.Instance.Torch.InvokeAsync(() =>

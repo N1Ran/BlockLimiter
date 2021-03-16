@@ -1,8 +1,3 @@
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\BlockLimiter.dll
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.dll
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\BlockLimiter.pdb
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.pdb
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.CoreCompileInputs.cache
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\BlockLimiter.dll
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\BlockLimiter.pdb
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.CoreCompileInputs.cache
@@ -14,7 +9,12 @@ C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\bin\Release\BlockLimiter
 C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.CoreCompileInputs.cache
 C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.dll
 C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.pdb
+D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\BlockLimiter.dll
+D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\BlockLimiter.pdb
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\Newtonsoft.Json.dll
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\Newtonsoft.Json.xml
+D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.CoreCompileInputs.cache
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.CopyComplete
+D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.dll
+D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.pdb
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csprojAssemblyReference.cache

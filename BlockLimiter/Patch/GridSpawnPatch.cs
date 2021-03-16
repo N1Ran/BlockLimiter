@@ -68,7 +68,7 @@ namespace BlockLimiter.Patch
 
             grids.RemoveAll(g=> Grid.IsSizeViolation(g) || Grid.CountViolation(g,playerId));
             
-            if (grids.Count == 0)
+            if (grids.Count == 0  && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)
             {
                 Log.Info($"Blocked {playerName} from spawning a grid");
 

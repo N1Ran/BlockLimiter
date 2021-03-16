@@ -307,9 +307,6 @@ namespace BlockLimiter.Settings
                     }
 
                     playerSteamId = Utilities.GetSteamIdFromPlayerId(playerIdentity.IdentityId);
-
-                    if (playerSteamId == 0) return false;
-                    if (allExceptions.Contains(playerSteamId.ToString())) return true;
                     break;
                 case MyCubeGrid grid:
                 {

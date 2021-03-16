@@ -65,12 +65,12 @@ namespace BlockLimiter.Settings
         private string _projectionDenyMessage = "{BC} blocks removed from Projection. \nBlockNames = \n{BL}";
         private bool _mergerBlocking;
         private List<string> _generalException;
-        private bool _countProjection;
         private bool _killNoOwnerBlocks;
         private string _logFileName = "BlockLimiter-${shortdate}.log";
         private int _maxBlockSizeProjections;
         private int _maxSmallGrids;
         private int _maxLargeGrids;
+        private BlockingType _blockingType = BlockingType.None;
 
 
         #region General BlockCount Limit
@@ -130,7 +130,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 6, Name = "SmallGrids Allowed", GroupName = "General Count Limit",
+        [Display(Order = 1, Name = "SmallGrids Allowed", GroupName = "General Grid Limit",
             Description = "Max allowed small grid per player")]
         public int MaxSmallGrids
         {
@@ -142,7 +142,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 7, Name = "LargeGrids Allowed", GroupName = "General Count Limit",
+        [Display(Order = 2, Name = "LargeGrids Allowed", GroupName = "General Grid Limit",
             Description = "Max allowed large grid per player")]
         public int MaxLargeGrids
         {
@@ -150,6 +150,18 @@ namespace BlockLimiter.Settings
             set
             {
                 _maxLargeGrids = value;
+                Changed();
+            }
+        }
+
+        [Display(Order = 3, Name = "Max Grid Allowed Blocking Type", GroupName = "General Grid Limit",
+            Description = "Warn = annoyance message, Soft = Block placement, Hard = Block placement and delete excess")]
+        public BlockingType BlockType
+        {
+            get => _blockingType;
+            set
+            {
+                _blockingType = value;
                 Changed();
             }
         }
@@ -363,7 +375,6 @@ namespace BlockLimiter.Settings
 
         #endregion
 
-
         #region Loading and Saving
 
         private void Changed(bool updated = true)
@@ -480,6 +491,13 @@ namespace BlockLimiter.Settings
 
         #endregion
 
+        public enum BlockingType
+        {
+            None,
+            Warn,
+            Soft,
+            Hard
+        }
 
     }
 }

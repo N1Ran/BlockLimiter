@@ -47,8 +47,6 @@ namespace BlockLimiter
         public readonly HashSet<LimitItem> VanillaLimits = new HashSet<LimitItem>();
         private int _updateCounter;
         public static IPluginManager PluginManager { get; private set; }
-        public PlayerTimeModule timeModule = new PlayerTimeModule();
-
         public string timeDataPath = "";
 
         private void DoInit()
