@@ -124,9 +124,9 @@ namespace BlockLimiter.Patch
             var projector = __instance;
             if (projector == null) return false;
 
-            if (owner + builder == 0) return false;
-
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+
+            if (owner + builder == 0) return false;
 
             long projectorId = projector.EntityId;
             int subgridIndex = (int)builtBy;
