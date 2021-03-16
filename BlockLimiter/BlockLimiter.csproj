@@ -12,6 +12,7 @@
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -37,13 +38,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\GameBinaries\netstandard.dll</HintPath>
+      <HintPath>$(SolutionDir)\GameBinaries\netstandard.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\TorchBinaries\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(SolutionDir)\TorchBinaries\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="NLog">
       <HintPath>$(SolutionDir)\GameBinaries\NLog.dll</HintPath>
@@ -147,6 +148,10 @@
     <Compile Include="BlockLimiter.cs" />
     <Compile Include="Commands\Admin.cs" />
     <Compile Include="Commands\Player.cs" />
+    <Compile Include="MultigridProjectorApi\BlockLocation.cs" />
+    <Compile Include="MultigridProjectorApi\BlockState.cs" />
+    <Compile Include="MultigridProjectorApi\IMultigridProjectorApi.cs" />
+    <Compile Include="MultigridProjectorApi\MultigridProjectorTorchAgent.cs" />
     <Compile Include="Patch\BlockOwnershipTransfer.cs" />
     <Compile Include="Patch\GridChange.cs" />
     <Compile Include="Patch\MergeBlockPatch.cs" />
