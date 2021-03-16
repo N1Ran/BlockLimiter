@@ -11,6 +11,7 @@ using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
+using MultigridProjector.Api;
 using Newtonsoft.Json;
 using NLog;
 using Sandbox.Engine.Multiplayer;
@@ -49,8 +50,11 @@ namespace BlockLimiter
         public static IPluginManager PluginManager { get; private set; }
         public string timeDataPath = "";
 
+        public IMultigridProjectorApi MultigridProjectorApi;
+
         private void DoInit()
         {
+            MultigridProjectorApi = new MultigridProjectorTorchAgent(_sessionManager.CurrentSession);
 
             _limitHandlers = new List<ProcessHandlerBase>
             {
@@ -60,7 +64,7 @@ namespace BlockLimiter
             _processThreads = new List<Thread>();
             _processThread = new Thread(PluginProcessing);
             _processThread.Start();
-            
+
             MyMultiplayer.Static.ClientJoined += StaticOnClientJoined;
             MyCubeGrids.BlockBuilt += MyCubeGridsOnBlockBuilt;
             MySession.Static.Factions.FactionStateChanged += FactionsOnFactionStateChanged;
@@ -79,7 +83,7 @@ namespace BlockLimiter
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
 
             if (!(entity is MyCubeGrid grid)) return;
-            
+
             if (grid.Projector != null||grid.IsPreview) return;
 
             var biggestGrid = Grid.GetBiggestGridInGroup(grid);
@@ -312,7 +316,7 @@ namespace BlockLimiter
         {
             BlockLimiterConfig.Instance.Load();
         }
-        
+
         private UserControl _control;
         private UserControl Control => _control ?? (_control = new PropertyGrid{ DataContext = BlockLimiterConfig.Instance});
         public UserControl GetControl()
@@ -416,7 +420,7 @@ namespace BlockLimiter
         }
 
         #region External Access
-        
+
         public static bool CheckLimits_future(MyObjectBuilder_CubeGrid[] grids, long id = 0)
         {
             if (grids.Length == 0 ||!BlockLimiterConfig.Instance.EnableLimits || Utilities.IsExcepted(id))
@@ -438,10 +442,10 @@ namespace BlockLimiter
         {
             return Block.CanAdd(blocks, id, out nonAllowedBlocks);
         }
-        
+
         #endregion
 
-        
+
     }
 
 
