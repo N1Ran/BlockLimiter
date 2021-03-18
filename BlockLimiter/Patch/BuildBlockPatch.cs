@@ -121,28 +121,32 @@ namespace BlockLimiter.Patch
 
         private static bool Build(MyProjectorBase __instance, Vector3I cubeBlockPosition, long owner, long builder, bool requestInstant = true, long builtBy = 0)
         {
-            if (__instance == null) return false;
+            var projector = __instance;
+            if (projector == null) return false;
 
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
 
-            var grid = __instance?.CubeGrid;
-
-            if (grid == null) return false;
-
-            MySlimBlock cubeBlock = __instance?.ProjectedGrid?.GetCubeBlock(cubeBlockPosition);
-
-            var def = cubeBlock?.BlockDefinition;
-
-            if (def == null) return false;
-
             if (owner + builder == 0) return false;
+
+            long projectorId = projector.EntityId;
+            int subgridIndex = (int)builtBy;
+
+            MyCubeGrid builtGrid = (MyCubeGrid)BlockLimiter.Instance.MultigridProjectorApi.GetBuiltGrid(projectorId, subgridIndex) ?? __instance.CubeGrid;
+            if (builtGrid == null) return false;
+
+            MyCubeGrid previewGrid = (MyCubeGrid)BlockLimiter.Instance.MultigridProjectorApi.GetPreviewGrid(projectorId, subgridIndex) ?? __instance.ProjectedGrid;
+            if (previewGrid == null) return false;
+
+            MySlimBlock previewBlock = previewGrid?.GetCubeBlock(cubeBlockPosition);
+            var blockDefinition = previewBlock?.BlockDefinition;
+            if (blockDefinition == null) return false;
 
             var remoteUserId = MySession.Static.Players.TryGetSteamId(owner);
 
-            if (Block.IsWithinLimits(def, owner, grid.EntityId, 1, out var limitName) &&
-                Block.IsWithinLimits(def, builder, grid.EntityId, 1, out limitName)) return true;
-            BlockLimiter.Instance.Log.Info($"Blocked  welding of {def.ToString().Substring(16)} owned by {Utilities.GetPlayerNameFromSteamId(remoteUserId)}");
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {def.ToString().Substring(16)},limitName);
+            if (Block.IsWithinLimits(blockDefinition, owner, builtGrid.EntityId, 1, out var limitName) &&
+                Block.IsWithinLimits(blockDefinition, builder, builtGrid.EntityId, 1, out limitName)) return true;
+            BlockLimiter.Instance.Log.Info($"Blocked  welding of {blockDefinition.ToString().Substring(16)} owned by {Utilities.GetPlayerNameFromSteamId(remoteUserId)}");
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {blockDefinition.ToString().Substring(16)},limitName);
             if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(owner))
                 BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);

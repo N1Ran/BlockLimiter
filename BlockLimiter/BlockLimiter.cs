@@ -11,6 +11,7 @@ using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
+using MultigridProjector.Api;
 using Newtonsoft.Json;
 using NLog;
 using Sandbox.Engine.Multiplayer;
@@ -49,8 +50,11 @@ namespace BlockLimiter
         public static IPluginManager PluginManager { get; private set; }
         public string timeDataPath = "";
 
+        public IMultigridProjectorApi MultigridProjectorApi;
+
         private void DoInit()
         {
+            MultigridProjectorApi = new MultigridProjectorTorchAgent(_sessionManager.CurrentSession);
 
             _limitHandlers = new List<ProcessHandlerBase>
             {
