@@ -19,6 +19,7 @@ namespace BlockLimiter.Punishment
         private static readonly Logger Log = BlockLimiter.Instance.Log;
         private readonly HashSet<MySlimBlock> _blockCache = new HashSet<MySlimBlock>();
         private static bool _firstCheckCompleted;
+        private static List<ulong> _approvedPunishList = new List<ulong>();
 
         public override int GetUpdateResolution()
         {
@@ -53,6 +54,11 @@ namespace BlockLimiter.Punishment
             var punishBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
 
             var punishCount = 0;
+
+            if (_firstCheckCompleted)
+            {
+                _approvedPunishList.Clear();
+            }
 
             foreach (var item in limitItems.Where(item => item.FoundEntities.Count > 0 && item.Punishment != LimitItem.PunishmentType.None))
             {
@@ -103,6 +109,18 @@ namespace BlockLimiter.Punishment
                             continue;
                         }
 
+                        var playerSteamId = MySession.Static.Players.TryGetSteamId(id);
+
+                        if (playerSteamId > 0 && !_approvedPunishList.Contains(playerSteamId))
+                        {
+                            if (!Annoy.AnnoyList.Contains(playerSteamId) )
+                            {
+                                if (!Annoy.AnnoyQueue.Contains(playerSteamId)) Annoy.AnnoyQueue.Enqueue(playerSteamId);
+                                _approvedPunishList.Add(playerSteamId);
+                                continue;
+                            }
+                        }
+
                         if (item.LimitGrids && block.CubeGrid.EntityId == id)
                         {
                             punishCount++;
@@ -142,6 +160,7 @@ namespace BlockLimiter.Punishment
             }
 
             Block.Punish(punishBlocks);
+
             return totalBlocksPunished;
 
         }

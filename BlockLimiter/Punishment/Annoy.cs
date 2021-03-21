@@ -19,7 +19,8 @@ namespace BlockLimiter.Punishment
     public class Annoy : ProcessHandlerBase
     {
         private static readonly Logger Log = BlockLimiter.Instance.Log;
-        
+        public static readonly Queue<ulong> AnnoyQueue = new Queue<ulong>();
+        public static readonly List<ulong> AnnoyList = new List<ulong>();
         public override int GetUpdateResolution()
         {
             return Math.Max(BlockLimiterConfig.Instance.AnnoyInterval,1) * 1000;
@@ -38,6 +39,8 @@ namespace BlockLimiter.Punishment
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
 
+            AnnoyList.Clear();
+
             if (!limitItems.Any())
             {
                 return;
@@ -47,13 +50,16 @@ namespace BlockLimiter.Punishment
             var onlinePlayers = MySession.Static.Players.GetOnlinePlayers();
 
             if (onlinePlayers.Count < 1) return;
-            var annoyList = new List<ulong>();
+
 
             foreach (var player in onlinePlayers)
             {
                 var steamId = MySession.Static.Players.TryGetSteamId(player.Identity.IdentityId);
-               
-                if (annoyList.Contains(steamId)) continue;
+
+                if (AnnoyList.Contains(steamId))
+                {
+                    continue;
+                }
 
                 var playerGridIds = new HashSet<long>(player.Grids);
 
@@ -66,35 +72,39 @@ namespace BlockLimiter.Punishment
 
                     foreach (var (id,count) in item.FoundEntities)
                     {
-                        if (annoyList.Contains(steamId)) break;
+                        if (AnnoyList.Contains(steamId)) break;
 
                         if (count <= item.Limit) continue;
 
                         if (id == player.Identity.IdentityId)
                         {
-                            annoyList.Add(steamId);
+                            AnnoyList.Add(steamId);
                             break;
                         }
 
                         if (playerGridIds.Contains(id))
                         {
-                            annoyList.Add(steamId);
+                            AnnoyList.Add(steamId);
                             break;
                         }
                         
                         if (playerFaction == null || id != playerFaction.FactionId) continue;
-                        annoyList.Add(steamId);
+                        AnnoyList.Add(steamId);
                         break;
                     }
                 }
 
             }
 
-            if (annoyList.Count < 1) return;
+            if (AnnoyList.Count == 0) return;
 
-            
+            foreach (var item in AnnoyQueue)
+            {
+                if (AnnoyList.Contains(item)) AnnoyQueue.Dequeue();
+                AnnoyList.Add(AnnoyQueue.Dequeue());
+            }
 
-            foreach (var id in annoyList)
+            foreach (var id in AnnoyList)
             {
                 try
                 {
@@ -104,9 +114,10 @@ namespace BlockLimiter.Punishment
                 {
                     Log.Debug(exception);
                 }
+                Log.Info($"Annoy message sent to {id}");
             }
 
-            Log.Info($"Blocklimiter annoyed {annoyList.Count} players");
+            Log.Info($"Blocklimiter annoyed {AnnoyList.Count} players");
 
         }
 

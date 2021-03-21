@@ -37,6 +37,7 @@ namespace BlockLimiter.Settings
             ulong steamId = player.SteamId;
             PlayerTimeData data = new PlayerTimeData();
             bool found = false;
+            if (PlayerTimes == null) PlayerTimes = new List<PlayerTimeData>();
             foreach (var time in PlayerTimes)
             {
                 if (time.SteamId != steamId) continue;

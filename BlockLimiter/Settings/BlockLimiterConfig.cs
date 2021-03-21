@@ -493,10 +493,10 @@ namespace BlockLimiter.Settings
 
         public enum BlockingType
         {
-            None,
-            Warn,
-            Soft,
-            Hard
+            None, //plugin allows the placement
+            Warn, //plugin warns player during placement, but still allows it
+            Soft, //plugin blocks placement
+            Hard  //plugin blocks potential violation removes any excess.
         }
 
     }
