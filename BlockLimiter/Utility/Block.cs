@@ -346,7 +346,7 @@ namespace BlockLimiter.Utility
                                 BlockLimiter.Instance.Torch.InvokeAsync(() =>
                                 {
                                     block.CubeGrid?.RemoveBlock(block);
-                                },"BlockLimiter");
+                                });
                                 log.Info(
                                     $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
                                 break;
@@ -359,7 +359,7 @@ namespace BlockLimiter.Utility
                                 BlockLimiter.Instance.Torch.InvokeAsync(() =>
                                 {
                                     block.DoDamage(block.BlockDefinition.MaxIntegrity, MyDamageType.Fire);
-                                },"BlockLimiter");
+                                });
                                 break;
                             default:
                                 return;

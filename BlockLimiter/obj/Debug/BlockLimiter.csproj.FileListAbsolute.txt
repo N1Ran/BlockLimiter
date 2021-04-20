@@ -13,7 +13,4 @@ C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockL
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.dll
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.pdb
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.csproj.CoreCompileInputs.cache
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Debug\Newtonsoft.Json.dll
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Debug\Newtonsoft.Json.xml
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.csproj.CoreCompileInputs.cache
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.csproj.CopyComplete

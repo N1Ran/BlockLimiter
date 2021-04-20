@@ -6,6 +6,7 @@ using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using Sandbox.Definitions;
 using Sandbox.Game.World;
+using Sandbox.ModAPI;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using Torch.Mod;
@@ -110,6 +111,12 @@ namespace BlockLimiter.Commands
                 Context.Respond("You have no block within set limit");
                 return;
             }
+            
+            if (Utilities.TryGetAimedBlock(Context.Player, out var panel))
+            {
+                ((IMyTextSurface) panel).WriteText(sb);
+                return;
+            }
 
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"PlayerLimit",sb.ToString()),Context.Player.SteamUserId);
 
@@ -199,6 +206,12 @@ namespace BlockLimiter.Commands
                 Context.Respond(sb.ToString());
                 return;
             }
+            
+            if (Utilities.TryGetAimedBlock(Context.Player, out var panel))
+            {
+                ((IMyTextSurface) panel).WriteText(sb);
+                return;
+            }
 
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of Limits",sb.ToString()),Context.Player.SteamUserId);
         }
@@ -207,7 +220,7 @@ namespace BlockLimiter.Commands
         
         [Command("pairnames", "gets the list of all pair names possible")]
         [Permission(MyPromoteLevel.None)]
-        public void ListPairNames(string blockType=null)
+        public void ListPairNames()
         {
 
             var sb = new StringBuilder();
@@ -216,8 +229,9 @@ namespace BlockLimiter.Commands
 
             var def = new List<MyDefinitionBase>();
 
-            if (!string.IsNullOrEmpty(blockType))
+            if (Context.Args.Count > 0)
             {
+                var blockType = Context.Args[0];
                 foreach (var defBase in allDef)
                 {
                     if (!defBase.Id.TypeId.ToString().Substring(16).Equals(blockType,StringComparison.OrdinalIgnoreCase))
@@ -274,13 +288,20 @@ namespace BlockLimiter.Commands
                 return;
             }
 
+            
+            if (Utilities.TryGetAimedBlock(Context.Player, out var panel))
+            {
+                ((IMyTextSurface) panel).WriteText(sb);
+                return;
+            }
+
 
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of pair names",sb.ToString()),Context.Player.SteamUserId);
         }
 
         [Command("definitions", "gets the list of all pair names possible")]
         [Permission(MyPromoteLevel.None)]
-        public void ListBlockDefinitions(string blockType=null)
+        public void ListBlockDefinitions()
         {
 
             var sb = new StringBuilder();
@@ -288,9 +309,9 @@ namespace BlockLimiter.Commands
             var allDef = MyDefinitionManager.Static.GetAllDefinitions();
 
             var def = new List<MyDefinitionBase>();
-
-            if (!string.IsNullOrEmpty(blockType))
+            if (Context.Args.Count > 0)
             {
+                string blockType = Context.Args[0];
                 foreach (var defBase in allDef)
                 {
                     if (!defBase.Id.TypeId.ToString().Substring(16).Equals(blockType,StringComparison.OrdinalIgnoreCase))
@@ -347,8 +368,14 @@ namespace BlockLimiter.Commands
                 return;
             }
 
+            if (Utilities.TryGetAimedBlock(Context.Player, out var panel))
+            {
+                ((IMyTextSurface) panel).WriteText(sb);
+                return;
+            }
 
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of pair names",sb.ToString()),Context.Player.SteamUserId);
+
         }
 
     }

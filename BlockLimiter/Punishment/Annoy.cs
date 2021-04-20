@@ -19,7 +19,7 @@ namespace BlockLimiter.Punishment
     public class Annoy : ProcessHandlerBase
     {
         private static readonly Logger Log = BlockLimiter.Instance.Log;
-        public static readonly Queue<ulong> AnnoyQueue = new Queue<ulong>();
+        public static readonly Dictionary<ulong, DateTime> AnnoyQueue = new Dictionary<ulong, DateTime>();
         public static readonly List<ulong> AnnoyList = new List<ulong>();
         public override int GetUpdateResolution()
         {
@@ -98,10 +98,10 @@ namespace BlockLimiter.Punishment
 
             if (AnnoyList.Count == 0) return;
 
-            foreach (var item in AnnoyQueue)
+            foreach (var (id, time) in AnnoyQueue)
             {
-                if (AnnoyList.Contains(item)) AnnoyQueue.Dequeue();
-                AnnoyList.Add(AnnoyQueue.Dequeue());
+                if (Math.Abs(time.Second - DateTime.Now.Second) > BlockLimiterConfig.Instance.AnnoyInterval) continue;
+                AnnoyList.Add(id);
             }
 
             foreach (var id in AnnoyList)

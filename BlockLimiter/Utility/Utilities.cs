@@ -2,17 +2,23 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Blocks;
+using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using Torch.Managers;
+using Torch.Mod;
 using Torch.Utils;
 using VRage.Collections;
 using VRage.Game;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Network;
 using VRage.Utils;
@@ -258,6 +264,43 @@ namespace BlockLimiter.Utility
         }
 
 
+        public static bool TryGetAimedBlock(IMyPlayer player, out MyTextPanel panel)
+        {
+            panel = null;
+            if (player == null) return false;
+
+            var character = ((MyCharacter) player.Character);
+
+            if (character == null) return false;
+
+            if (!GridCache.TryGetGridById(character.AimedGrid, out var aimedGrid)) return false;
+
+            var aimedBlock = aimedGrid.GetCubeBlock(character.AimedBlock);
+
+            if (aimedBlock.FatBlock is MyTextPanel txtPanel && Block.IsOwner(aimedBlock, player.IdentityId))
+            {
+                panel = txtPanel;
+            }
+
+            return panel != null;
+        }
+
+
+        public static void SetClipboard(string text)
+        {
+            var blocks = new HashSet<MySlimBlock>();
+            GridCache.GetBlocks(blocks);
+            if (blocks.Count == 0) return;
+            foreach (var block in blocks)
+            {
+                if (!(block.FatBlock is MyTerminalBlock tBlock))continue;
+
+                if (!tBlock.CustomName.ToString().Contains("Blocklimiter Clipboard", StringComparison.OrdinalIgnoreCase))continue;
+                tBlock.CustomData = text;
+
+            }
+            
+        }
 
         #region Limits
 

@@ -21,6 +21,7 @@ using Torch.API.Managers;
 using Torch.Managers;
 using Torch.Managers.ChatManager;
 using VRage.GameServices;
+using VRage.ModAPI;
 using VRage.Serialization;
 using VRageMath;
 
@@ -37,9 +38,6 @@ namespace BlockLimiter.Patch
         public static void Patch(PatchContext ctx)
         {
 
-           /* ctx.GetPattern(typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.Instance | BindingFlags.NonPublic)).
-                Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixNewBlueprint), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
-           */
             ctx.GetPattern(typeof(MyProjectorBase).GetMethod("InitializeClipboard", BindingFlags.Instance | BindingFlags.NonPublic)).
                 Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixInitializeClipboard), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
 
@@ -57,6 +55,7 @@ namespace BlockLimiter.Patch
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var grid = __instance.CubeGrid;
+
             var copiedGrid = __instance.Clipboard.CopiedGrids[0];
             
             if (copiedGrid == null || grid == null) return true;
@@ -80,7 +79,7 @@ namespace BlockLimiter.Patch
             var playerId = player.Identity.IdentityId;
             if ((Grid.IsSizeViolation(copiedGrid) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)|| BlockLimiterConfig.Instance.MaxBlockSizeProjections < 0 || (projectedBlocks.Count > BlockLimiterConfig.Instance.MaxBlockSizeProjections && BlockLimiterConfig.Instance.MaxBlockSizeProjections > 0) || (Grid.CountViolation(copiedGrid,playerId) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn))
             {
-                NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod, new EndpointId(remoteUserId));
+                NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod, MyEventContext.Current.Sender);
                 Utilities.ValidationFailed();
                 var msg1 = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{"Null"},"SizeViolation",grid.CubeBlocks.Count);
                 if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(player.Identity.IdentityId))
@@ -141,15 +140,8 @@ namespace BlockLimiter.Patch
             Log.Info($"Removed {count} blocks from projector set by {player.DisplayName} ");
 
             NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod);
-
-            try
-            {
-                ((IMyProjector)__instance).SetProjectedGrid(copiedGrid);
-            }
-            catch (Exception e)
-            {
-                Log.Error(e);
-            }
+            
+            ((IMyProjector) __instance).SetProjectedGrid(copiedGrid);
 
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.ProjectionDenyMessage,removedList, limitName,count);
 
@@ -157,7 +149,7 @@ namespace BlockLimiter.Patch
                 BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
 
-            return true;
+            return false;
         }
 
 
