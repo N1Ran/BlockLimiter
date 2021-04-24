@@ -160,9 +160,16 @@ namespace BlockLimiter.Patch
                 Block.IsWithinLimits(blockDefinition, builder, builtGrid.EntityId, 1, out limitName)) return true;
             BlockLimiter.Instance.Log.Info($"Blocked  welding of {blockDefinition.ToString().Substring(16)} owned by {Utilities.GetPlayerNameFromSteamId(remoteUserId)}");
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {blockDefinition.ToString().Substring(16)},limitName);
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).Identity.IdentityId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
+
+            
+            if (remoteUserId == 0) return false;
+
+            var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
+
+            if (!MySession.Static.Players.IsPlayerOnline(playerId)) return false;
+
+            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed(remoteUserId);
             return false;
