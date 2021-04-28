@@ -71,6 +71,7 @@ namespace BlockLimiter.Settings
         private int _maxSmallGrids;
         private int _maxLargeGrids;
         private BlockingType _blockingType = BlockingType.None;
+        private bool _countSubGrids;
 
 
         #region General BlockCount Limit
@@ -245,8 +246,19 @@ namespace BlockLimiter.Settings
             }
         }
 
+        [Display(Order = 8, GroupName = "*Main Settings", Name = "Count SubGrids", Description = "This enables if subgrids are counted into main grid")]
+        public bool CountSubGrids
+        {
+            get => _countSubGrids;
+            set
+            {
+                _countSubGrids = value;
+                Changed();
+            }
+        }
 
-        [Display(Order = 8, GroupName = "*Main Settings", Name = "Log File Name", Description = "Log file is saved under provided name. Leave empty to log into default Torch log file")]
+
+        [Display(Order = 9, GroupName = "*Main Settings", Name = "Log File Name", Description = "Log file is saved under provided name. Leave empty to log into default Torch log file")]
         public string LogFileName
         {
             get => _logFileName;
@@ -257,7 +269,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 9, GroupName = "*Main Settings", Name = "Exception", Description = "Any player, grid or faction listed will be ignored by the plugin.")]
+        [Display(Order = 10, GroupName = "*Main Settings", Name = "Exception", Description = "Any player, grid or faction listed will be ignored by the plugin.")]
         public List<string> GeneralException
         {
             get => _generalException;

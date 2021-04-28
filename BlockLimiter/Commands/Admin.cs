@@ -62,7 +62,6 @@ namespace BlockLimiter.Commands
                     return;
                 }
                 _doCheck = false;
-                BlockLimiter.Instance.Torch.Invoke(()=>GridCache.Update());
                 BlockLimiterConfig.Instance.Save();
                 BlockLimiter.ResetLimits();
                 _lastRun = DateTime.Now;

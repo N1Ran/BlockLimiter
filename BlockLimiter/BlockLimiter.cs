@@ -94,7 +94,7 @@ namespace BlockLimiter
             foreach (var block in blocks)
             {
                 Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1,grid.EntityId);
-                if (biggestGrid != null && biggestGrid != grid)
+                if (BlockLimiterConfig.Instance.CountSubGrids && biggestGrid != null && biggestGrid != grid)
                 {
                     Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1,biggestGrid.EntityId);
                 }
@@ -136,7 +136,7 @@ namespace BlockLimiter
                 return;
             }
 
-            if (grid == biggestGrid)
+            if (grid == biggestGrid || !BlockLimiterConfig.Instance.CountSubGrids)
             {
                 Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
                 return;
@@ -268,13 +268,7 @@ namespace BlockLimiter
             if (MyAPIGateway.Session == null|| !BlockLimiterConfig.Instance.EnableLimits)
                 return;
             if (++_updateCounter % 100 != 0) return;
-            Task.Run(() =>
-            {
-                var updateGrids = Torch.InvokeAsync(GridCache.Update);
-                Task.WaitAny(updateGrids);
-                if (updateGrids.IsCompleted && updateGrids.Result > 0)
-                    ResetLimits(true, false, false);
-            });
+            GridCache.Update();
             MergeBlockPatch.MergeBlockCache?.Clear();
 
 
@@ -393,19 +387,16 @@ namespace BlockLimiter
             {
                 var grids = new HashSet<MyCubeGrid>();
                 GridCache.GetGrids(grids);
-                if (grids.Count == 0)
-                {
-                    Instance.Log.Warn("No Grids Found");
-                }
-                Task.Run(() =>
-                {
-                    Parallel.ForEach(grids, grid =>
+                if (grids.Count > 0)
+                    Task.Run(() =>
                     {
+                        Parallel.ForEach(grids, grid =>
+                        {
                         if (grid == null) return;
 
                         UpdateLimits.GridLimit(grid);
+                        });
                     });
-                });
 
 
             }
