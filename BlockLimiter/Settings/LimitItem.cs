@@ -351,13 +351,13 @@ namespace BlockLimiter.Settings
 
             if (GridTypeBlock != GridType.AllGrids)
             {
-                switch (definition.CubeSize)
-                {
-                    case MyCubeSize.Small when (GridTypeBlock == GridType.LargeGridsOnly ||
-                                                GridTypeBlock == GridType.StationsOnly):
-                    case MyCubeSize.Large when (GridTypeBlock == GridType.SmallGridsOnly):
-                        return false;
-                }
+
+                if (definition.CubeSize == MyCubeSize.Small && (GridTypeBlock == GridType.LargeGridsOnly ||
+                                                                GridTypeBlock == GridType.StationsOnly ||
+                                                                GridTypeBlock == GridType.SupportedStationsOnly))
+                    return false;
+
+                if (definition.CubeSize == MyCubeSize.Large && GridTypeBlock == GridType.SmallGridsOnly) return false;
             }
 
             var found = false;
@@ -463,7 +463,7 @@ namespace BlockLimiter.Settings
                     isGridType =  grid.GridSizeEnum == MyCubeSize.Large;
                     break;
                 case GridType.StationsOnly:
-                    isGridType = grid.IsStatic && grid.IsUnsupportedStation;
+                    isGridType = grid.GridSizeEnum != MyCubeSize.Small && grid.IsStatic && grid.IsUnsupportedStation;
                     break;
                 case GridType.ShipsOnly:
                     if (!grid.IsStatic)

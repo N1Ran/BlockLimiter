@@ -4,6 +4,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using BlockLimiter.Settings;
+using NLog;
 using NLog.Fluent;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
@@ -14,6 +15,8 @@ namespace BlockLimiter.Utility
 {
     public static class UpdateLimits
     {
+
+        private static readonly Logger Log = BlockLimiter.Instance.Log;
 
         public static bool PlayerLimit(long id)
         {
@@ -62,9 +65,12 @@ namespace BlockLimiter.Utility
             if (grid == null) return;
             
             var blocks = new HashSet<MySlimBlock>();
-            blocks.UnionWith(grid.CubeBlocks);    
-            
-            if (blocks.Count == 0) return;
+            blocks.UnionWith(grid.CubeBlocks);
+
+            if (blocks.Count == 0)
+            {
+                return;
+            }
 
             Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, limit =>
             {

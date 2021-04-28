@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Management.Instrumentation;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -127,13 +128,22 @@ namespace BlockLimiter
         {
             if (grid == null || !BlockLimiterConfig.Instance.EnableLimits) return;
 
+            var biggestGrid = Grid.GetBiggestGridInGroup(grid);
+
             if (!GridCache.TryGetGridById(grid.EntityId, out _))
             {
                 GridCache.AddGrid(grid);
                 return;
             }
-            Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
 
+            if (grid == biggestGrid)
+            {
+                Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
+                return;
+            }
+
+            Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
+            Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,biggestGrid.EntityId);
 
         }
 
@@ -148,8 +158,6 @@ namespace BlockLimiter
             UpdateLimits.PlayerLimit(identityId);
             if (playerFaction != null)UpdateLimits.PlayerLimit(playerFaction.FactionId);
         }
-
-
 
         private void GetVanillaLimits()
         {
@@ -260,8 +268,15 @@ namespace BlockLimiter
             if (MyAPIGateway.Session == null|| !BlockLimiterConfig.Instance.EnableLimits)
                 return;
             if (++_updateCounter % 100 != 0) return;
-            GridCache.Update();
+            Task.Run(() =>
+            {
+                var updateGrids = Torch.InvokeAsync(GridCache.Update);
+                Task.WaitAny(updateGrids);
+                if (updateGrids.IsCompleted && updateGrids.Result > 0)
+                    ResetLimits(true, false, false);
+            });
             MergeBlockPatch.MergeBlockCache?.Clear();
+
 
         }
 
@@ -292,10 +307,9 @@ namespace BlockLimiter
                     DoInit();
                     EnableControl();
                     GetVanillaLimits();
-                    GridCache.Update();
                     if (BlockLimiterConfig.Instance.EnableLimits)
                     {
-                        Activate();
+                        MySession.Static.OnReady += Static_OnReady; 
                     }
                     break;
                 case TorchSessionState.Unloading:
@@ -305,12 +319,25 @@ namespace BlockLimiter
             }
         }
 
-        public static void Activate()
+        private void Static_OnReady()
         {
-            BlockLimiterConfig.Instance.AllLimits = Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits);
-            ResetLimits();
-            Block.FixIds();
+            Instance.Activate();
+        }
 
+        public void Activate()
+        {
+            if (_sessionManager == null) return;
+            Task.Run(() =>
+            {
+                var test = Torch.InvokeAsync(GridCache.Update);
+                Task.WaitAny(test);
+                if (!test.IsCompleted || test.Result <= 0) return;
+                BlockLimiterConfig.Instance.AllLimits =
+                    new HashSet<LimitItem>(
+                        Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
+                Block.FixIds();
+                ResetLimits();
+            });
         }
         private static void Load()
         {
@@ -366,6 +393,10 @@ namespace BlockLimiter
             {
                 var grids = new HashSet<MyCubeGrid>();
                 GridCache.GetGrids(grids);
+                if (grids.Count == 0)
+                {
+                    Instance.Log.Warn("No Grids Found");
+                }
                 Task.Run(() =>
                 {
                     Parallel.ForEach(grids, grid =>

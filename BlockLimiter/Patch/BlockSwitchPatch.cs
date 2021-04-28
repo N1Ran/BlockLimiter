@@ -18,6 +18,9 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
+            ctx.GetPattern(typeof(MyFunctionalBlock).GetMethod("UpdateBeforeSimulation10", BindingFlags.Instance | BindingFlags.Public)).
+                Prefixes.Add(typeof(BlockSwitchPatch).GetMethod(nameof(KeepBlocksOff), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
+
             ctx.GetPattern(typeof(MyFunctionalBlock).GetMethod("UpdateBeforeSimulation100", BindingFlags.Instance | BindingFlags.Public)).
                 Prefixes.Add(typeof(BlockSwitchPatch).GetMethod(nameof(KeepBlocksOff), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
 
@@ -27,30 +30,25 @@ namespace BlockLimiter.Patch
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
             var block = __instance;
-            if (block == null || block.Enabled == false || block is MyParachute || block is MyButtonPanel || block is IMyPowerProducer) return;
-
-            if ((!BlockLimiterConfig.Instance.KillNoOwnerBlocks || block.BlockDefinition?.ContainsComputer() == false || block.OwnerId != 0)) return;
-
-            lock (KeepOffBlocks)
+            
+            if (block.Enabled == false) return;
+            if (KeepOffBlocks.Contains(block))
             {
-                if (KeepOffBlocks.Count > 0)
-                {
-                    lock (KeepOffBlocks)
-                    {
-                        try
-                        {
-                            if (!KeepOffBlocks.Contains(block)) return;
-                        }
-                        catch (Exception e)
-                        {
-                            //ignore
-                        }
-                    }
-                }
+                block.Enabled = false;
+                Log.Info(
+                    $"Turned off {block.BlockDefinition?.BlockPairName} from {block.CubeGrid?.DisplayName}");
+                return;
             }
+            if (block.Enabled == false || block is MyParachute || block is MyButtonPanel ||
+                block is IMyPowerProducer || block.BlockDefinition?.ContainsComputer() == false)
+            {
+                return;
+            }
+
+            if (!BlockLimiterConfig.Instance.KillNoOwnerBlocks || block.OwnerId != 0) return;
             block.Enabled = false;
-            Log.Info(
-                $"Turned off {block.BlockDefinition?.BlockPairName} from {block.CubeGrid?.DisplayName}");
+            return;
+
         }
     }
 }

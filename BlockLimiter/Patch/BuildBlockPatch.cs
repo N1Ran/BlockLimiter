@@ -1,12 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Policy;
 using Sandbox.Game.Entities;
 using BlockLimiter.Utility;
 using Sandbox.Game.World;
 using Torch.Managers.PatchManager;
 using BlockLimiter.Settings;
+using NLog;
 using VRage.Network;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities.Blocks;
@@ -24,6 +26,8 @@ namespace BlockLimiter.Patch
     public static class BuildBlockPatch
     {
      
+        private static readonly Logger Log = BlockLimiter.Instance.Log;
+
         public static void Patch(PatchContext ctx)
         {
             var t = typeof(MyCubeGrid);
@@ -57,7 +61,7 @@ namespace BlockLimiter.Patch
 
             if (grid == null)
             {
-                BlockLimiter.Instance.Log.Debug("Null grid in BuildBlockHandler");
+                Log.Debug("Null grid in BuildBlockHandler");
                 return true;
             }
 
@@ -66,12 +70,13 @@ namespace BlockLimiter.Patch
 
             if (Block.IsWithinLimits(def, playerId, grid.EntityId, blocksToBuild, out var limitName)) return true;
 
-            BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
+            if (remoteUserId == 0 || !MySession.Static.Players.IsPlayerOnline(playerId)) return false;
+            
+            Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
 
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>(){def.ToString().Substring(16)},limitName);
 
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
@@ -95,7 +100,7 @@ namespace BlockLimiter.Patch
             var grid = __instance;
             if (grid == null)
             {
-                BlockLimiter.Instance.Log.Debug("Null grid in BuildBlockHandler");
+                Log.Debug("Null grid in BuildBlockHandler");
                 return true;
             }
 
@@ -109,10 +114,12 @@ namespace BlockLimiter.Patch
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
             if (Block.IsWithinLimits(def, playerId, grid.EntityId,1, out var limitName)) return true;
-            BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
+
+            if (remoteUserId == 0 || !MySession.Static.Players.IsPlayerOnline(playerId)) return false;
+
+            Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {def.ToString().Substring(16)},limitName);
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
 
             Utilities.SendFailSound(remoteUserId);
@@ -158,16 +165,15 @@ namespace BlockLimiter.Patch
 
             if (Block.IsWithinLimits(blockDefinition, owner, builtGrid.EntityId, 1, out var limitName) &&
                 Block.IsWithinLimits(blockDefinition, builder, builtGrid.EntityId, 1, out limitName)) return true;
-            BlockLimiter.Instance.Log.Info($"Blocked  welding of {blockDefinition.ToString().Substring(16)} owned by {Utilities.GetPlayerNameFromSteamId(remoteUserId)}");
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {blockDefinition.ToString().Substring(16)},limitName);
 
-            
             if (remoteUserId == 0) return false;
 
+            Log.Info($"Blocked  welding of {blockDefinition.ToString().Substring(16)} owned by {Utilities.GetPlayerNameFromSteamId(remoteUserId)}");
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
             if (!MySession.Static.Players.IsPlayerOnline(playerId)) return false;
 
+            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {blockDefinition.ToString().Substring(16)},limitName);
             BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                 .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             Utilities.SendFailSound(remoteUserId);

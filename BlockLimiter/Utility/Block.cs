@@ -25,6 +25,7 @@ namespace BlockLimiter.Utility
         private static void KillBlock(MyCubeBlock block)
         {
             if (!(block is MyFunctionalBlock fBlock) || BlockSwitchPatch.KeepOffBlocks.Contains(fBlock))return;
+            //fBlock.Enabled = false;
             BlockSwitchPatch.KeepOffBlocks.Add(fBlock);
         }
 
@@ -365,8 +366,9 @@ namespace BlockLimiter.Utility
                                 return;
                         }
 
-                       if (ownerSteamId != 0 && MySession.Static.Players.IsPlayerOnline(block.OwnerId)) 
-                           chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid.DisplayName} with {punishment}",color,ownerSteamId);
+                       if (ownerSteamId == 0 || !MySession.Static.Players.IsPlayerOnline(block.OwnerId)) return;
+
+                       chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid.DisplayName} with {punishment}",color,ownerSteamId);
 
                     });
                 });

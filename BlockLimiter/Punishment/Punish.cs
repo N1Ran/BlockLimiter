@@ -52,13 +52,14 @@ namespace BlockLimiter.Punishment
 
             var punishBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
 
-            var punishCount = 0;
+            //ToDo Check if this is supposed to be place here.  
+            //var punishCount = 0;
 
             foreach (var item in limitItems.Where(item => item.FoundEntities.Count > 0 && item.Punishment != LimitItem.PunishmentType.None))
             {
                 if (punishmentTypes != null && !punishmentTypes.Contains(item.Punishment)) continue;
                 var idsToRemove = new HashSet<long>();
-
+                var punishCount = 0;
                 foreach (var (id,count) in item.FoundEntities)
                 {
                     if (id == 0 || item.IsExcepted(id))
@@ -96,10 +97,8 @@ namespace BlockLimiter.Punishment
                             }
                         }
 
-                        if (item.Punishment == LimitItem.PunishmentType.ShutOffBlock &&
-                            block.FatBlock is MyFunctionalBlock fBlock && (!fBlock.Enabled || block.FatBlock.MarkedForClose || block.FatBlock.Closed))
+                        if (item.Punishment == LimitItem.PunishmentType.ShutOffBlock && Math.Abs(GetDisabledBlocks(id,item) - count) <= item.Limit )
                         {
-                            punishCount++;
                             continue;
                         }
 
@@ -158,6 +157,26 @@ namespace BlockLimiter.Punishment
 
             Block.Punish(punishBlocks);
 
+
+            int GetDisabledBlocks(long id, LimitItem limit)
+            {
+                var disabledCount = 0;
+                foreach (var block in blocks)
+                {
+                    if (!limit.IsGridType(block.CubeGrid)) continue;
+                    if (!limit.IsMatch(block.BlockDefinition)) continue;
+                    if (!(block.FatBlock is MyFunctionalBlock fBlock) || block.FatBlock.MarkedForClose || block.FatBlock.Closed) continue;
+                    if (block.CubeGrid.EntityId != id && !Block.IsOwner(block,id)) continue;
+                    if (BlockSwitchPatch.KeepOffBlocks.Contains(block.FatBlock))
+                    {
+                        disabledCount++;
+                        continue;
+                    }
+                    if (fBlock.Enabled)continue;
+                    disabledCount++;
+                }
+                return disabledCount;
+            }
             return totalBlocksPunished;
 
         }

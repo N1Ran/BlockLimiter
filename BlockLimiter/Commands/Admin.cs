@@ -47,7 +47,6 @@ namespace BlockLimiter.Commands
 
             var args = Context.Args;
 
-            GridCache.Update();
 
             if (args.Count == 0)
             {
@@ -63,6 +62,7 @@ namespace BlockLimiter.Commands
                     return;
                 }
                 _doCheck = false;
+                BlockLimiter.Instance.Torch.Invoke(()=>GridCache.Update());
                 BlockLimiterConfig.Instance.Save();
                 BlockLimiter.ResetLimits();
                 _lastRun = DateTime.Now;

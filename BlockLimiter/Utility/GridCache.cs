@@ -46,23 +46,27 @@ namespace BlockLimiter.Utility
             }
         }
 
-        public static void Update()
+        public static int Update()
         {
-            if(Thread.CurrentThread != MySandboxGame.Static.UpdateThread)
+            if (Thread.CurrentThread != MySandboxGame.Static.UpdateThread)
+
+            {
                 throw new Exception("Update called from wrong thread");
+            }
 
             using(_entityLock.AcquireExclusiveUsing())
             {
                 var e = MyEntities.GetEntities();
                 
-                if (e.Count == 0) return;
+                if (e.Count == 0) return 0;
                 _gridCache.Clear();
                 _gridCache.UnionWith(e.OfType<MyCubeGrid>().Where(x => x.Projector == null));
             }
 
-            if (++_updateCounter % 100 != 0) return;
+            if (++_updateCounter % 100 != 0) return _gridCache.Count;
             UpdateOwners();
             UpdateBuilders();
+            return _gridCache.Count;
         }
 
         public static bool TryGetGridById(long entityId, out MyCubeGrid entity)
