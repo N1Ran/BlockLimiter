@@ -320,7 +320,6 @@ namespace BlockLimiter
             {
                 var test = Torch.InvokeAsync(GridCache.Update);
                 Task.WaitAny(test);
-                Log.Warn("Finished County Grids");
                 if (test.Result <= 0) return;
                 BlockLimiterConfig.Instance.AllLimits =
                     new HashSet<LimitItem>(
