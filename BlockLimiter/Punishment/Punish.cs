@@ -67,6 +67,7 @@ namespace BlockLimiter.Punishment
 
                     if (count <= item.Limit) continue;
 
+
                     foreach (var block in blocks)
                     {
                         if (block.CubeGrid.IsPreview || !item.IsMatch(block.BlockDefinition))
@@ -94,11 +95,23 @@ namespace BlockLimiter.Punishment
                             }
                         }
 
+                        //Reverting to old shutoff due to performance issues
+                        if (item.Punishment == LimitItem.PunishmentType.ShutOffBlock &&
+                            block.FatBlock is MyFunctionalBlock fBlock && (!fBlock.Enabled ||
+                                                                           block.FatBlock.MarkedForClose ||
+                                                                           block.FatBlock.Closed))
+                        {
+                            punishCount++;
+                            continue;
+                        }
+
+                        //Todo Fix this function and re-implement. Currently too expensive
+                        /*
                         if (item.Punishment == LimitItem.PunishmentType.ShutOffBlock && Math.Abs(GetDisabledBlocks(id,item) - count) <= item.Limit )
                         {
                             continue;
                         }
-
+                        */
                         var playerSteamId = MySession.Static.Players.TryGetSteamId(id);
 
                         if (playerSteamId > 0 )
@@ -154,7 +167,7 @@ namespace BlockLimiter.Punishment
 
             Block.Punish(punishBlocks);
 
-
+            /*
             int GetDisabledBlocks(long id, LimitItem limit)
             {
                 var disabledCount = 0;
@@ -174,6 +187,7 @@ namespace BlockLimiter.Punishment
                 }
                 return disabledCount;
             }
+            */
             return totalBlocksPunished;
 
         }

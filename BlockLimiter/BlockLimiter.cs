@@ -303,7 +303,7 @@ namespace BlockLimiter
                     GetVanillaLimits();
                     if (BlockLimiterConfig.Instance.EnableLimits)
                     {
-                        MySession.Static.OnReady += Static_OnReady; 
+                        Activate(); 
                     }
                     break;
                 case TorchSessionState.Unloading:
@@ -313,11 +313,6 @@ namespace BlockLimiter
             }
         }
 
-        private void Static_OnReady()
-        {
-            Instance.Activate();
-        }
-
         public void Activate()
         {
             if (_sessionManager == null) return;
@@ -325,11 +320,12 @@ namespace BlockLimiter
             {
                 var test = Torch.InvokeAsync(GridCache.Update);
                 Task.WaitAny(test);
-                if (!test.IsCompleted || test.Result <= 0) return;
+                Log.Warn("Finished County Grids");
+                if (test.Result <= 0) return;
                 BlockLimiterConfig.Instance.AllLimits =
                     new HashSet<LimitItem>(
                         Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
-                Block.FixIds();
+               if (BlockLimiterConfig.Instance.BlockOwnershipTransfer) Block.FixIds();
                 ResetLimits();
             });
         }
