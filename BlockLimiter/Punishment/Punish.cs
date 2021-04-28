@@ -52,9 +52,6 @@ namespace BlockLimiter.Punishment
 
             var punishBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
 
-            //ToDo Check if this is supposed to be place here.  
-            //var punishCount = 0;
-
             foreach (var item in limitItems.Where(item => item.FoundEntities.Count > 0 && item.Punishment != LimitItem.PunishmentType.None))
             {
                 if (punishmentTypes != null && !punishmentTypes.Contains(item.Punishment)) continue;
