@@ -29,7 +29,7 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class GridChange
     {
-        private static readonly Logger Log = LogManager.GetLogger("BlockLimiter");
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
 
         private static  readonly MethodInfo ConvertToStationRequest = typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.OnConvertedToStationRequest), BindingFlags.Public | BindingFlags.Instance);
@@ -56,15 +56,30 @@ namespace BlockLimiter.Patch
         private static void OnClose(MyEntity __instance)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
-
-            if (__instance.MarkedForClose || !(__instance is MyCubeBlock cubeBlock)) return;
-
-            if (cubeBlock.BuiltBy == cubeBlock.OwnerId)
-                Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
-            else
+            if (__instance.MarkedForClose) return;
+            /*
+            if (__instance is MyCubeBlock cubeBlock)
             {
-                Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.BuiltBy,1,cubeBlock.CubeGrid.EntityId);
-                Block.DecreaseCount(cubeBlock.BlockDefinition,cubeBlock.OwnerId);
+                Log.Warn($"CubeBlockRemoval: {cubeBlock.BlockDefinition.Id.SubtypeId} removed from {cubeBlock.CubeGrid.DisplayName}");
+                if (cubeBlock.BuiltBy == cubeBlock.OwnerId)
+                    Block.DecreaseCount(cubeBlock.BlockDefinition, cubeBlock.BuiltBy, 1, cubeBlock.CubeGrid.EntityId);
+                else
+                {
+                    Block.DecreaseCount(cubeBlock.BlockDefinition, cubeBlock.BuiltBy, 1, cubeBlock.CubeGrid.EntityId);
+                    Block.DecreaseCount(cubeBlock.BlockDefinition, cubeBlock.OwnerId);
+                }
+            }
+            */
+            if (!(__instance is MyCubeGrid grid)) return;
+            foreach (var block in grid.CubeBlocks)
+            {
+                if (block.BuiltBy == block.OwnerId)
+                    Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
+                else
+                {
+                    Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
+                    Block.DecreaseCount(block.BlockDefinition,block.OwnerId);
+                }
             }
 
 

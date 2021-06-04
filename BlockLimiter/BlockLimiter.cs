@@ -39,13 +39,13 @@ namespace BlockLimiter
     {
         public readonly Logger Log = LogManager.GetLogger("BlockLimiter");
         private Thread _processThread;
-        private List<Thread> _processThreads;
+        private List<Thread> _processThreads = new List<Thread>();
         private static bool _running;
         public static BlockLimiter Instance { get; private set; }
         public static string ChatName => Instance.Torch.Config.ChatName;
         public static string ChatColor => Instance.Torch.Config.ChatColor;
         private TorchSessionManager _sessionManager;
-        private List<ProcessHandlerBase> _limitHandlers;
+        private List<ProcessHandlerBase> _limitHandlers = new List<ProcessHandlerBase>();
         public readonly HashSet<LimitItem> VanillaLimits = new HashSet<LimitItem>();
         private int _updateCounter;
         public static IPluginManager PluginManager { get; private set; }
@@ -93,10 +93,17 @@ namespace BlockLimiter
 
             foreach (var block in blocks)
             {
-                Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1,grid.EntityId);
+                if (block.BuiltBy == block.OwnerId)
+                    Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
+                else
+                {
+                    Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
+                    Block.IncreaseCount(block.BlockDefinition,block.OwnerId);
+                }
                 if (BlockLimiterConfig.Instance.CountSubGrids && biggestGrid != null && biggestGrid != grid)
                 {
-                    Block.IncreaseCount(block.BlockDefinition,block.OwnerId,1,biggestGrid.EntityId);
+                    Block.IncreaseCount(block.BlockDefinition,grid.EntityId,1,biggestGrid.EntityId);
+
                 }
             }
 
@@ -144,7 +151,6 @@ namespace BlockLimiter
 
             Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
             Block.IncreaseCount(block.BlockDefinition,block.BuiltBy,1,biggestGrid.EntityId);
-
         }
 
 
@@ -234,7 +240,7 @@ namespace BlockLimiter
                     thread.Start();
                 }
 
-                foreach (Thread thread in _processThreads)
+                foreach (var thread in _processThreads)
                     thread.Join();
 
             }
@@ -292,8 +298,7 @@ namespace BlockLimiter
                     if (!string.IsNullOrEmpty(data))
                     {
                         PlayerTimeModule.PlayerTimes =
-                            JsonConvert.DeserializeObject<List<PlayerTimeModule.PlayerTimeData>>(
-                                File.ReadAllText(timeDataPath));
+                            JsonConvert.DeserializeObject<List<PlayerTimeModule.PlayerTimeData>>(data);
                     }
 
                     Torch.CurrentSession.Managers.GetManager<IMultiplayerManagerServer>().PlayerJoined +=
@@ -339,6 +344,7 @@ namespace BlockLimiter
         {
             return Control;
         }
+
         private void EnableControl(bool enable = true)
         {
             _control?.Dispatcher?.Invoke(() =>
@@ -436,6 +442,8 @@ namespace BlockLimiter
 
         }
 
+
+        //The methods below are method used by other plugins to check limits from Blocklimiter
         #region External Access
         
         public static bool CheckLimits_future(MyObjectBuilder_CubeGrid[] grids, long id = 0)

@@ -44,7 +44,7 @@ namespace BlockLimiter.Punishment
                 return 0;
             }
 
-            var limitItems = BlockLimiterConfig.Instance.AllLimits;
+            var limitItems = BlockLimiterConfig.Instance.AllLimits.Where(item => item.FoundEntities.Count > 0 && item.Punishment != LimitItem.PunishmentType.None).ToList();
 
             BlockSwitchPatch.KeepOffBlocks.Clear();
 
@@ -52,12 +52,13 @@ namespace BlockLimiter.Punishment
 
             var punishBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
 
-            foreach (var item in limitItems.Where(item => item.FoundEntities.Count > 0 && item.Punishment != LimitItem.PunishmentType.None))
+            for (var i = limitItems.Count - 1; i >= 0; i--)
             {
+                var item = limitItems[i];
                 if (punishmentTypes != null && !punishmentTypes.Contains(item.Punishment)) continue;
                 var idsToRemove = new HashSet<long>();
                 var punishCount = 0;
-                foreach (var (id,count) in item.FoundEntities)
+                foreach (var (id, count) in item.FoundEntities)
                 {
                     if (id == 0 || item.IsExcepted(id))
                     {
@@ -87,7 +88,8 @@ namespace BlockLimiter.Punishment
 
                         if (item.IgnoreNpcs)
                         {
-                            if (MySession.Static.Players.IdentityIsNpc(block.FatBlock.BuiltBy) || MySession.Static.Players.IdentityIsNpc(block.FatBlock.OwnerId))
+                            if (MySession.Static.Players.IdentityIsNpc(block.FatBlock.BuiltBy) ||
+                                MySession.Static.Players.IdentityIsNpc(block.FatBlock.OwnerId))
 
                             {
                                 idsToRemove.Add(id);
@@ -114,7 +116,7 @@ namespace BlockLimiter.Punishment
                         */
                         var playerSteamId = MySession.Static.Players.TryGetSteamId(id);
 
-                        if (playerSteamId > 0 )
+                        if (playerSteamId > 0)
                         {
                             if (!Annoy.AnnoyQueue.TryGetValue(playerSteamId, out var time))
                             {
@@ -122,7 +124,8 @@ namespace BlockLimiter.Punishment
                                 continue;
                             }
 
-                            if (Math.Abs(time.Second - DateTime.Now.Second) < BlockLimiterConfig.Instance.AnnoyInterval) continue;
+                            if (Math.Abs(time.Second - DateTime.Now.Second) < BlockLimiterConfig.Instance.AnnoyInterval)
+                                continue;
 
                             Annoy.AnnoyQueue.Remove(playerSteamId);
                         }
@@ -146,16 +149,12 @@ namespace BlockLimiter.Punishment
 
                         if (!item.LimitFaction) continue;
                         var faction = MySession.Static.Factions.TryGetFactionById(id);
-                        if (faction == null || block.FatBlock.GetOwnerFactionTag()?.Equals(faction.Tag) == false) continue;
+                        if (faction == null || block.FatBlock.GetOwnerFactionTag()?.Equals(faction.Tag) == false)
+                            continue;
                         punishCount++;
                         punishBlocks[block] = item.Punishment;
                     }
-                
-
                 }
-
-
-                idsToRemove.ForEach(x=>item.FoundEntities.Remove(x));
             }
 
             totalBlocksPunished = punishBlocks.Count;
@@ -168,7 +167,26 @@ namespace BlockLimiter.Punishment
             Block.Punish(punishBlocks);
 
             /*
-            int GetDisabledBlocks(long id, LimitItem limit)
+            List<MySlimBlock> GetDisabledBlocks(long id, LimitItem limit)
+            {
+                var disabledBlocks = new List<MySlimBlock>();
+                foreach (var block in blocks)
+                {
+                    if (!(block.FatBlock is MyFunctionalBlock fBlock) || block.FatBlock.MarkedForClose || block.FatBlock.Closed) continue;
+                    if (block.CubeGrid.EntityId != id && !Block.IsOwner(block,id)) continue;
+                    if (BlockSwitchPatch.KeepOffBlocks.Contains(block.FatBlock))
+                    {
+                        disabledBlocks.Add(block);
+                        continue;
+                    }
+                    if (fBlock.Enabled)continue;
+                    disabledBlocks.Add(block);
+                }
+
+                return disabledBlocks;
+            }
+
+            int GetDisabledCount (long id, LimitItem limit)
             {
                 var disabledCount = 0;
                 foreach (var block in blocks)

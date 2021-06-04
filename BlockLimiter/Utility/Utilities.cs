@@ -41,11 +41,20 @@ namespace BlockLimiter.Utility
 
             return returnMsg;
         }
+
+        public static string GetPlayerNameFromId(long id)
+        {
+            var playername = "";
+            if (id == 0) return playername;
+            var identity = MySession.Static.Players.TryGetIdentity(id);
+            playername = identity?.DisplayName;
+            return playername;
+        }
         public static string GetPlayerNameFromSteamId(ulong steamId)
         {
             var pid = MySession.Static.Players.TryGetIdentityId(steamId);
             if (pid == 0)
-                return null;
+                return "";
             var id = MySession.Static.Players.TryGetIdentity(pid);
             return id?.DisplayName;
         }
@@ -412,7 +421,7 @@ namespace BlockLimiter.Utility
 
                 if (item.LimitPlayers && item.FoundEntities.TryGetValue(playerId, out var pCount))
                 {
-                    if (pCount > 1)
+                    if (pCount > 0)
 
                     {
                         var dictionary = new ConcurrentDictionary<long, double>();
@@ -452,7 +461,7 @@ namespace BlockLimiter.Utility
                 }
 
                 if (!item.LimitGrids) continue;
-                var gridDictionary = new Dictionary<string,int>();
+                var gridDictionary = new Dictionary<MyCubeGrid,int>();
                 foreach (var (id,gCount) in item.FoundEntities)
                 {
                     if (!GridCache.TryGetGridById(id, out var grid) || !Grid.IsOwner(grid,playerId)) continue;
@@ -462,14 +471,14 @@ namespace BlockLimiter.Utility
                         continue;
                     }
                     if (gCount < 1) continue;
-                    gridDictionary[grid.DisplayName] = gCount;
+                    gridDictionary[grid] = gCount;
                 }
                 if (gridDictionary.Count == 0)continue;
                 sb.AppendLine("Grid Limits:");
 
-                foreach (var (name,gCount) in gridDictionary)
+                foreach (var (grid,gCount) in gridDictionary)
                 {
-                    sb.AppendLine($"->{name} = {gCount} / {item.Limit}");
+                    sb.AppendLine($"->{grid.DisplayName} = {gCount} / {item.Limit}");
                 }
             }
             

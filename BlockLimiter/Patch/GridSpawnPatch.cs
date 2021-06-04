@@ -39,7 +39,7 @@ namespace BlockLimiter.Patch
         public static void Patch(PatchContext ctx)
         {
             ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
-                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(Prefix),BindingFlags.NonPublic|BindingFlags.Static));
+                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
             
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation",  BindingFlags.Public  |  BindingFlags.Static)).
                 Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(AttemptSpawn), BindingFlags.Static |  BindingFlags.NonPublic));
@@ -136,7 +136,7 @@ namespace BlockLimiter.Patch
         /// </summary>
         /// <param name="definition"></param>
         /// <returns></returns>
-        private static bool Prefix(DefinitionIdBlit definition)
+        private static bool OnSpawn(DefinitionIdBlit definition)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
             

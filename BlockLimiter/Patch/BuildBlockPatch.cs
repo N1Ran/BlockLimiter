@@ -167,8 +167,8 @@ namespace BlockLimiter.Patch
                 Block.IsWithinLimits(blockDefinition, builder, builtGrid.EntityId, 1, out limitName)) return true;
 
             if (remoteUserId == 0) return false;
-
-            Log.Info($"Blocked  welding of {blockDefinition.ToString().Substring(16)} owned by {Utilities.GetPlayerNameFromSteamId(remoteUserId)}");
+            var grid = projector.CubeGrid;
+            Log.Info($"Blocked welding of {blockDefinition.ToString().Substring(16)} on {grid.DisplayName} ownedby {Utilities.GetPlayerNameFromId(grid.BigOwners[0])}");
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
             if (!MySession.Static.Players.IsPlayerOnline(playerId)) return false;
