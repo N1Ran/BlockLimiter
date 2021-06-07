@@ -48,6 +48,7 @@ namespace BlockLimiter.Patch
         }
 
 
+        private static HashSet<MySlimBlock> _justRemoved = new HashSet<MySlimBlock>();
         /// <summary>
         /// Removes blocks on closure
         /// </summary>
@@ -60,6 +61,12 @@ namespace BlockLimiter.Patch
 
             if (__instance is MyCubeBlock cubeBlock)
             {
+                if (_justRemoved.Contains(cubeBlock.SlimBlock))
+                {
+                    _justRemoved.Remove(cubeBlock.SlimBlock);
+                    return;
+                }
+                _justRemoved.Add(cubeBlock.SlimBlock);
                 Block.DecreaseCount(cubeBlock.BlockDefinition,
                     cubeBlock.BuiltBy == cubeBlock.OwnerId
                         ? new List<long> {cubeBlock.BuiltBy}
@@ -68,6 +75,12 @@ namespace BlockLimiter.Patch
             if (!(__instance is MyCubeGrid grid)) return;
             foreach (var block in grid.CubeBlocks)
             {
+                if (_justRemoved.Contains(block))
+                {
+                    _justRemoved.Remove(block);
+                    continue;
+                }
+                _justRemoved.Add(block);
                 Block.DecreaseCount(block.BlockDefinition,
                     block.BuiltBy == block.OwnerId
                         ? new List<long> {block.BuiltBy}
