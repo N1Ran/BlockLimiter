@@ -182,11 +182,16 @@ namespace BlockLimiter.Utility
             return block.BuiltBy == playerId || block.OwnerId == playerId;
         }
 
-        public static void IncreaseCount(MyCubeBlockDefinition def, long playerId, int amount = 1, long gridId = 0)
+        public static void IncreaseCount(MyCubeBlockDefinition def, List<long> playerIds, int amount = 1, long gridId = 0)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
-
-            var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
+            var factions = new List<MyFaction>();
+            foreach (var playerId in playerIds)
+            {
+                var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
+                if (faction == null) continue;
+                factions.Add(faction);
+            }
             
             foreach (var limit in Limits)
             {
@@ -200,30 +205,46 @@ namespace BlockLimiter.Utility
                     continue;
                 }
 
-                if (limit.IgnoreNpcs)
-                {
-                    if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
-                    if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
-                    
-                }
-
-                if (limit.LimitPlayers && playerId > 0)
-                    limit.FoundEntities.AddOrUpdate(playerId, amount, (l, i) => i+amount);
-
                 if (limit.LimitGrids && gridId > 0)
                     limit.FoundEntities.AddOrUpdate(gridId, amount, (l, i) => i+amount);
 
-                if (limit.LimitFaction && faction != null)
+
+                foreach (var playerId in playerIds)
+                {
+                    if (playerId == 0) continue;
+                    if (limit.IgnoreNpcs)
+                    {
+                        if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
+                        if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
+                    
+                    }
+
+                    if (limit.LimitPlayers)
+                        limit.FoundEntities.AddOrUpdate(playerId, amount, (l, i) => i+amount);
+
+                }
+
+                if (!limit.LimitFaction || factions.Count <= 0) continue;
+                foreach (var faction in factions)
+                {
                     limit.FoundEntities.AddOrUpdate(faction.FactionId, amount, (l, i) => i+amount);
+                }
 
             }
 
         }
 
-        public static void DecreaseCount(MyCubeBlockDefinition def, long playerId, int amount = 1, long gridId = 0)
+        public static void DecreaseCount(MyCubeBlockDefinition def, List<long> playerIds, int amount = 1, long gridId = 0)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
-            var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
+            var factions = new List<MyFaction>();
+
+            foreach (var playerId in playerIds)
+            {
+                var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
+                if (faction == null) continue;
+                factions.Add(faction);
+            }
 
             foreach (var limit in Limits)
             {
@@ -237,23 +258,32 @@ namespace BlockLimiter.Utility
                     continue;
                 }
 
-                if (limit.IgnoreNpcs)
-                {
-                    if (MySession.Static.Players.IdentityIsNpc(playerId))
-                    {
-                        limit.FoundEntities.Remove(playerId);
-                        continue;
-                    }
-                    if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
-                    
-                }
-
-                if (limit.LimitPlayers && playerId > 0)
-                    limit.FoundEntities.AddOrUpdate(playerId, 0, (l, i) => Math.Max(0,i - amount));
                 if (limit.LimitGrids && gridId > 0)
                     limit.FoundEntities.AddOrUpdate(gridId, 0, (l, i) => Math.Max(0,i - amount));
-                if (limit.LimitFaction && faction != null)
-                    limit.FoundEntities.AddOrUpdate(faction.FactionId, 0, (l, i) => Math.Max(0,i - amount));
+
+                foreach (var playerId in playerIds)
+                {
+                    if (playerId == 0) continue;
+                    if (limit.IgnoreNpcs)
+                    {
+                        if (MySession.Static.Players.IdentityIsNpc(playerId))
+                        {
+                            limit.FoundEntities.Remove(playerId);
+                            continue;
+                        }
+                        if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
+                    
+                    }
+
+                    if (limit.LimitPlayers)
+                        limit.FoundEntities.AddOrUpdate(playerId, 0, (l, i) => Math.Max(0,i - amount));
+                }
+
+                if (limit.LimitFaction && factions.Count > 0)
+                    foreach (var faction in factions)
+                    {
+                        limit.FoundEntities.AddOrUpdate(faction.FactionId, 0, (l, i) => Math.Max(0,i - amount));
+                    }
                 limit.ClearEmptyEntities();
             }
 

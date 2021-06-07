@@ -129,8 +129,8 @@ namespace BlockLimiter.Patch
             }
 
 
-            Block.IncreaseCount(block.BlockDefinition,newOwner);
-            Block.DecreaseCount(block.BlockDefinition,oldId);
+            Block.IncreaseCount(block.BlockDefinition,new List<long>{newOwner});
+            Block.DecreaseCount(block.BlockDefinition,new List<long>{oldId});
 
             return true;
         }

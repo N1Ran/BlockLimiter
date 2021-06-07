@@ -57,29 +57,21 @@ namespace BlockLimiter.Patch
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
             if (__instance.MarkedForClose) return;
-            /*
+
             if (__instance is MyCubeBlock cubeBlock)
             {
-                Log.Warn($"CubeBlockRemoval: {cubeBlock.BlockDefinition.Id.SubtypeId} removed from {cubeBlock.CubeGrid.DisplayName}");
-                if (cubeBlock.BuiltBy == cubeBlock.OwnerId)
-                    Block.DecreaseCount(cubeBlock.BlockDefinition, cubeBlock.BuiltBy, 1, cubeBlock.CubeGrid.EntityId);
-                else
-                {
-                    Block.DecreaseCount(cubeBlock.BlockDefinition, cubeBlock.BuiltBy, 1, cubeBlock.CubeGrid.EntityId);
-                    Block.DecreaseCount(cubeBlock.BlockDefinition, cubeBlock.OwnerId);
-                }
+                Block.DecreaseCount(cubeBlock.BlockDefinition,
+                    cubeBlock.BuiltBy == cubeBlock.OwnerId
+                        ? new List<long> {cubeBlock.BuiltBy}
+                        : new List<long> {cubeBlock.BuiltBy, cubeBlock.OwnerId}, 1, cubeBlock.CubeGrid.EntityId);
             }
-            */
             if (!(__instance is MyCubeGrid grid)) return;
             foreach (var block in grid.CubeBlocks)
             {
-                if (block.BuiltBy == block.OwnerId)
-                    Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
-                else
-                {
-                    Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,grid.EntityId);
-                    Block.DecreaseCount(block.BlockDefinition,block.OwnerId);
-                }
+                Block.DecreaseCount(block.BlockDefinition,
+                    block.BuiltBy == block.OwnerId
+                        ? new List<long> {block.BuiltBy}
+                        : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
             }
 
 
@@ -106,11 +98,10 @@ namespace BlockLimiter.Patch
             foreach (var block in toBlocks)
             {
                 if (block.BuiltBy == block.OwnerId)
-                    Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,from.EntityId);
+                    Block.DecreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,from.EntityId);
                 else
                 {
-                    Block.DecreaseCount(block.BlockDefinition,block.BuiltBy,1,from.EntityId);
-                    Block.DecreaseCount(block.BlockDefinition,block.OwnerId);
+                    Block.DecreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy,block.OwnerId},1,from.EntityId);
                 }
             }
 
