@@ -19,7 +19,7 @@ namespace BlockLimiter.Commands
     [Category("blocklimit")]
     public partial class Player:CommandModule
     {
-        private static Dictionary<ulong, DateTime> _updateCommandTimeout = new Dictionary<ulong, DateTime>();
+        private static readonly Dictionary<ulong, DateTime> _updateCommandTimeout = new Dictionary<ulong, DateTime>();
 
         [Command("update mylimit")]
         [Permission(MyPromoteLevel.None)]
@@ -56,7 +56,7 @@ namespace BlockLimiter.Commands
             var diff = DateTime.Now - lastRun;
             if (diff.TotalSeconds < 300)
             {
-                var totalRemaining = TimeSpan.FromSeconds(60) - diff;
+                var totalRemaining = TimeSpan.FromMinutes(5) - diff;
                 Context.Respond($"Cooldown in effect.  Try again in {totalRemaining.TotalSeconds:N0} seconds");
                 return;
             }

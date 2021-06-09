@@ -48,7 +48,7 @@ namespace BlockLimiter.Patch
         }
 
 
-        private static HashSet<MySlimBlock> _justRemoved = new HashSet<MySlimBlock>();
+        private static readonly HashSet<MySlimBlock> _justRemoved = new HashSet<MySlimBlock>();
         /// <summary>
         /// Removes blocks on closure
         /// </summary>
