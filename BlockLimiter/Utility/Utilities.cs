@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
@@ -13,8 +12,6 @@ using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
-using Torch.Managers;
-using Torch.Mod;
 using Torch.Utils;
 using VRage.Collections;
 using VRage.Game;

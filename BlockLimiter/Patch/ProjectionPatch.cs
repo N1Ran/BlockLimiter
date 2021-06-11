@@ -4,25 +4,17 @@ using System.Reflection;
 using BlockLimiter.Settings;
 using Sandbox.Game.Entities.Blocks;
 using Torch.Managers.PatchManager;
-using Torch.Mod;
-using Torch.Mod.Messages;
 using VRage.Game;
 using VRage.Network;
 using System.Linq;
 using BlockLimiter.Utility;
 using NLog;
-using System.Threading;
-using System.Threading.Tasks;
-using Sandbox.Game;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using Torch;
 using Torch.API.Managers;
 using Torch.Managers;
 using Torch.Managers.ChatManager;
-using VRage.GameServices;
-using VRage.ModAPI;
-using VRage.Serialization;
 using VRageMath;
 
 namespace BlockLimiter.Patch

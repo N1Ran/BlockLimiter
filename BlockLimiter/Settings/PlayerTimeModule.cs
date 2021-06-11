@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Windows.Documents;
 using BlockLimiter.Utility;
 using Newtonsoft.Json;
 using Sandbox.Game.World;
-using Torch.API.ModAPI;
 
 namespace BlockLimiter.Settings
 {

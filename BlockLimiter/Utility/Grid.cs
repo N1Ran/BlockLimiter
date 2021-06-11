@@ -1,16 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
-using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
-using Sandbox.Graphics.GUI;
 using VRage.Game;
 using VRage.Groups;
-using VRageRender.Messages;
 
 namespace BlockLimiter.Utility
 {

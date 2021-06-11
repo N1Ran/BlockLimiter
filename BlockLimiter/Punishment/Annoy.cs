@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
-using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Character;
 using Sandbox.Game.World;
-using Torch;
 using Torch.Mod;
 using Torch.Mod.Messages;
 using VRage.Game;
@@ -20,10 +16,10 @@ namespace BlockLimiter.Punishment
     {
         private static readonly Logger Log = BlockLimiter.Instance.Log;
         public static readonly Dictionary<ulong, DateTime> AnnoyQueue = new Dictionary<ulong, DateTime>();
-        public static readonly List<ulong> AnnoyList = new List<ulong>();
         public override int GetUpdateResolution()
         {
-            return Math.Max(BlockLimiterConfig.Instance.AnnoyInterval,1) * 1000;
+            return 800;
+            //return Math.Max(BlockLimiterConfig.Instance.AnnoyInterval,1) * 1000;
         }
 
         public override void Handle()
@@ -39,7 +35,6 @@ namespace BlockLimiter.Punishment
             if (!BlockLimiterConfig.Instance.EnableLimits)return;
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
 
-            AnnoyList.Clear();
 
             if (!limitItems.Any())
             {
@@ -55,69 +50,85 @@ namespace BlockLimiter.Punishment
             foreach (var player in onlinePlayers)
             {
                 var steamId = MySession.Static.Players.TryGetSteamId(player.Identity.IdentityId);
-
-                if (AnnoyList.Contains(steamId))
-                {
-                    continue;
-                }
-
                 var playerGridIds = new HashSet<long>(player.Grids);
 
                 var playerFaction = MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId);
 
 
-                foreach (var item in limitItems)
+                bool AnnoyPlayer()
                 {
-                    if (item.IsExcepted(player)) continue;
-
-                    foreach (var (id,count) in item.FoundEntities)
+                    var annoy = false;
+                    foreach (var item in limitItems)
                     {
-                        if (AnnoyList.Contains(steamId)) break;
+                        if (item.IsExcepted(player)) continue;
 
-                        if (count <= item.Limit) continue;
-
-                        if (id == player.Identity.IdentityId)
+                        foreach (var (id,count) in item.FoundEntities)
                         {
-                            AnnoyList.Add(steamId);
-                            break;
-                        }
 
-                        if (playerGridIds.Contains(id))
-                        {
-                            AnnoyList.Add(steamId);
-                            break;
-                        }
+                            if (count <= item.Limit) continue;
+
+                            if (id == player.Identity.IdentityId)
+                            {
+                                annoy = true;
+                                break;
+                            }
+
+                            if (playerGridIds.Contains(id))
+                            {
+                                annoy = true;
+                                break;
+                            }
                         
-                        if (playerFaction == null || id != playerFaction.FactionId) continue;
-                        AnnoyList.Add(steamId);
-                        break;
+                            if (playerFaction == null || id != playerFaction.FactionId) continue;
+                            annoy = true;
+                            break;
+                        }
                     }
+
+                    return annoy;
                 }
 
-            }
-
-            if (AnnoyList.Count == 0) return;
-
-            foreach (var (id, time) in AnnoyQueue)
-            {
-                if (Math.Abs(time.Second - DateTime.Now.Second) > BlockLimiterConfig.Instance.AnnoyInterval) continue;
-                AnnoyList.Add(id);
-            }
-
-            foreach (var id in AnnoyList)
-            {
-                try
+                if (!AnnoyQueue.TryGetValue(steamId, out var time))
                 {
-                    ModCommunication.SendMessageTo(new NotificationMessage($"{BlockLimiterConfig.Instance.AnnoyMessage}",BlockLimiterConfig.Instance.AnnoyDuration,MyFontEnum.White),id);
+                    if (AnnoyPlayer())
+                    {
+                        AnnoyQueue[steamId] = DateTime.Now.AddSeconds(BlockLimiterConfig.Instance.AnnoyInterval);
+                    }
+                    continue;
                 }
-                catch (Exception exception)
-                {
-                    Log.Debug(exception);
-                }
-                Log.Info($"Annoy message sent to {id}");
+
+                if (AnnoyPlayer()) continue;
+                AnnoyQueue.Remove(steamId);
+
             }
 
-            Log.Info($"Blocklimiter annoyed {AnnoyList.Count} players");
+            if (AnnoyQueue.Count == 0) return;
+
+            var reset = new List<ulong>();
+            lock (AnnoyQueue)
+            {
+                foreach (var (id, time) in AnnoyQueue)
+                {
+                    if (Math.Abs((time - DateTime.Now).TotalSeconds) >= 1) continue;
+                    reset.Add(id);
+
+                    try
+                    {
+                        ModCommunication.SendMessageTo(new NotificationMessage($"{BlockLimiterConfig.Instance.AnnoyMessage}",BlockLimiterConfig.Instance.AnnoyDuration,MyFontEnum.White),id);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Error(exception);
+                    }
+                    Log.Info($"Annoy message sent to {Utilities.GetPlayerNameFromSteamId(id)}");
+
+                }
+            }
+
+            foreach (var id in reset)
+            {
+                AnnoyQueue[id] = DateTime.Now.AddSeconds(BlockLimiterConfig.Instance.AnnoyInterval);
+            }
 
         }
 

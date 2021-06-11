@@ -3,17 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using BlockLimiter.Patch;
-using BlockLimiter.Settings;
 using Sandbox;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using VRage;
-using VRage.Collections;
-using VRage.Game;
 using VRage.Game.Entity;
-using VRage.ModAPI;
 
 namespace BlockLimiter.Utility
 {

@@ -7,7 +7,6 @@ using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
 using Sandbox.Definitions;
-using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using VRage.Collections;
@@ -116,18 +115,11 @@ namespace BlockLimiter.Punishment
                         */
                         var playerSteamId = MySession.Static.Players.TryGetSteamId(id);
 
-                        if (playerSteamId > 0)
+                        if (playerSteamId > 0 && !Annoy.AnnoyQueue.ContainsKey(playerSteamId))
                         {
-                            if (!Annoy.AnnoyQueue.TryGetValue(playerSteamId, out var time))
-                            {
-                                Annoy.AnnoyQueue.Add(playerSteamId, DateTime.Now);
-                                continue;
-                            }
+                            Annoy.AnnoyQueue[playerSteamId] = DateTime.Now;
+                            break;
 
-                            if (Math.Abs(time.Second - DateTime.Now.Second) < BlockLimiterConfig.Instance.AnnoyInterval)
-                                continue;
-
-                            Annoy.AnnoyQueue.Remove(playerSteamId);
                         }
 
                         if (item.LimitGrids && block.CubeGrid.EntityId == id)

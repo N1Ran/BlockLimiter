@@ -1,15 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
 using System.Threading.Tasks;
 using BlockLimiter.Settings;
 using NLog;
-using NLog.Fluent;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
-using SpaceEngineers.Game.Entities.Blocks;
 
 namespace BlockLimiter.Utility
 {
