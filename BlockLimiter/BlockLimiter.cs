@@ -285,6 +285,10 @@ namespace BlockLimiter
             {
                 case TorchSessionState.Loading:
                     var storageDir = Path.Combine(Torch.CurrentSession.KeenSession.CurrentPath, "Storage");
+                    if (!Directory.Exists(storageDir))
+                    {
+                        Directory.CreateDirectory(storageDir);
+                    }
                     timeDataPath = Path.Combine(storageDir, "BLPlayerTime.json");
                     if (!File.Exists(timeDataPath))
                     {
