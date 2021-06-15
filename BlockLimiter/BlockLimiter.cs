@@ -284,8 +284,14 @@ namespace BlockLimiter
             switch (state)
             {
                 case TorchSessionState.Loading:
-                    timeDataPath = Path.Combine(Torch.CurrentSession.KeenSession.CurrentPath, "BLPlayerTime.json");
-                    if (!File.Exists(timeDataPath)) File.Create(timeDataPath);
+                    var storageDir = Path.Combine(Torch.CurrentSession.KeenSession.CurrentPath, "Storage");
+                    timeDataPath = Path.Combine(storageDir, "BLPlayerTime.json");
+                    if (!File.Exists(timeDataPath))
+                    {
+                        var stream = File.Create(timeDataPath);
+                        Log.Warn($"Creating Player Time data at {timeDataPath}");
+                        stream.Dispose();
+                    }
 
                     break;
 
