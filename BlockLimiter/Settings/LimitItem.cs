@@ -388,11 +388,9 @@ namespace BlockLimiter.Settings
                     var player = MySession.Static.Players.TryGetIdentity(owners.FirstOrDefault());
                     break;
                 case FilterType.GridBlockCount:
-                    if (LimitFilterOperator == FilterOperator.GreaterThan) return grid.BlocksCount > FilterValue;
-                    else
-                    {
-                        return grid.BlocksCount < FilterValue;
-                    }
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? grid.CubeBlocks.Count > FilterValue
+                        : grid.CubeBlocks.Count < FilterValue;
                 case FilterType.FactionMemberCount:
                     var owners1 = new HashSet<long>(GridCache.GetOwners(grid));
                     owners1.UnionWith(GridCache.GetBuilders(grid));
@@ -404,6 +402,10 @@ namespace BlockLimiter.Settings
                     {
                         return ownerFaction.Members.Count < FilterValue;
                     }
+                case FilterType.GridMass:
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? grid.Mass > FilterValue
+                        : grid.Mass < FilterValue;
                 default:
                     return false;
             }
@@ -421,18 +423,15 @@ namespace BlockLimiter.Settings
                     var player = MySession.Static.Players.TryGetSteamId(playerId);
                     if (player == 0) break;
                     var playerTime = PlayerTimeModule.GetTime(player);
-                    if (playerTime == null) break;
                     if (LimitFilterOperator == FilterOperator.GreaterThan) return (DateTime.Now - playerTime).TotalDays > FilterValue;
                     else
                     {
                         return (DateTime.Now - playerTime).TotalDays < FilterValue;
                     }
                 case FilterType.GridBlockCount:
-                    if (LimitFilterOperator == FilterOperator.GreaterThan) return grid.CubeBlocks.Count > FilterValue;
-                    else
-                    {
-                        return grid.CubeBlocks.Count < FilterValue;
-                    }
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? grid.CubeBlocks.Count > FilterValue
+                        : grid.CubeBlocks.Count < FilterValue;
                 case FilterType.FactionMemberCount:
                     if (playerId == 0)break;
                     var ownerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
@@ -552,7 +551,8 @@ namespace BlockLimiter.Settings
             None,
             PlayerPlayTime,
             GridBlockCount,
-            FactionMemberCount
+            FactionMemberCount,
+            GridMass
         }
 
         public enum FilterOperator

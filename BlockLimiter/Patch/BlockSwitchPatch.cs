@@ -46,8 +46,6 @@ namespace BlockLimiter.Patch
 
             if (!BlockLimiterConfig.Instance.KillNoOwnerBlocks || block.OwnerId != 0) return;
             block.Enabled = false;
-            return;
-
         }
     }
 }
