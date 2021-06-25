@@ -403,7 +403,7 @@ namespace BlockLimiter.Settings
                         return ownerFaction.Members.Count < FilterValue;
                     }
                 case FilterType.GridMass:
-                    var gridMass = grid.GetCurrentMass(out var baseMass, out var _);
+                    grid.GetCurrentMass(out var baseMass, out var _);
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? baseMass > FilterValue
                         : baseMass < FilterValue;
