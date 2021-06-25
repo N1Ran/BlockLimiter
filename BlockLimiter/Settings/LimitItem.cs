@@ -403,9 +403,10 @@ namespace BlockLimiter.Settings
                         return ownerFaction.Members.Count < FilterValue;
                     }
                 case FilterType.GridMass:
+                    var gridMass = grid.GetCurrentMass(out var baseMass, out var _);
                     return LimitFilterOperator == FilterOperator.GreaterThan
-                        ? grid.Mass > FilterValue
-                        : grid.Mass < FilterValue;
+                        ? baseMass > FilterValue
+                        : baseMass < FilterValue;
                 default:
                     return false;
             }
@@ -423,11 +424,9 @@ namespace BlockLimiter.Settings
                     var player = MySession.Static.Players.TryGetSteamId(playerId);
                     if (player == 0) break;
                     var playerTime = PlayerTimeModule.GetTime(player);
-                    if (LimitFilterOperator == FilterOperator.GreaterThan) return (DateTime.Now - playerTime).TotalDays > FilterValue;
-                    else
-                    {
-                        return (DateTime.Now - playerTime).TotalDays < FilterValue;
-                    }
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? (DateTime.Now - playerTime).TotalDays > FilterValue
+                        : (DateTime.Now - playerTime).TotalDays < FilterValue;
                 case FilterType.GridBlockCount:
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? grid.CubeBlocks.Count > FilterValue
