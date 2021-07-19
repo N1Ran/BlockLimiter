@@ -91,12 +91,10 @@ namespace BlockLimiter
 
             foreach (var block in blocks)
             {
-                if (block.BuiltBy == block.OwnerId)
-                    Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
-                else
-                {
-                    Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy,block.OwnerId},1,grid.EntityId);
-                }
+                Block.IncreaseCount(block.BlockDefinition,
+                    block.BuiltBy == block.OwnerId
+                        ? new List<long> {block.BuiltBy}
+                        : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
                 if (BlockLimiterConfig.Instance.CountSubGrids && biggestGrid != null && biggestGrid != grid)
                 {
                     Block.IncreaseCount(block.BlockDefinition,new List<long>{grid.EntityId},1,biggestGrid.EntityId);
@@ -140,12 +138,11 @@ namespace BlockLimiter
                 return;
             }
 
-            if (grid == biggestGrid || !BlockLimiterConfig.Instance.CountSubGrids)
+            if (grid == biggestGrid || !BlockLimiterConfig.Instance.CountSubGrids || biggestGrid == null)
             {
                 Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
                 return;
             }
-
             Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
             Block.IncreaseCount(block.BlockDefinition,new List<long>{grid.EntityId},1,biggestGrid.EntityId);
         }

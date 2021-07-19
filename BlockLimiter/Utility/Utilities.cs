@@ -475,7 +475,8 @@ namespace BlockLimiter.Utility
 
                 foreach (var (grid,gCount) in gridDictionary)
                 {
-                    sb.AppendLine($"->{grid.DisplayName} = {gCount} / {item.Limit}");
+                    var gridName = Grid.IsBiggestGridInGroup(grid) ? grid.DisplayName : $"{grid.DisplayName}*{grid.DisplayName}";
+                    sb.AppendLine($"->{gridName} = {gCount} / {item.Limit}");
                 }
             }
             

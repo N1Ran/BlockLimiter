@@ -51,7 +51,9 @@ namespace BlockLimiter.Patch
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
             if (__instance.MarkedForClose) return;
-
+            MyCubeGrid biggestGrid;
+            bool removeFromBiggestGrid
+                ;
             if (__instance is MyCubeBlock cubeBlock)
             {
                 if (_justRemoved.Contains(cubeBlock.SlimBlock))
@@ -64,8 +66,21 @@ namespace BlockLimiter.Patch
                     cubeBlock.BuiltBy == cubeBlock.OwnerId
                         ? new List<long> {cubeBlock.BuiltBy}
                         : new List<long> {cubeBlock.BuiltBy, cubeBlock.OwnerId}, 1, cubeBlock.CubeGrid.EntityId);
+                var cubeBlockGrid = cubeBlock.CubeGrid;
+                if (cubeBlockGrid != null)
+                {
+                    biggestGrid = Grid.GetBiggestGridInGroup(cubeBlockGrid);
+                    removeFromBiggestGrid = BlockLimiterConfig.Instance.CountSubGrids && biggestGrid != null &&
+                                            cubeBlockGrid != biggestGrid;
+                    if (removeFromBiggestGrid) Block.DecreaseCount(cubeBlock.BlockDefinition,new List<long>{cubeBlockGrid.EntityId},1,biggestGrid.EntityId);
+
+                }
+
             }
             if (!(__instance is MyCubeGrid grid)) return;
+
+            biggestGrid = Grid.GetBiggestGridInGroup(grid);
+            removeFromBiggestGrid = BlockLimiterConfig.Instance.CountSubGrids && biggestGrid != null && grid != biggestGrid;
             foreach (var block in grid.CubeBlocks)
             {
                 if (_justRemoved.Contains(block))
@@ -78,6 +93,7 @@ namespace BlockLimiter.Patch
                     block.BuiltBy == block.OwnerId
                         ? new List<long> {block.BuiltBy}
                         : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
+                if (removeFromBiggestGrid) Block.DecreaseCount(block.BlockDefinition,new List<long>{grid.EntityId},1,biggestGrid.EntityId);
             }
 
 
@@ -103,12 +119,10 @@ namespace BlockLimiter.Patch
 
             foreach (var block in toBlocks)
             {
-                if (block.BuiltBy == block.OwnerId)
-                    Block.DecreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,from.EntityId);
-                else
-                {
-                    Block.DecreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy,block.OwnerId},1,from.EntityId);
-                }
+                Block.DecreaseCount(block.BlockDefinition,
+                    block.BuiltBy == block.OwnerId
+                        ? new List<long> {block.BuiltBy}
+                        : new List<long> {block.BuiltBy, block.OwnerId}, 1, @from.EntityId);
             }
 
 
