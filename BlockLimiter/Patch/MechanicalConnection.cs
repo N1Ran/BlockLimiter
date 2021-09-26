@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using BlockLimiter.Settings;
@@ -9,6 +11,7 @@ using Sandbox.Game.Entities.Blocks;
 using Torch.API.Managers;
 using Torch.Managers.ChatManager;
 using Torch.Managers.PatchManager;
+using VRage.Collections;
 using VRage.Network;
 using VRageMath;
 
@@ -18,6 +21,9 @@ namespace BlockLimiter.Patch
     public static class MechanicalConnection
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+        private static MyConcurrentDictionary<long, DateTime> _lastChecked =
+            new MyConcurrentDictionary<long, DateTime>();
 
         public static void Patch(PatchContext ctx)
         {
@@ -37,19 +43,43 @@ namespace BlockLimiter.Patch
 
         private static bool OnAttach(MyMechanicalConnectionBlockBase __instance, MyAttachableTopBlockBase top)
         {
+            if (!BlockLimiterConfig.Instance.MergerBlocking)
+            {
+                return true;
+            }
             var topGrid = top.CubeGrid;
             var baseGrid = __instance.CubeGrid;
+
+            var remoteUserId = MyEventContext.Current.Sender.Value;
+            DateTime topDateTime = default;
+            if (_lastChecked.TryGetValue(__instance.EntityId, out var inDateTime) || _lastChecked.TryGetValue(top.EntityId, out topDateTime))
+            {
+                if ( Math.Abs((DateTime.Now - inDateTime).Seconds) > 10)
+                {
+                    _lastChecked.Remove(__instance.EntityId);
+                }
+                if (Math.Abs((DateTime.Now - topDateTime).Seconds) > 10)
+                {
+                    _lastChecked.Remove(top.EntityId);
+                }
+
+                if (remoteUserId <= 0) return false;
+                Utilities.SendFailSound(remoteUserId);
+                Utilities.ValidationFailed(remoteUserId);
+                return false;
+            }
             var result = Grid.CanMerge(topGrid, baseGrid, out var blocks, out var count, out var limitName);
-            if (!BlockLimiterConfig.Instance.MergerBlocking || result)
+            if (result)
             {
 
                 return true;
             }
 
+            _lastChecked[__instance.EntityId] = DateTime.Now;
+            _lastChecked[top.EntityId] = DateTime.Now;
 
             Log.Info($"Blocked attachement between {baseGrid.DisplayName} and {topGrid.DisplayName}");
 
-            var remoteUserId = MyEventContext.Current.Sender.Value;
             if (remoteUserId <= 0) return false;
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed(remoteUserId);

@@ -23,7 +23,8 @@ namespace BlockLimiter.Utility
         private static readonly Dictionary<long, HashSet<long>> _bigOwners = new Dictionary<long, HashSet<long>>();
         private static readonly HashSet<MyCubeGrid> _dirtyEntities = new HashSet<MyCubeGrid>();
         private static int _updateCounter;
-        private static readonly FastResourceLock _entityLock = new FastResourceLock();
+        private static readonly FastResourceLock _gridLock = new FastResourceLock();
+        private static readonly FastResourceLock _blockLock = new FastResourceLock();
         private static readonly FastResourceLock _builderLock = new FastResourceLock();
         private static readonly FastResourceLock _ownerLock = new FastResourceLock();
 
@@ -36,17 +37,17 @@ namespace BlockLimiter.Utility
         public static void AddGrid(MyCubeGrid grid)
         {
             if (grid == null || _gridCache.Contains(grid)) return;
-            using (_entityLock.AcquireExclusiveUsing())
+            using (_gridLock.AcquireExclusiveUsing())
             {
                 _gridCache.Add(grid);
-                _blockCache.UnionWith(grid.CubeBlocks);
+               AddBlocks(grid.CubeBlocks);
             }
         }
 
         public static void RemoveGrid(MyCubeGrid grid)
         {
             if (grid == null || _gridCache.Contains(grid)) return;
-            using (_entityLock.AcquireExclusiveUsing())
+            using (_gridLock.AcquireExclusiveUsing())
             {
                 _gridCache.Remove(grid);
                 RemoveBlocks(grid.CubeBlocks);
@@ -56,15 +57,24 @@ namespace BlockLimiter.Utility
         public static void AddBlock(MySlimBlock block)
         {
             if (block == null || _blockCache.Contains(block)) return;
-            using (_entityLock.AcquireExclusiveUsing())
+            using (_blockLock.AcquireExclusiveUsing())
             {
                 _blockCache.Add(block);
             }
         }
 
+        private static void AddBlocks(HashSet<MySlimBlock> blocks)
+        {
+            if (blocks.Count == 0) return;
+            using (_blockLock.AcquireExclusiveUsing())
+            {
+                _blockCache.UnionWith(blocks);
+            }
+        }
+
         public static void RemoveBlocks(HashSet<MySlimBlock> blocks)
         {
-            using (_entityLock.AcquireExclusiveUsing())
+            using (_blockLock.AcquireExclusiveUsing())
             {
                 foreach (var block in blocks)
                 {
@@ -81,7 +91,7 @@ namespace BlockLimiter.Utility
                 throw new Exception("Update called from wrong thread");
             }
 
-            using(_entityLock.AcquireExclusiveUsing())
+            using(_gridLock.AcquireExclusiveUsing())
             {
                 var e = MyEntities.GetEntities();
                 
@@ -91,7 +101,7 @@ namespace BlockLimiter.Utility
                 foreach (var g in e.OfType<MyCubeGrid>())
                 {
                     _gridCache.Add(g);
-                    _blockCache.UnionWith(g.CubeBlocks);
+                    AddBlocks(g.CubeBlocks);
                 }
             }
 
@@ -103,7 +113,7 @@ namespace BlockLimiter.Utility
 
         public static bool TryGetGridById(long entityId, out MyCubeGrid entity)
         {
-            using(_entityLock.AcquireSharedUsing())
+            using(_gridLock.AcquireSharedUsing())
             {
                 entity = _gridCache.FirstOrDefault(e => e.EntityId == entityId);
                 return entity != null;
@@ -113,7 +123,7 @@ namespace BlockLimiter.Utility
 
         public static void GetGrids(HashSet<MyCubeGrid> grids)
         {
-            using(_entityLock.AcquireSharedUsing())
+            using(_gridLock.AcquireSharedUsing())
             {
                 grids.UnionWith(_gridCache);
             }
@@ -121,7 +131,7 @@ namespace BlockLimiter.Utility
 
         public static void GetPlayerGrids(HashSet<MyCubeGrid> grids,long owner)
         {
-            using (_entityLock.AcquireSharedUsing())
+            using (_gridLock.AcquireSharedUsing())
             {
                 grids.UnionWith(_gridCache.Where(g=>g.BigOwners.Contains(owner)));
             }
@@ -129,7 +139,7 @@ namespace BlockLimiter.Utility
 
         public static void GetBlocks(HashSet<MySlimBlock> entities)
         {
-            using(_entityLock.AcquireSharedUsing())
+            using(_blockLock.AcquireSharedUsing())
             {
                 entities.UnionWith(_blockCache);
             }
@@ -137,7 +147,7 @@ namespace BlockLimiter.Utility
 
         public static void GetPlayerBlocks(HashSet<MySlimBlock> entities, long id)
         {
-            using(_entityLock.AcquireSharedUsing())
+            using(_blockLock.AcquireSharedUsing())
             {
                 entities.UnionWith(_blockCache.Where(x=>x?.OwnerId == id));
             }
@@ -147,7 +157,7 @@ namespace BlockLimiter.Utility
         {
             var faction = MySession.Static.Factions.TryGetFactionById(id);
             if (faction == null)return;
-            using(_entityLock.AcquireSharedUsing())
+            using(_blockLock.AcquireSharedUsing())
             {
                 entities.UnionWith(_blockCache.Where(x=>x?.FatBlock?.GetOwnerFactionTag() == faction.Tag));
             }
@@ -159,7 +169,7 @@ namespace BlockLimiter.Utility
             _dirtyEntities.Clear();
             var rem = new HashSet<long>();
 
-            using(_entityLock.AcquireSharedUsing())
+            using(_gridLock.AcquireSharedUsing())
             using (_ownerLock.AcquireSharedUsing())
             {
                 rem.UnionWith(from e in _bigOwners where _gridCache.All(en => en?.EntityId != e.Key) select e.Key);
@@ -227,7 +237,7 @@ namespace BlockLimiter.Utility
             _dirtyEntities.Clear();
             var rem = new HashSet<long>();
 
-            using(_entityLock.AcquireSharedUsing())
+            using(_gridLock.AcquireSharedUsing())
             using (_builderLock.AcquireSharedUsing())
             {
                 rem.UnionWith(from e in _bigBuilders where _gridCache.All(en => en?.EntityId != e.Key) select e.Key);
