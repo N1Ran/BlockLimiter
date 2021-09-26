@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
@@ -55,7 +56,8 @@ namespace BlockLimiter.Patch
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
             BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                 .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-
+            topGrid.RemoveBlock(top.SlimBlock);
+            baseGrid.RemoveBlock(__instance.SlimBlock);
             return false;
         }
 
