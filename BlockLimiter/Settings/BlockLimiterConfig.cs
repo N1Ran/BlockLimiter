@@ -71,7 +71,6 @@ namespace BlockLimiter.Settings
         private int _maxSmallGrids;
         private int _maxLargeGrids;
         private BlockingType _blockingType = BlockingType.None;
-        private bool _countSubGrids;
 
 
         #region General BlockCount Limit
@@ -187,42 +186,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 2, GroupName = "*Main Settings", Name = "Server Name", Description = "Name used by the plugin when sending info to players")]
-        public string ServerName
-        {
-            get => _serverName;
-            set
-            {
-                _serverName = string.IsNullOrEmpty(value) ? BlockLimiter.ChatName : value; 
-                Changed();
-            }
-        }
-
-        [Display(Order = 3, GroupName = "*Main Settings", Name = "Deny Message", Description = "Message posted when limit is reached.  {BL} to list names of denied blocks. {BC} to give count of affected blocks")]
-        public string DenyMessage
-        {
-            get => _denyMessage;
-            set
-            {
-                _denyMessage = value; 
-                Changed();
-            }
-        }
-
-        [Display(Order = 4, GroupName = "*Main Settings", Name = "Projection Deny Message", Description = "Message posted when blocks are removed from projection.  {BL} to list names of denied blocks. {BC} to give count of affected blocks")]
-        public string ProjectionDenyMessage
-        {
-            get => _projectionDenyMessage;
-            set
-            {
-                _projectionDenyMessage = value; 
-                Changed();
-            }
-        }
-
-
-        
-        [Display(Order = 5, GroupName = "*Main Settings", Name = "Use Vanilla Limits", Description = "This will add vanilla block limits to limiter's checks")]
+        [Display(Order = 2, GroupName = "*Main Settings", Name = "Use Vanilla Limits", Description = "This will add vanilla block limits to limiter's checks")]
         public bool UseVanillaLimits
         {
             get => _vanillaLimits;
@@ -233,9 +197,9 @@ namespace BlockLimiter.Settings
                 Changed();
             }
         }
-        
 
-        [Display(Order = 7, GroupName = "*Main Settings", Name = "ShutOff UnOwned Blocks", Description = "Turns off any blocks that becomes UnOwned except power blocks, button panels and parachutes")]
+
+        [Display(Order = 3, GroupName = "*Main Settings", Name = "ShutOff UnOwned Blocks", Description = "Turns off any blocks that becomes UnOwned except power blocks, button panels and parachutes")]
         public bool KillNoOwnerBlocks
         {
             get => _killNoOwnerBlocks;
@@ -246,25 +210,48 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 8, GroupName = "*Main Settings", Name = "Count SubGrids", Description = "This enables if subgrids are counted into main grid")]
-        public bool CountSubGrids
+
+        [Display(Order = 4, GroupName = "*Main Settings", Name = "Server Name", Description = "Name used by the plugin when sending info to players")]
+        public string ServerName
         {
-            get => _countSubGrids;
+            get => _serverName;
             set
             {
-                _countSubGrids = value;
+                _serverName = string.IsNullOrEmpty(value) ? BlockLimiter.ChatName : value; 
                 Changed();
             }
         }
 
-
-        [Display(Order = 9, GroupName = "*Main Settings", Name = "Log File Name", Description = "Log file is saved under provided name. Leave empty to log into default Torch log file")]
+        [Display(Order = 5, GroupName = "*Main Settings", Name = "Log File Name", Description = "Log file is saved under provided name. Leave empty to log into default Torch log file")]
         public string LogFileName
         {
             get => _logFileName;
             set
             {
                 _logFileName = value;
+                Changed();
+            }
+        }
+
+
+        [Display(Order = 6, GroupName = "*Main Settings", Name = "Deny Message", Description = "Message posted when limit is reached.  {BL} to list names of denied blocks. {BC} to give count of affected blocks")]
+        public string DenyMessage
+        {
+            get => _denyMessage;
+            set
+            {
+                _denyMessage = value; 
+                Changed();
+            }
+        }
+
+        [Display(Order = 7, GroupName = "*Main Settings", Name = "Projection Deny Message", Description = "Message posted when blocks are removed from projection.  {BL} to list names of denied blocks. {BC} to give count of affected blocks")]
+        public string ProjectionDenyMessage
+        {
+            get => _projectionDenyMessage;
+            set
+            {
+                _projectionDenyMessage = value; 
                 Changed();
             }
         }

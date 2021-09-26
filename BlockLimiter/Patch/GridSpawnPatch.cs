@@ -23,7 +23,7 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class GridSpawnPatch
     {
-        private static readonly Logger Log = BlockLimiter.Instance.Log;
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         private static readonly MethodInfo ShowPasteFailed =
             typeof(MyCubeGrid).GetMethod("SendHudNotificationAfterPaste", BindingFlags.Static | BindingFlags.Public);

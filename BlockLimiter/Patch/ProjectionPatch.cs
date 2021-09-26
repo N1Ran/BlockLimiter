@@ -22,7 +22,7 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class ProjectionPatch
     {
-        private static readonly Logger Log = BlockLimiter.Instance.Log;
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         private static readonly MethodInfo NewBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly MethodInfo RemoveBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);

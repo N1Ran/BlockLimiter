@@ -5,6 +5,12 @@
   &lt;Assembly Path="D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\GameBinaries\netstandard.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Net.Http.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=3997d968_002Db7c3_002D4e92_002Dbf2a_002D42aa3c3eb4b9/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Session #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Nothing /&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=50d0a395_002D14e9_002D4870_002D9a94_002D34568bf3c177/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Nothing /&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
 	
 	
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=blocklimit/@EntryIndexedValue">True</s:Boolean>

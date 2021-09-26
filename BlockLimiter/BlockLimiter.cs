@@ -85,6 +85,8 @@ namespace BlockLimiter
             
             if (grid.Projector != null||grid.IsPreview) return;
 
+            GridCache.AddGrid(grid);
+
             var biggestGrid = Grid.GetBiggestGridInGroup(grid);
 
             var blocks = grid.CubeBlocks;
@@ -95,7 +97,8 @@ namespace BlockLimiter
                     block.BuiltBy == block.OwnerId
                         ? new List<long> {block.BuiltBy}
                         : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
-                if (BlockLimiterConfig.Instance.CountSubGrids && biggestGrid != null && biggestGrid != grid)
+                continue;
+                if (biggestGrid != null && biggestGrid != grid)
                 {
                     Block.IncreaseCount(block.BlockDefinition,new List<long>{grid.EntityId},1,biggestGrid.EntityId);
 
@@ -138,13 +141,18 @@ namespace BlockLimiter
                 return;
             }
 
-            if (grid == biggestGrid || !BlockLimiterConfig.Instance.CountSubGrids || biggestGrid == null)
+            GridCache.AddBlock(block);
+            Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
+            
+            /*
+            if (grid == biggestGrid || biggestGrid == null)
             {
                 Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
                 return;
             }
             Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
             Block.IncreaseCount(block.BlockDefinition,new List<long>{grid.EntityId},1,biggestGrid.EntityId);
+            */
         }
 
 
@@ -268,7 +276,6 @@ namespace BlockLimiter
             if (MyAPIGateway.Session == null|| !BlockLimiterConfig.Instance.EnableLimits)
                 return;
             if (++_updateCounter % 100 != 0) return;
-            GridCache.Update();
             MergeBlockPatch.MergeBlockCache?.Clear();
 
 
@@ -325,14 +332,14 @@ namespace BlockLimiter
         public void Activate()
         {
             if (_sessionManager == null) return;
+            BlockLimiterConfig.Instance.AllLimits =
+                new HashSet<LimitItem>(
+                    Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
             Task.Run(() =>
             {
                 var test = Torch.InvokeAsync(GridCache.Update);
                 Task.WaitAny(test);
                 if (test.Result <= 0) return;
-                BlockLimiterConfig.Instance.AllLimits =
-                    new HashSet<LimitItem>(
-                        Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
                if (BlockLimiterConfig.Instance.BlockOwnershipTransfer) Block.FixIds();
                 ResetLimits();
             });

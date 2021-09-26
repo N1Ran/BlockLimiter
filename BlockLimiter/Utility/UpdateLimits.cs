@@ -62,6 +62,8 @@ namespace BlockLimiter.Utility
             
             var blocks = new HashSet<MySlimBlock>();
             blocks.UnionWith(grid.CubeBlocks);
+            //adding all blocks from subGrids to count
+            //blocks.UnionWith(Grid.GetGridsInGroup(grid).SelectMany(x=>x.CubeBlocks));
 
             if (blocks.Count == 0)
             {

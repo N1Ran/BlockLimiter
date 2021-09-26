@@ -45,8 +45,6 @@ namespace BlockLimiter.Punishment
 
             var limitItems = BlockLimiterConfig.Instance.AllLimits.Where(item => item.FoundEntities.Count > 0 && item.Punishment != LimitItem.PunishmentType.None).ToList();
 
-            BlockSwitchPatch.KeepOffBlocks.Clear();
-
             if (limitItems.Count == 0) return 0;
 
             var punishBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();

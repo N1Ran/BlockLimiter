@@ -22,7 +22,7 @@ namespace BlockLimiter.Patch
     public static class BuildBlockPatch
     {
      
-        private static readonly Logger Log = BlockLimiter.Instance.Log;
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         public static void Patch(PatchContext ctx)
         {

@@ -18,7 +18,7 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class MergeBlockPatch
     {
-        private static readonly Logger Log = BlockLimiter.Instance.Log;
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         public static readonly HashSet<long> MergeBlockCache = new HashSet<long>();
 

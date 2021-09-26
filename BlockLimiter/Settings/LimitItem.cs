@@ -54,7 +54,7 @@ namespace BlockLimiter.Settings
         public ConcurrentDictionary<long,int> FoundEntities { get; } = new ConcurrentDictionary<long, int>();
 
 
-        [Display(Order = 1, Name = "Name", Description = "Name of the limit. This helps with some of the commands")]
+        [Display(GroupName =  "Description", Order = 1, Name = "Name", Description = "Name of the limit. This helps with some of the commands")]
         public string Name
         {
             get => _name;
@@ -65,7 +65,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Blocks", Description = "Block typeid, subtypeId and/or pair names from cubeblocks.sbc can be use here")]
+        [Display(GroupName = "Description", Order = 2, Name = "Blocks", Description = "Block typeid, subtypeId and/or pair names from cubeblocks.sbc can be use here")]
         public List<string> BlockList
         {
             get => _blockList;
@@ -78,7 +78,7 @@ namespace BlockLimiter.Settings
 
         
 
-        [Display(Name = "Exceptions", Description = "List of player or grid exception. You can also use entityId.")]
+        [Display(GroupName = "Description",Order = 4, Name = "Exceptions", Description = "List of player or grid exception. You can also use entityId.")]
         public List<string> Exceptions
         {
             get => _exceptions;
@@ -89,7 +89,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Limit", Description = "Limit value")]
+        [Display(GroupName = "Description", Order =  3,Name = "Limit", Description = "Limit value")]
         public int Limit
         {
             get => _limit;
@@ -100,9 +100,9 @@ namespace BlockLimiter.Settings
             }
         }
 
-        #region Limits
+        #region Options
 
-        [Display(Name = "Limit Faction", GroupName = "Limits", Description = "Applies Limit to Factions")]
+        [Display(Name = "Limit Faction", Order = 2, GroupName = "Options", Description = "Applies Limit to Factions")]
         public bool LimitFaction
         {
             get => _limitFaction;
@@ -113,7 +113,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "GridType Limit", GroupName = "Limits",
+        [Display(Name = "GridType Limit", GroupName = "Options", Order =  4,
             Description = "This is choose which grid type to block placement")]
         public GridType GridTypeBlock
         {
@@ -125,7 +125,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "Limit Grids", GroupName = "Limits", Description = "Applies Limit to Grids")]
+        [Display(Name = "Limit Grids", Order = 3, GroupName = "Options", Description = "Applies Limit to Grids")]
         public bool LimitGrids
         {
             get => _limitGrids;
@@ -135,7 +135,7 @@ namespace BlockLimiter.Settings
                 OnPropertyChanged();
             }
         }
-        [Display(Name = "Limit Players", GroupName = "Limits", Description = "Applies Limit to Players")]
+        [Display(Name = "Limit Players", Order = 1, GroupName = "Options", Description = "Applies Limit to Players")]
         public bool LimitPlayers
         {
             get => _limitPlayer;
@@ -149,7 +149,7 @@ namespace BlockLimiter.Settings
        
         #region Restrictions
 
-        [Display(Name = "PunishmentType", GroupName = "Restrictions", Description = "Set's what to do to extra blocks in violation of the limit")]
+        [Display(Name = "PunishmentType", Order = 3, GroupName = "Restrictions", Description = "Set's what to do to extra blocks in violation of the limit")]
         public PunishmentType Punishment
         {
             get => _punishType;
@@ -161,7 +161,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Name = "IgnoreNPCs", GroupName = "Restrictions", Description = "Will ignore NPC owned grids")]
+        [Display(Name = "IgnoreNPCs", Order = 1, GroupName = "Restrictions", Description = "Will ignore NPC owned grids")]
         public bool IgnoreNpcs
         {
             get => _ignoreNpc;
@@ -174,7 +174,7 @@ namespace BlockLimiter.Settings
         
         
         
-        [Display(Name = "Restrict Projection", GroupName = "Restrictions",
+        [Display(Name = "Restrict Projection", GroupName = "Restrictions", Order = 2,
             Description = "Removes block from projection once limit reached.")]
         public bool RestrictProjection
         {
@@ -345,10 +345,10 @@ namespace BlockLimiter.Settings
 
         public bool IsMatch(MyCubeBlockDefinition definition)
         {
-            var blockList = new HashSet<string>(BlockList);
+            var blockList = new HashSet<string>(_blockList);
             if (blockList.Count == 0 || definition == null) return false;
 
-
+            
             if (GridTypeBlock != GridType.AllGrids)
             {
 
@@ -361,14 +361,21 @@ namespace BlockLimiter.Settings
             }
 
             var found = false;
-
+            var defString = new HashSet<string>
+            {
+                definition.Id.ToString().Substring(16), definition.Id.TypeId.ToString().Substring(16),
+                definition.Id.SubtypeId.ToString(), definition.BlockPairName
+            };
+            
             foreach (var block in blockList)
             {
+                if (!defString.Contains(block,StringComparer.OrdinalIgnoreCase)) continue;
+                /*
                 if (!block.Equals(definition.Id.ToString().Substring(16), StringComparison.OrdinalIgnoreCase)
                     && !block.Equals(definition.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase)
                     && !block.Equals(definition.Id.SubtypeId.ToString(), StringComparison.OrdinalIgnoreCase)
                     && !block.Equals(definition.BlockPairName, StringComparison.OrdinalIgnoreCase)) continue;
-
+                */
                 found = true;
                 break;
             }

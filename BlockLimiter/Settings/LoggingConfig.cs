@@ -25,7 +25,6 @@ namespace BlockLimiter.Settings
             if (string.IsNullOrEmpty(config.LogFileName))
             {
                 LogManager.Configuration.Reload();
-                //LogManager.DisableLogging();
                 return;
             }
 

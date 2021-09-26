@@ -164,6 +164,44 @@ namespace BlockLimiter.Utility
             return biggestGrid;
         }
 
+        public static List<MyCubeGrid> GetSubGrids(MyCubeGrid grid)
+        {
+            if (grid == null) return null;
+            var result = new List<MyCubeGrid>();
+            double num = 0.0;
+            var nodes = MyCubeGridGroups.Static.Mechanical
+                .GetGroup(grid)?.Nodes;
+            if (nodes == null) return result;
+            foreach (MyGroups<MyCubeGrid, MyGridMechanicalGroupData>.Node node in nodes)
+            {
+                if (node.NodeData == grid) continue;
+                result.Add(node.NodeData);
+            }
+
+            return result;
+        }
+
+        public static HashSet<MySlimBlock> GetSubGridBlocks(MyCubeGrid grid)
+        {
+            if (grid == null) return null;
+            var result = new HashSet<MySlimBlock>();
+            double num = 0.0;
+            var nodes = MyCubeGridGroups.Static.Mechanical
+                .GetGroup(grid)?.Nodes;
+            if (nodes == null) return result;
+            foreach (MyGroups<MyCubeGrid, MyGridMechanicalGroupData>.Node node in nodes)
+            {
+                result.UnionWith(node.NodeData.CubeBlocks);
+            }
+
+            return result;
+        }
+
+        public static bool CanMerge(MyCubeGrid grid1, MyCubeGrid grid2)
+        {
+            return CanMerge(grid1, grid2, out _, out _, out _);
+        }
+
         public static bool CanMerge(MyCubeGrid grid1, MyCubeGrid grid2, out List<string>blocks, out int count, out string limitName)
         {
             limitName = null;
@@ -175,9 +213,10 @@ namespace BlockLimiter.Utility
                 Utilities.IsExcepted(grid2)) return true;
             
             var blocksHash = new HashSet<MySlimBlock>(grid1.CubeBlocks);
-            
+            //Adding all present blocks from grid.
             blocksHash.UnionWith(grid2.CubeBlocks);
-
+            blocksHash.UnionWith(GetSubGridBlocks(grid1));
+            blocksHash.UnionWith(GetSubGridBlocks(grid2));
             if (blocksHash.Count == 0) return true;
             
             blocks.Add("All blocks - Size Violation");

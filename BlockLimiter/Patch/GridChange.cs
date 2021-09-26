@@ -62,6 +62,7 @@ namespace BlockLimiter.Patch
                     return;
                 }
                 _justRemoved.Add(cubeBlock.SlimBlock);
+                GridCache.RemoveBlocks(new HashSet<MySlimBlock>{cubeBlock.SlimBlock});
                 Block.DecreaseCount(cubeBlock.BlockDefinition,
                     cubeBlock.BuiltBy == cubeBlock.OwnerId
                         ? new List<long> {cubeBlock.BuiltBy}
@@ -70,17 +71,17 @@ namespace BlockLimiter.Patch
                 if (cubeBlockGrid != null)
                 {
                     biggestGrid = Grid.GetBiggestGridInGroup(cubeBlockGrid);
-                    removeFromBiggestGrid = BlockLimiterConfig.Instance.CountSubGrids && biggestGrid != null &&
+                    removeFromBiggestGrid = biggestGrid != null &&
                                             cubeBlockGrid != biggestGrid;
-                    if (removeFromBiggestGrid) Block.DecreaseCount(cubeBlock.BlockDefinition,new List<long>{cubeBlockGrid.EntityId},1,biggestGrid.EntityId);
+                    //if (removeFromBiggestGrid) Block.DecreaseCount(cubeBlock.BlockDefinition,new List<long>{cubeBlockGrid.EntityId},1,biggestGrid.EntityId);
 
                 }
 
             }
             if (!(__instance is MyCubeGrid grid)) return;
-
+            GridCache.RemoveGrid(grid);
             biggestGrid = Grid.GetBiggestGridInGroup(grid);
-            removeFromBiggestGrid = BlockLimiterConfig.Instance.CountSubGrids && biggestGrid != null && grid != biggestGrid;
+            removeFromBiggestGrid = biggestGrid != null && grid != biggestGrid;
             foreach (var block in grid.CubeBlocks)
             {
                 if (_justRemoved.Contains(block))
@@ -93,7 +94,7 @@ namespace BlockLimiter.Patch
                     block.BuiltBy == block.OwnerId
                         ? new List<long> {block.BuiltBy}
                         : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
-                if (removeFromBiggestGrid) Block.DecreaseCount(block.BlockDefinition,new List<long>{grid.EntityId},1,biggestGrid.EntityId);
+                //if (removeFromBiggestGrid) Block.DecreaseCount(block.BlockDefinition,new List<long>{grid.EntityId},1,biggestGrid.EntityId);
             }
 
 

@@ -18,6 +18,7 @@ namespace BlockLimiter.Utility
     public static class GridCache
     {
         private static readonly HashSet<MyCubeGrid> _gridCache = new HashSet<MyCubeGrid>();
+        private static readonly HashSet<MySlimBlock> _blockCache = new HashSet<MySlimBlock>();
         private static readonly Dictionary<long, HashSet<long>> _bigBuilders = new Dictionary<long, HashSet<long>>();
         private static readonly Dictionary<long, HashSet<long>> _bigOwners = new Dictionary<long, HashSet<long>>();
         private static readonly HashSet<MyCubeGrid> _dirtyEntities = new HashSet<MyCubeGrid>();
@@ -26,7 +27,7 @@ namespace BlockLimiter.Utility
         private static readonly FastResourceLock _builderLock = new FastResourceLock();
         private static readonly FastResourceLock _ownerLock = new FastResourceLock();
 
-        
+
         static GridCache()
         {
 
@@ -38,6 +39,37 @@ namespace BlockLimiter.Utility
             using (_entityLock.AcquireExclusiveUsing())
             {
                 _gridCache.Add(grid);
+                _blockCache.UnionWith(grid.CubeBlocks);
+            }
+        }
+
+        public static void RemoveGrid(MyCubeGrid grid)
+        {
+            if (grid == null || _gridCache.Contains(grid)) return;
+            using (_entityLock.AcquireExclusiveUsing())
+            {
+                _gridCache.Remove(grid);
+                RemoveBlocks(grid.CubeBlocks);
+            }
+        }
+
+        public static void AddBlock(MySlimBlock block)
+        {
+            if (block == null || _blockCache.Contains(block)) return;
+            using (_entityLock.AcquireExclusiveUsing())
+            {
+                _blockCache.Add(block);
+            }
+        }
+
+        public static void RemoveBlocks(HashSet<MySlimBlock> blocks)
+        {
+            using (_entityLock.AcquireExclusiveUsing())
+            {
+                foreach (var block in blocks)
+                {
+                    _blockCache.Remove(block);
+                }
             }
         }
 
@@ -55,7 +87,12 @@ namespace BlockLimiter.Utility
                 
                 if (e.Count == 0) return 0;
                 _gridCache.Clear();
-                _gridCache.UnionWith(e.OfType<MyCubeGrid>().Where(x => x.Projector == null));
+                _blockCache.Clear();
+                foreach (var g in e.OfType<MyCubeGrid>())
+                {
+                    _gridCache.Add(g);
+                    _blockCache.UnionWith(g.CubeBlocks);
+                }
             }
 
             if (++_updateCounter % 100 != 0) return _gridCache.Count;
@@ -94,7 +131,7 @@ namespace BlockLimiter.Utility
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_gridCache.SelectMany(g=>g?.CubeBlocks));
+                entities.UnionWith(_blockCache);
             }
         }
 
@@ -102,7 +139,7 @@ namespace BlockLimiter.Utility
         {
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks.Where(x=>x?.OwnerId == id)));
+                entities.UnionWith(_blockCache.Where(x=>x?.OwnerId == id));
             }
         }
 
@@ -112,7 +149,7 @@ namespace BlockLimiter.Utility
             if (faction == null)return;
             using(_entityLock.AcquireSharedUsing())
             {
-                entities.UnionWith(_gridCache.SelectMany(g=>g.CubeBlocks.Where(x=>x?.FatBlock?.GetOwnerFactionTag() == faction.Tag)));
+                entities.UnionWith(_blockCache.Where(x=>x?.FatBlock?.GetOwnerFactionTag() == faction.Tag));
             }
         }
 

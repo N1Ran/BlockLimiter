@@ -20,11 +20,10 @@ namespace BlockLimiter.Utility
     {
         private static readonly HashSet<LimitItem> Limits = BlockLimiterConfig.Instance.AllLimits;
 
-        private static void KillBlock(MyCubeBlock block)
+        private static void KillBlock(MyFunctionalBlock block)
         {
-            if (!(block is MyFunctionalBlock fBlock) || BlockSwitchPatch.KeepOffBlocks.Contains(fBlock))return;
-            //fBlock.Enabled = false;
-            BlockSwitchPatch.KeepOffBlocks.Add(fBlock);
+            block.Enabled = false;
+            BlockLimiter.Instance.Log.Info($"Turned off {block.BlockDefinition?.Id.ToString().Substring(16)} from {block.CubeGrid?.DisplayName}");
         }
 
         public static bool IsWithinLimits(MyCubeBlockDefinition block, long playerId, MyObjectBuilder_CubeGrid grid, out string limitName)
@@ -113,7 +112,8 @@ namespace BlockLimiter.Utility
             if (Grid.IsSizeViolation(gridId)) return false;
 
             if (BlockLimiterConfig.Instance.AllLimits.Count == 0) return true;
-
+            var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
+            var subGrids = Grid.GetSubGrids(grid);
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
                 limit = item.Name;
@@ -123,7 +123,6 @@ namespace BlockLimiter.Utility
                     gridId > 0 && item.IsExcepted(gridId))
                     continue;
 
-                var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
 
                 if (foundGrid && !item.IsGridType(grid)) continue;
 
@@ -142,7 +141,19 @@ namespace BlockLimiter.Utility
                             allow = false;
                             break;
                         }
+                        //Counts found subgrid blocks too. 
+                        var subGBlockCount = 0;
+                        foreach (var subGrid in subGrids)
+                        {
+                            if (!item.FoundEntities.TryGetValue(subGrid.EntityId, out var subGCount)) continue;
+                            subGBlockCount += subGCount;
+                        }
 
+                        if (subGBlockCount + count + gCount > item.Limit)
+                        {
+                            allow = false;
+                            break;
+                        }
                     }
                 }
 
@@ -380,7 +391,8 @@ namespace BlockLimiter.Utility
                                     $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
                                 break;
                             case LimitItem.PunishmentType.ShutOffBlock:
-                                KillBlock(block.FatBlock);
+                                if (!(block.FatBlock is MyFunctionalBlock fBlock)) return;
+                                KillBlock(fBlock);
                                 break;
                             case LimitItem.PunishmentType.Explode:
                                 log.Info(
@@ -416,7 +428,7 @@ namespace BlockLimiter.Utility
             {
                 Parallel.ForEach(blockCache, block =>
                 {
-                    if (block == null  || !block.BlockDefinition.ContainsComputer()) return;
+                    if (block == null) return;
 
                     if (block.OwnerId == block.BuiltBy) return;
                     

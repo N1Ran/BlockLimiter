@@ -14,7 +14,7 @@ namespace BlockLimiter.Patch
     [PatchShim]
     public static class BlockOwnershipTransfer
     {
-        private static readonly Logger Log = BlockLimiter.Instance.Log;
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
 
         private static void Patch(PatchContext ctx)
