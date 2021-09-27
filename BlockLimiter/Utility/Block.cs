@@ -194,6 +194,7 @@ namespace BlockLimiter.Utility
         public static void IncreaseCount(MyCubeBlockDefinition def, List<long> playerIds, int amount = 1, long gridId = 0)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
+            
             var factions = new List<MyFaction>();
             foreach (var playerId in playerIds)
             {
@@ -215,22 +216,25 @@ namespace BlockLimiter.Utility
                 }
 
                 if (limit.LimitGrids && gridId > 0)
-                    limit.FoundEntities.AddOrUpdate(gridId, amount, (l, i) => i+amount);
-
-
-                foreach (var playerId in playerIds)
                 {
-                    if (playerId == 0) continue;
-                    if (limit.IgnoreNpcs)
-                    {
-                        if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
-                        if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
-                    
-                    }
+                    limit.FoundEntities.AddOrUpdate(gridId, amount, (l, i) => i+amount);
+                }
 
-                    if (limit.LimitPlayers)
+                if (limit.LimitPlayers && playerIds.Count > 0)
+                {
+                    foreach (var playerId in playerIds)
+                    {
+                        if (playerId == 0) continue;
+                        if (limit.IgnoreNpcs)
+                        {
+                            if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
+                            if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
+                    
+                        }
+
                         limit.FoundEntities.AddOrUpdate(playerId, amount, (l, i) => i+amount);
 
+                    }
                 }
 
                 if (!limit.LimitFaction || factions.Count <= 0) continue;

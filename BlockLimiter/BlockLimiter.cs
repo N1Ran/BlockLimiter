@@ -26,6 +26,7 @@ using Torch.API.Session;
 using Torch.Managers;
 using Torch.Session;
 using Torch.Views;
+using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -48,6 +49,7 @@ namespace BlockLimiter
         private int _updateCounter;
         public static IPluginManager PluginManager { get; private set; }
         public string timeDataPath = "";
+        private MyConcurrentHashSet<MyCubeGrid> _justAdded = new MyConcurrentHashSet<MyCubeGrid>();
 
         public IMultigridProjectorApi MultigridProjectorApi;
 
@@ -77,37 +79,40 @@ namespace BlockLimiter
             UpdateLimits.FactionLimit(id);
         }
 
+        /// <summary>
+        /// Adds newly added grids to cache and update count to meet change
+        /// </summary>
+        /// <param name="entity"></param>
         private void MyEntitiesOnOnEntityAdd(MyEntity entity)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
 
             if (!(entity is MyCubeGrid grid)) return;
-            
+
             if (grid.Projector != null||grid.IsPreview) return;
-
-            GridCache.AddGrid(grid);
-
-            var biggestGrid = Grid.GetBiggestGridInGroup(grid);
-
+            // Do Not Add to grid cache at this point to allow MyCubeGridsOnBlockBuild to add and prevent double counts
             var blocks = grid.CubeBlocks;
-
+            GridCache.AddGrid(grid);
+            _justAdded.Add(grid);
             foreach (var block in blocks)
             {
                 Block.IncreaseCount(block.BlockDefinition,
                     block.BuiltBy == block.OwnerId
                         ? new List<long> {block.BuiltBy}
                         : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
-                continue;
-                if (biggestGrid != null && biggestGrid != grid)
-                {
-                    Block.IncreaseCount(block.BlockDefinition,new List<long>{grid.EntityId},1,biggestGrid.EntityId);
-
-                }
             }
 
 
         }
-
+        
+        /// <summary>
+        /// Event to refresh player's faction/player limits to account for change
+        /// </summary>
+        /// <param name="factionState"></param>
+        /// <param name="fromFaction"></param>
+        /// <param name="toFaction"></param>
+        /// <param name="playerId"></param>
+        /// <param name="senderId"></param>
         private void FactionsOnFactionStateChanged(MyFactionStateChange factionState, long fromFaction, long toFaction, long playerId, long senderId)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits || (factionState != MyFactionStateChange.FactionMemberLeave && factionState != MyFactionStateChange.FactionMemberAcceptJoin && factionState != MyFactionStateChange.RemoveFaction
@@ -129,12 +134,21 @@ namespace BlockLimiter
 
         }
 
+        /// <summary>
+        /// Accounts for block being added to a grid that already exist in the world
+        /// </summary>
+        /// <param name="grid"></param>
+        /// <param name="block"></param>
         private void MyCubeGridsOnBlockBuilt(MyCubeGrid grid, MySlimBlock block)
         {
             if (grid == null || !BlockLimiterConfig.Instance.EnableLimits) return;
 
-            var biggestGrid = Grid.GetBiggestGridInGroup(grid);
-
+            if (_justAdded.Contains(grid))
+            {
+                _justAdded.Remove(grid);
+                return;
+            }
+            //This adds grid to cache and also prevents double count from MyEntitiesOnEntityAdd
             if (!GridCache.TryGetGridById(grid.EntityId, out _))
             {
                 GridCache.AddGrid(grid);
@@ -144,15 +158,6 @@ namespace BlockLimiter
             GridCache.AddBlock(block);
             Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
             
-            /*
-            if (grid == biggestGrid || biggestGrid == null)
-            {
-                Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
-                return;
-            }
-            Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
-            Block.IncreaseCount(block.BlockDefinition,new List<long>{grid.EntityId},1,biggestGrid.EntityId);
-            */
         }
 
 

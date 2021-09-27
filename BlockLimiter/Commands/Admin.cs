@@ -63,6 +63,7 @@ namespace BlockLimiter.Commands
                 }
                 _doCheck = false;
                 BlockLimiterConfig.Instance.Save();
+                GridCache.Update();
                 BlockLimiter.ResetLimits();
                 _lastRun = DateTime.Now;
             

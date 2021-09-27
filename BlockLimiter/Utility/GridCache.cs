@@ -100,6 +100,7 @@ namespace BlockLimiter.Utility
                 _blockCache.Clear();
                 foreach (var g in e.OfType<MyCubeGrid>())
                 {
+                    if (g.IsPreview || g.Projector != null) continue;
                     _gridCache.Add(g);
                     AddBlocks(g.CubeBlocks);
                 }
