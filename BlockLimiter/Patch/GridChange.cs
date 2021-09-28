@@ -68,7 +68,6 @@ namespace BlockLimiter.Patch
 
             }
             if (!(__instance is MyCubeGrid grid)) return;
-            if (grid.Projector == null)GridCache.RemoveGrid(grid);
             foreach (var block in grid.CubeBlocks)
             {
                 if (_justRemoved.Contains(block))
@@ -82,7 +81,7 @@ namespace BlockLimiter.Patch
                         ? new List<long> {block.BuiltBy}
                         : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
             }
-
+            if (grid.Projector == null) GridCache.RemoveGrid(grid);
 
         }
 

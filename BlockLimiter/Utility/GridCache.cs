@@ -46,7 +46,6 @@ namespace BlockLimiter.Utility
 
         public static void RemoveGrid(MyCubeGrid grid)
         {
-            if (grid == null || _gridCache.Contains(grid)) return;
             using (_gridLock.AcquireExclusiveUsing())
             {
                 _gridCache.Remove(grid);

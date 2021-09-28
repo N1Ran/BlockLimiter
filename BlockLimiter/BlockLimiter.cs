@@ -49,7 +49,7 @@ namespace BlockLimiter
         private int _updateCounter;
         public static IPluginManager PluginManager { get; private set; }
         public string timeDataPath = "";
-        private MyConcurrentHashSet<MyCubeGrid> _justAdded = new MyConcurrentHashSet<MyCubeGrid>();
+        private MyConcurrentHashSet<MySlimBlock> _justAdded = new MyConcurrentHashSet<MySlimBlock>();
 
         public IMultigridProjectorApi MultigridProjectorApi;
 
@@ -93,9 +93,14 @@ namespace BlockLimiter
             // Do Not Add to grid cache at this point to allow MyCubeGridsOnBlockBuild to add and prevent double counts
             var blocks = grid.CubeBlocks;
             GridCache.AddGrid(grid);
-            _justAdded.Add(grid);
             foreach (var block in blocks)
             {
+                if (_justAdded.Contains(block))
+                {
+                    _justAdded.Remove(block);
+                    continue;
+                }
+                _justAdded.Add(block);
                 Block.IncreaseCount(block.BlockDefinition,
                     block.BuiltBy == block.OwnerId
                         ? new List<long> {block.BuiltBy}
@@ -143,11 +148,6 @@ namespace BlockLimiter
         {
             if (grid == null || !BlockLimiterConfig.Instance.EnableLimits) return;
 
-            if (_justAdded.Contains(grid))
-            {
-                _justAdded.Remove(grid);
-                return;
-            }
             //This adds grid to cache and also prevents double count from MyEntitiesOnEntityAdd
             if (!GridCache.TryGetGridById(grid.EntityId, out _))
             {
@@ -155,7 +155,15 @@ namespace BlockLimiter
                 return;
             }
 
+            if (_justAdded.Contains(block))
+            {
+                _justAdded.Remove(block);
+                return;
+            }
+
+            _justAdded.Add(block);
             GridCache.AddBlock(block);
+            
             Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
             
         }
