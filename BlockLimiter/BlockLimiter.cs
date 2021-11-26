@@ -472,24 +472,14 @@ namespace BlockLimiter
         
         public static bool CheckLimits_future(MyObjectBuilder_CubeGrid[] grids, long id = 0)
         {
-            if (grids.Length == 0 ||!BlockLimiterConfig.Instance.EnableLimits || Utilities.IsExcepted(id))
-            {
-                return false;
-            }
-
-            foreach (var grid in grids)
-            {
-                if (Grid.CanSpawn(grid,id)) continue;
-                return true;
-            }
-
-            return false;
+            return PluginApi.Limits.CheckLimits(grids, id);
 
         }
 
         public static bool CanAdd(List<MySlimBlock> blocks, long id, out List<MySlimBlock> nonAllowedBlocks)
         {
-            return Block.CanAdd(blocks, id, out nonAllowedBlocks);
+
+            return PluginApi.Limits.CanAdd(blocks, id, out nonAllowedBlocks);
         }
         
         #endregion

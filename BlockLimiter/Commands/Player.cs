@@ -227,18 +227,21 @@ namespace BlockLimiter.Commands
 
             var allDef = MyDefinitionManager.Static.GetAllDefinitions();
 
-            var def = new List<MyDefinitionBase>();
+            var def = new List<MyDefinitionBase>(allDef.Where(x => x is MyCubeBlockDefinition));
 
             if (Context.Args.Count > 0)
             {
                 var blockType = Context.Args[0];
+                def.RemoveAll(x =>
+                    !x.Id.TypeId.ToString().Substring(16).Contains(blockType, StringComparison.OrdinalIgnoreCase));
+                /*
                 foreach (var defBase in allDef)
                 {
                     if (!defBase.Id.TypeId.ToString().Substring(16).Equals(blockType,StringComparison.OrdinalIgnoreCase))
                         continue;
                     def.Add(defBase);
                 }
-
+                */
                 if (!def.Any())
                 {
                     Context.Respond($"Can't find any definition for {blockType}");
@@ -247,14 +250,10 @@ namespace BlockLimiter.Commands
 
             }
 
-            else
-            {
-                def.AddRange(allDef);
-            }
 
-            if (!def.Any())
+            if (def.Count == 0)
             {
-                Context.Respond("Na Bruh!");
+                Context.Respond("Reading no definitions.  Recheck filter and try again!");
                 return;
             }
 
@@ -264,6 +263,7 @@ namespace BlockLimiter.Commands
             {
                 if (!MyDefinitionManager.Static.TryGetCubeBlockDefinition(myDefinitionId.Id, out var x)) continue;
                 if (myDefinitionId.Context == null) continue;
+                
                 if (!definitionDictionary.ContainsKey(myDefinitionId.Context))
                 {
                     definitionDictionary[myDefinitionId.Context] = new List<string> {x.BlockPairName};
@@ -274,11 +274,11 @@ namespace BlockLimiter.Commands
                 definitionDictionary[myDefinitionId.Context].Add(x.BlockPairName);
             }
 
-            foreach (var (context,thisList) in definitionDictionary)
+            foreach (var (context, thisList) in definitionDictionary.OrderBy(x => x.Key.ModName))
             {
                 sb.AppendLine(context.IsBaseGame ? $"[{thisList.Count} Vanilla blocks]" : $"[{thisList.Count} blocks --- {context.ModName} - {context.ModId}]");
                 
-                thisList.ForEach(x=>sb.AppendLine(x));
+                thisList.OrderBy(x=>x).ForEach(x=>sb.AppendLine(x));
                 sb.AppendLine();
             }
 
@@ -299,7 +299,7 @@ namespace BlockLimiter.Commands
             ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of pair names",sb.ToString()),Context.Player.SteamUserId);
         }
 
-        [Command("definitions", "gets the list of all pair names possible")]
+        [Command("definitions", "gets the list of all blocks definitions currently in game")]
         [Permission(MyPromoteLevel.None)]
         public void ListBlockDefinitions()
         {
@@ -308,17 +308,20 @@ namespace BlockLimiter.Commands
 
             var allDef = MyDefinitionManager.Static.GetAllDefinitions();
 
-            var def = new List<MyDefinitionBase>();
+            var def = new List<MyDefinitionBase>(allDef.Where(x => x is MyCubeBlockDefinition).OrderBy(x => x.Id.ToString()));
             if (Context.Args.Count > 0)
             {
                 string blockType = Context.Args[0];
+                def.RemoveAll(x =>
+                    !x.Id.TypeId.ToString().Substring(16).Contains(blockType, StringComparison.OrdinalIgnoreCase));
+                /*
                 foreach (var defBase in allDef)
                 {
                     if (!defBase.Id.TypeId.ToString().Substring(16).Equals(blockType,StringComparison.OrdinalIgnoreCase))
                         continue;
                     def.Add(defBase);
                 }
-
+                */
                 if (!def.Any())
                 {
                     Context.Respond($"Can't find any definition for {blockType}");
@@ -327,34 +330,30 @@ namespace BlockLimiter.Commands
 
             }
 
-            else
+            if (def.Count == 0)
             {
-                def.AddRange(allDef);
-            }
-
-            if (!def.Any())
-            {
-                Context.Respond("Na Bruh!");
+                Context.Respond("Reading no definitions.  Recheck filter and try again!");
                 return;
             }
 
             sb.AppendLine($"Total of {def.Count} definitions found on server");
             var definitionDictionary = new Dictionary<MyModContext, List<string>>();
+
             foreach (var myDefinitionId in def)
             {
-                if (!MyDefinitionManager.Static.TryGetCubeBlockDefinition(myDefinitionId.Id, out var x)) continue;
+               
                 if (myDefinitionId.Context == null) continue;
                 if (!definitionDictionary.ContainsKey(myDefinitionId.Context))
                 {
-                    definitionDictionary[myDefinitionId.Context] = new List<string> {x.Id.ToString().Substring(16)};
+                    definitionDictionary[myDefinitionId.Context] = new List<string> {myDefinitionId.Id.ToString().Substring(16)};
                     continue;
                 }
 
-                if (definitionDictionary[myDefinitionId.Context].Contains(x.BlockPairName)) continue;
-                definitionDictionary[myDefinitionId.Context].Add(x.Id.ToString().Substring(16));
+                if (definitionDictionary[myDefinitionId.Context].Contains(myDefinitionId.Id.ToString().Substring(16))) continue;
+                definitionDictionary[myDefinitionId.Context].Add(myDefinitionId.Id.ToString().Substring(16));
             }
 
-            foreach (var (context,thisList) in definitionDictionary)
+            foreach (var (context,thisList) in definitionDictionary.OrderBy(x=>x.Key.ModName))
             {
                 sb.AppendLine(context.IsBaseGame ? $"[{thisList.Count} Vanilla blocks]" : $"[{thisList.Count} blocks --- {context.ModName} - {context.ModId}]");
                 
@@ -374,7 +373,7 @@ namespace BlockLimiter.Commands
                 return;
             }
 
-            ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of pair names",sb.ToString()),Context.Player.SteamUserId);
+            ModCommunication.SendMessageTo(new DialogMessage(BlockLimiterConfig.Instance.ServerName,"List of block definitions",sb.ToString()),Context.Player.SteamUserId);
 
         }
 

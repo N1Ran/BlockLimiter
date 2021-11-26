@@ -15,6 +15,7 @@ using Torch.Mod;
 using Torch.Mod.Messages;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.GameServices;
 
 namespace BlockLimiter.Commands
 {
@@ -124,6 +125,72 @@ namespace BlockLimiter.Commands
                 }
             }
 
+        }
+
+        [Command("update grid", "updates limits")]
+        [Permission(MyPromoteLevel.Moderator)]
+        public void UpdateGrid(string gridName = null)
+        {
+            if (string.IsNullOrEmpty(gridName))
+            {
+                Context.Respond($"provide name of grid to bue updated");
+                return;
+            }
+            if (!Utilities.TryGetEntityByNameOrId(gridName, out var entity))
+            {
+
+                Context.Respond($"No entity with the name {gridName} found");
+                return;
+            }
+
+            if (!(entity is MyCubeGrid grid))
+            {
+                Context.Respond("No grid found");
+                return;
+            }
+
+            Context.Respond($"{grid.DisplayName} limits updated");
+            Utility.UpdateLimits.GridLimit(grid);
+        }
+
+        [Command("update player", "updates limits")]
+        [Permission(MyPromoteLevel.Moderator)]
+        public void UpdatePlayer(string name = null)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                Context.Respond("Provide name or id of player to be updated");
+                return;
+            }
+
+            if (!Utilities.TryGetPlayerByNameOrId(name, out var identity))
+            {
+                Context.Respond($"Player {name} not found");
+                return;
+            }
+
+            Context.Respond($"Updated {identity.DisplayName} limits");
+            Utility.UpdateLimits.PlayerLimit(identity.IdentityId);
+
+        }
+
+        [Command("update faction", "updates limits")]
+        [Permission(MyPromoteLevel.Moderator)]
+        public void UpdateFaction(string factionTag = null)
+        {
+            if (string.IsNullOrEmpty(factionTag))
+            {
+                Context.Respond("provide faction tag you want updated");
+                return;
+            }
+            var faction = MySession.Static.Factions.TryGetFactionByTag(factionTag);
+            if (faction == null)
+            {
+                Context.Respond($"{factionTag} was not found in factions.  Check spelling and case.");
+                return;
+            }
+            Context.Respond($"{faction.Tag} limits updated");
+            Utility.UpdateLimits.FactionLimit(faction.FactionId);
         }
 
         [Command("reload", "Reloads current BlockLimiter.cfg and apply any changes to current session")]

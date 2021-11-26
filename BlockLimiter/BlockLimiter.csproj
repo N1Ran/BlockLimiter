@@ -157,6 +157,7 @@
     <Compile Include="Patch\MechanicalConnection.cs" />
     <Compile Include="Patch\MergeBlockPatch.cs" />
     <Compile Include="Patch\ProjectionPatch.cs" />
+    <Compile Include="PluginApi\Limits.cs" />
     <Compile Include="ProcessHandlers\ProcessHandlerBase.cs" />
     <Compile Include="Punishment\Annoy.cs" />
     <Compile Include="Patch\BlockSwitchPatch.cs" />
