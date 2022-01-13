@@ -60,7 +60,7 @@ namespace BlockLimiter.Patch
                 }
                 _justRemoved.Add(cubeBlock.SlimBlock);
                 //added filter for projector
-                if (cubeBlock.CubeGrid.Projector == null)GridCache.RemoveBlocks(new HashSet<MySlimBlock>{cubeBlock.SlimBlock});
+                if (cubeBlock.CubeGrid.Projector == null)GridCache.RemoveBlock(cubeBlock.SlimBlock);
                 Block.DecreaseCount(cubeBlock.BlockDefinition,
                     cubeBlock.BuiltBy == cubeBlock.OwnerId
                         ? new List<long> {cubeBlock.BuiltBy}

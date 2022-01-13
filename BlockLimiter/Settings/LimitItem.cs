@@ -6,6 +6,7 @@ using System.Linq;
 using Torch;
 using Torch.Views;
 using System.Xml.Serialization;
+using BlockLimiter.PluginApi;
 using BlockLimiter.Utility;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
@@ -225,7 +226,7 @@ namespace BlockLimiter.Settings
 
         #region Utilities
 
-        public bool IsExcepted(object target)
+        internal bool IsExcepted(object target)
         {
             if (target == null) return false;
             var allExceptions = new HashSet<string>(Exceptions);
@@ -343,7 +344,7 @@ namespace BlockLimiter.Settings
             return !string.IsNullOrEmpty(displayName) && allExceptions.Contains(displayName);
         }
 
-        public bool IsMatch(MyCubeBlockDefinition definition)
+        internal bool IsMatch(MyCubeBlockDefinition definition)
         {
             var blockList = new HashSet<string>(_blockList);
             if (blockList.Count == 0 || definition == null) return false;
@@ -383,7 +384,7 @@ namespace BlockLimiter.Settings
             return found;
         }
 
-        public bool IsFilterType(MyCubeGrid grid)
+        internal bool IsFilterType(MyCubeGrid grid)
         {
             if (LimitFilterType == FilterType.None) return true;
             switch (LimitFilterType)
@@ -414,6 +415,15 @@ namespace BlockLimiter.Settings
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? baseMass > FilterValue
                         : baseMass < FilterValue;
+                /*
+                case FilterType.GridScore:
+                    if (!PointCheckApi.IsInstalled()) return false;
+                    var gridScore = PointCheckApi.GetGridBP(grid);
+                    if (gridScore == 0) return false;
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? gridScore > FilterValue
+                        : gridScore < FilterValue;
+                */
                 default:
                     return false;
             }
@@ -421,7 +431,7 @@ namespace BlockLimiter.Settings
             return false;
         }
         
-        public bool IsFilterType(MyObjectBuilder_CubeGrid grid, long playerId = 0)
+        internal bool IsFilterType(MyObjectBuilder_CubeGrid grid, long playerId = 0)
         {
             if (LimitFilterType == FilterType.None) return true;
             switch (LimitFilterType)
@@ -454,7 +464,7 @@ namespace BlockLimiter.Settings
             return false;
         }
         
-        public bool IsGridType(MyCubeGrid grid)
+        internal bool IsGridType(MyCubeGrid grid)
         {
             bool isGridType = false;
             var isFilterType = IsFilterType(grid);
@@ -485,7 +495,7 @@ namespace BlockLimiter.Settings
             return isGridType && isFilterType;
         }
 
-        public bool IsGridType(MyObjectBuilder_CubeGrid grid, long playerId = 0)
+        internal bool IsGridType(MyObjectBuilder_CubeGrid grid, long playerId = 0)
         {
             bool isGridType = false;
             var isFilterType = IsFilterType(grid,playerId);
@@ -512,7 +522,7 @@ namespace BlockLimiter.Settings
             return isGridType && isFilterType;
         }
 
-        public void ClearEmptyEntities()
+        internal void ClearEmptyEntities()
         {
             var foundEntities = FoundEntities;
             if (foundEntities == null || foundEntities.Count == 0) return;
@@ -522,7 +532,7 @@ namespace BlockLimiter.Settings
             }
         }
         
-        public void Reset()
+        internal void Reset()
         {
             FoundEntities.Clear();
         }

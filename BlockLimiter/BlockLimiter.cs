@@ -30,7 +30,6 @@ using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using Grid = BlockLimiter.Utility.Grid;
 
 namespace BlockLimiter
 {
@@ -356,6 +355,17 @@ namespace BlockLimiter
                if (BlockLimiterConfig.Instance.BlockOwnershipTransfer) Block.FixIds();
                 ResetLimits();
             });
+            //Todo Implement PointCheckAPI
+            /*
+            try
+            {
+                PluginApi.PointCheckApi.Init();
+            }
+            catch (Exception e)
+            {
+                Log.Warn(e.StackTrace, "Failed to implement PointCheck");
+            }
+            */
         }
         private static void Load()
         {
@@ -383,6 +393,7 @@ namespace BlockLimiter
         public override void Dispose()
         {
             base.Dispose();
+            //PluginApi.PointCheckApi.Close();
             try
             {
                 foreach (var thread in _processThreads)
@@ -391,7 +402,7 @@ namespace BlockLimiter
             }
             catch (Exception e)
             {
-                Log.Warn(e,"Session failed to load.  Check world for corruption");
+                Log.Warn(e.StackTrace,"Session failed to load.  Check world for corruption");
 
             }
         }

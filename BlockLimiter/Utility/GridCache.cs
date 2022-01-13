@@ -62,6 +62,15 @@ namespace BlockLimiter.Utility
             }
         }
 
+        public static void RemoveBlock(MySlimBlock block)
+        {
+            if (block == null || !_blockCache.Contains(block)) return;
+            using (_blockLock.AcquireExclusiveUsing())
+            {
+                _blockCache.Remove(block);
+            }
+        }
+
         private static void AddBlocks(HashSet<MySlimBlock> blocks)
         {
             if (blocks.Count == 0) return;
