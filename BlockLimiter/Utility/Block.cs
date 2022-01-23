@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BlockLimiter.Patch;
 using BlockLimiter.Settings;
+using NLog;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
@@ -19,11 +20,13 @@ namespace BlockLimiter.Utility
     public static class Block
     {
         private static readonly HashSet<LimitItem> Limits = BlockLimiterConfig.Instance.AllLimits;
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         private static void KillBlock(MyFunctionalBlock block)
         {
             block.Enabled = false;
-            BlockLimiter.Instance.Log.Info($"Turned off {block.BlockDefinition?.Id.ToString().Substring(16)} from {block.CubeGrid?.DisplayName}");
+            _blockLimitLogger.Info($"Turned off {block.BlockDefinition?.Id.ToString().Substring(16)} from {block.CubeGrid?.DisplayName}");
         }
 
         public static bool IsWithinLimits(MyCubeBlockDefinition block, long playerId, MyObjectBuilder_CubeGrid grid, out string limitName)
@@ -367,8 +370,6 @@ namespace BlockLimiter.Utility
         {
 
             if (removalCollection.Count == 0 || !BlockLimiterConfig.Instance.EnableLimits) return;
-            var log = BlockLimiter.Instance.Log;
-            log.Info($"Punishing {removalCollection.Count} blocks");
             var chatManager = BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>();
             lock (removalCollection)
             {
@@ -391,7 +392,7 @@ namespace BlockLimiter.Utility
                                 {
                                     block.CubeGrid?.RemoveBlock(block);
                                 });
-                                log.Info(
+                                _blockLimitLogger.Info(
                                     $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
                                 break;
                             case LimitItem.PunishmentType.ShutOffBlock:
@@ -399,7 +400,7 @@ namespace BlockLimiter.Utility
                                 KillBlock(fBlock);
                                 break;
                             case LimitItem.PunishmentType.Explode:
-                                log.Info(
+                                _blockLimitLogger.Info(
                                     $"Destroyed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
                                 BlockLimiter.Instance.Torch.InvokeAsync(() =>
                                 {

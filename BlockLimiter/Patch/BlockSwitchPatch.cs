@@ -15,6 +15,7 @@ namespace BlockLimiter.Patch
     public static class BlockSwitchPatch
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         public static void Patch(PatchContext ctx)
         {
@@ -36,7 +37,7 @@ namespace BlockLimiter.Patch
             {
                 return;
             }
-            Log.Info($"Keeping {block.BlockDefinition?.Id.ToString().Substring(16)} from {block.CubeGrid?.DisplayName} off due to no ownership");
+            _blockLimitLogger.Info($"Keeping {block.BlockDefinition?.Id.ToString().Substring(16)} from {block.CubeGrid?.DisplayName} off due to no ownership");
             block.Enabled = false;
         }
     }

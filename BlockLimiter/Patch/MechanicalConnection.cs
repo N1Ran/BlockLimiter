@@ -21,6 +21,7 @@ namespace BlockLimiter.Patch
     public static class MechanicalConnection
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         private static MyConcurrentDictionary<long, DateTime> _lastChecked =
             new MyConcurrentDictionary<long, DateTime>();
@@ -78,7 +79,7 @@ namespace BlockLimiter.Patch
             _lastChecked[__instance.EntityId] = DateTime.Now;
             _lastChecked[top.EntityId] = DateTime.Now;
 
-            Log.Info($"Blocked attachement between {baseGrid.DisplayName} and {topGrid.DisplayName}");
+            _blockLimitLogger.Info($"Blocked attachement between {baseGrid.DisplayName} and {topGrid.DisplayName}");
 
             if (remoteUserId <= 0) return false;
             Utilities.SendFailSound(remoteUserId);

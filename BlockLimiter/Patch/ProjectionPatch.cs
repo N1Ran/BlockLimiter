@@ -23,6 +23,7 @@ namespace BlockLimiter.Patch
     public static class ProjectionPatch
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         private static readonly MethodInfo NewBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly MethodInfo RemoveBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -78,7 +79,7 @@ namespace BlockLimiter.Patch
                     BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                         .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg1, Color.Red, remoteUserId);
                 
-                Log.Info($"Projection blocked from {player.DisplayName} due to size limit");
+                _blockLimitLogger.Info($"Projection blocked from {player.DisplayName} due to size limit");
                 
                 return false;
             }
@@ -129,7 +130,7 @@ namespace BlockLimiter.Patch
 
             if ( count == 0) return true;
             
-            Log.Info($"Removed {count} blocks from projector set by {player.DisplayName} ");
+            _blockLimitLogger.Info($"Removed {count} blocks from projector set by {player.DisplayName} ");
 
             NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod);
             

@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using BlockLimiter.Utility;
 using Newtonsoft.Json;
+using NLog;
 using Sandbox.Game.World;
 
 namespace BlockLimiter.Settings
 {
     public class PlayerTimeModule
     {
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         public static List<PlayerTimeData> PlayerTimes = new List<PlayerTimeData>();
 
@@ -43,7 +46,7 @@ namespace BlockLimiter.Settings
             }
 
             if (found) return;
-            BlockLimiter.Instance.Log.Info($"Logging time for player {player.Name}");
+            Log.Info($"Logging time for player {player.Name}");
             data.SteamId = steamId;
             data.Player = player.Name;
             var lastLogout = MySession.Static.Players.TryGetIdentity(Utilities.GetPlayerIdFromSteamId(steamId))?.LastLoginTime;

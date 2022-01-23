@@ -24,6 +24,7 @@ namespace BlockLimiter.Patch
     public static class GridSpawnPatch
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         private static readonly MethodInfo ShowPasteFailed =
             typeof(MyCubeGrid).GetMethod("SendHudNotificationAfterPaste", BindingFlags.Static | BindingFlags.Public);
@@ -66,7 +67,7 @@ namespace BlockLimiter.Patch
             
             if (grids.Count == 0  && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)
             {
-                Log.Info($"Blocked {playerName} from spawning a grid");
+                _blockLimitLogger.Info($"Blocked {playerName} from spawning a grid");
 
                 if (remoteUserId > 0)
                 {
@@ -123,7 +124,7 @@ namespace BlockLimiter.Patch
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
 
 
-            Log.Info($"Removed {removalCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
+            _blockLimitLogger.Info($"Removed {removalCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
             return true;
         }
 
@@ -156,7 +157,7 @@ namespace BlockLimiter.Patch
 
             var p = player.DisplayName;
 
-            Log.Info($"Blocked {p} from placing {block}");
+            _blockLimitLogger.Info($"Blocked {p} from placing {block}");
 
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{block.ToString().Substring(16)},limitName);

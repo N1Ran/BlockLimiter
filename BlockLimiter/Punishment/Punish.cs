@@ -15,7 +15,8 @@ namespace BlockLimiter.Punishment
 {
     public class Punish : ProcessHandlerBase
     {
-        private static readonly Logger Log = BlockLimiter.Instance.Log;
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
         private readonly HashSet<MySlimBlock> _blockCache = new HashSet<MySlimBlock>();
         private static bool _firstCheckCompleted;
 
@@ -153,7 +154,7 @@ namespace BlockLimiter.Punishment
             {
                 return totalBlocksPunished;
             }
-
+            Log.Debug($"Punishing {punishBlocks.Count} blocks");
             Block.Punish(punishBlocks);
 
             /*

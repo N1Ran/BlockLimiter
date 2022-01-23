@@ -20,4 +20,3 @@ D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Rel
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.dll
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.pdb
 C:\Users\tide1\Nextcloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.AssemblyReference.cache
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.AssemblyReference.cache

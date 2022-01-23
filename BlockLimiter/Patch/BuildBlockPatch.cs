@@ -23,6 +23,8 @@ namespace BlockLimiter.Patch
     {
      
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
+
 
         public static void Patch(PatchContext ctx)
         {
@@ -68,7 +70,7 @@ namespace BlockLimiter.Patch
 
             if (remoteUserId == 0 || !MySession.Static.Players.IsPlayerOnline(playerId)) return false;
             
-            Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
+            _blockLimitLogger.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
 
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>(){def.ToString().Substring(16)},limitName);
 
@@ -113,7 +115,7 @@ namespace BlockLimiter.Patch
 
             if (remoteUserId == 0 || !MySession.Static.Players.IsPlayerOnline(playerId)) return false;
 
-            Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
+            _blockLimitLogger.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {def.ToString().Substring(16)},limitName);
             BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
@@ -164,7 +166,7 @@ namespace BlockLimiter.Patch
 
             if (remoteUserId == 0) return false;
             var grid = projector.CubeGrid;
-            Log.Info($"Blocked welding of {blockDefinition.ToString().Substring(16)} on {grid.DisplayName} ownedby {Utilities.GetPlayerNameFromId(grid.BigOwners[0])}");
+            _blockLimitLogger.Info($"Blocked welding of {blockDefinition.ToString().Substring(16)} on {grid.DisplayName} ownedby {Utilities.GetPlayerNameFromId(grid.BigOwners[0])}");
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
             if (!MySession.Static.Players.IsPlayerOnline(playerId)) return false;
