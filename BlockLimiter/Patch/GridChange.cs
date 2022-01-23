@@ -23,7 +23,7 @@ namespace BlockLimiter.Patch
     public static class GridChange
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private static Logger _blockLimitLogger = BlockLimiter.Instance.Log;
+        private static Logger _blockLimitLogger;
 
 
         private static  readonly MethodInfo ConvertToStationRequest = typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.OnConvertedToStationRequest), BindingFlags.Public | BindingFlags.Instance);
@@ -187,7 +187,7 @@ namespace BlockLimiter.Patch
             }
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
 
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
+            if (MySession.Static.Players.IsPlayerOnline(playerId))
                 BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             if (_blockLimitLogger == null) _blockLimitLogger = BlockLimiter.Instance.Log;

@@ -8,6 +8,7 @@ using BlockLimiter.Utility;
 using NLog;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Blocks;
+using Sandbox.Game.World;
 using Torch.API.Managers;
 using Torch.Managers.ChatManager;
 using Torch.Managers.PatchManager;
@@ -44,7 +45,7 @@ namespace BlockLimiter.Patch
 
         private static bool OnAttach(MyMechanicalConnectionBlockBase __instance, MyAttachableTopBlockBase top)
         {
-            if (!BlockLimiterConfig.Instance.MergerBlocking)
+            if (!BlockLimiterConfig.Instance.MergerBlocking || !BlockLimiterConfig.Instance.EnableLimits || !MySession.Static.Ready)
             {
                 return true;
             }
