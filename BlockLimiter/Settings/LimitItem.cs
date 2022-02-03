@@ -573,7 +573,6 @@ namespace BlockLimiter.Settings
             GridBlockCount,
             FactionMemberCount,
             GridMass,
-            //GridPoints
         }
 
         public enum FilterOperator
