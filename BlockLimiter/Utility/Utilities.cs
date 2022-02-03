@@ -394,8 +394,6 @@ namespace BlockLimiter.Utility
                         }
                     }
                     
-                    /*
-                    
                     if (BlockLimiterConfig.Instance.MaxGridPoint > 0)
                     {
                         if (!PointCheckApi.IsInstalled())
@@ -414,7 +412,6 @@ namespace BlockLimiter.Utility
                     
                         }
                     }
-                    */
 
                     
                     if (BlockLimiterConfig.Instance.MaxSmallGrids > 0)

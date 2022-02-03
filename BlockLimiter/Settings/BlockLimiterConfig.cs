@@ -130,7 +130,7 @@ namespace BlockLimiter.Settings
                 Changed();
             }
         }
-        /*
+
         [Display(Order = 5, Name = "Projection", GroupName = "General Count Limit", Description = "Max size for projections")]
         public int MaxGridPoint
         {
@@ -141,7 +141,6 @@ namespace BlockLimiter.Settings
                 Changed();
             }
         }
-        */
 
         [Display(Order = 1, Name = "SmallGrids Allowed", GroupName = "General Grid Limit",
             Description = "Max allowed small grid per player")]

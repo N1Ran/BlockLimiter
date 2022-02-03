@@ -334,8 +334,7 @@ namespace BlockLimiter
                     {
                         Activate(); 
                     }
-                    /*
-
+                    
                     try
                     {
                         PointCheckApi.Init();
@@ -344,7 +343,7 @@ namespace BlockLimiter
                     {
                         Log.Error(e,"Failed to load PointCheckAPI");
                     }
-                    */
+
                     break;
                 case TorchSessionState.Unloading:
                     break;
@@ -367,17 +366,7 @@ namespace BlockLimiter
                if (BlockLimiterConfig.Instance.BlockOwnershipTransfer) Block.FixIds();
                 ResetLimits();
             });
-            //Todo Implement PointCheckAPI
-            /*
-            try
-            {
-                PluginApi.PointCheckApi.Init();
-            }
-            catch (Exception e)
-            {
-                Log.Warn(e.StackTrace, "Failed to implement PointCheck");
-            }
-            */
+
         }
         private static void Load()
         {
@@ -405,7 +394,7 @@ namespace BlockLimiter
         public override void Dispose()
         {
             base.Dispose();
-            //PointCheckApi.Close();
+            PointCheckApi.Close();
             try
             {
                 foreach (var thread in _processThreads)

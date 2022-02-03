@@ -137,6 +137,7 @@ namespace BlockLimiter.Utility
 
                 if (item.LimitGrids && gridId > 0 && item.FoundEntities.TryGetValue(gridId, out var gCount))
                 {
+                    //TODO Add pointCheck here.
                     if (foundGrid && item.IsGridType(grid))
                     {
                         if (gCount + count > item.Limit)
@@ -232,7 +233,6 @@ namespace BlockLimiter.Utility
                         {
                             if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
                             if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
-                    
                         }
 
                         limit.FoundEntities.AddOrUpdate(playerId, amount, (l, i) => i+amount);

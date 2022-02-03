@@ -90,7 +90,7 @@ namespace BlockLimiter.Utility
                 count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksLargeGrid);
                 return  true;
             }
-            /*
+
             if (BlockLimiterConfig.Instance.MaxGridPoint > 0)
             {
                 if (!PointCheckApi.IsInstalled())
@@ -107,7 +107,7 @@ namespace BlockLimiter.Utility
                     }
                 }
             }
-            */
+
             if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid <= 0 || gridType != MyCubeSize.Small ||
                 gridSize < BlockLimiterConfig.Instance.MaxBlocksSmallGrid) return false;
             count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksSmallGrid);
@@ -274,7 +274,7 @@ namespace BlockLimiter.Utility
 
                 return  false;
             }
-            /*
+
             if (BlockLimiterConfig.Instance.MaxGridPoint > 0)
             {
                 if (!PointCheckApi.IsInstalled())
@@ -286,7 +286,7 @@ namespace BlockLimiter.Utility
                     return false;
                 }
             }
-            */
+
             blocks.Clear();
             count = 0;
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
