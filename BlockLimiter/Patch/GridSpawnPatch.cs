@@ -34,7 +34,10 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
-            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
+            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnStaticGrid", BindingFlags.Public | BindingFlags.Static))
+                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
+            
+            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnDynamicGrid", BindingFlags.Public | BindingFlags.Static))
                 .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
             
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation",  BindingFlags.Public  |  BindingFlags.Static)).
@@ -132,11 +135,11 @@ namespace BlockLimiter.Patch
         /// </summary>
         /// <param name="definition"></param>
         /// <returns></returns>
-        private static bool OnSpawn(DefinitionIdBlit definition)
+        private static bool OnSpawn( MyCubeBlockDefinition blockDefinition)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
             
-            var block = MyDefinitionManager.Static.GetCubeBlockDefinition(definition);
+            var block = blockDefinition;
             
             if (block == null)
             {
