@@ -21,12 +21,12 @@ namespace BlockLimiter.Utility
     {
         private static readonly HashSet<LimitItem> Limits = BlockLimiterConfig.Instance.AllLimits;
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         private static void KillBlock(MyFunctionalBlock block)
         {
             block.Enabled = false;
-            _blockLimitLogger.Info($"Turned off {block.BlockDefinition?.Id.ToString().Substring(16)} from {block.CubeGrid?.DisplayName}");
+               
+            BlockLimiter.Instance.Log.Info($"Turned off {block.BlockDefinition?.Id.ToString().Substring(16)} from {block.CubeGrid?.DisplayName}");
         }
 
         public static bool IsWithinLimits(MyCubeBlockDefinition block, long playerId, MyObjectBuilder_CubeGrid grid, out string limitName)
@@ -392,7 +392,8 @@ namespace BlockLimiter.Utility
                                 {
                                     block.CubeGrid?.RemoveBlock(block);
                                 });
-                                _blockLimitLogger.Info(
+                                
+                                BlockLimiter.Instance.Log.Info(
                                     $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
                                 break;
                             case LimitItem.PunishmentType.ShutOffBlock:
@@ -400,7 +401,8 @@ namespace BlockLimiter.Utility
                                 KillBlock(fBlock);
                                 break;
                             case LimitItem.PunishmentType.Explode:
-                                _blockLimitLogger.Info(
+                                
+                                BlockLimiter.Instance.Log.Info(
                                     $"Destroyed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
                                 BlockLimiter.Instance.Torch.InvokeAsync(() =>
                                 {

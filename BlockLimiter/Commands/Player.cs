@@ -313,7 +313,7 @@ namespace BlockLimiter.Commands
             {
                 string blockType = Context.Args[0];
                 def.RemoveAll(x =>
-                    !x.Id.TypeId.ToString().Substring(16).Contains(blockType, StringComparison.OrdinalIgnoreCase));
+                    !x.ToString().Substring(16).Contains(blockType, StringComparison.OrdinalIgnoreCase));
                 /*
                 foreach (var defBase in allDef)
                 {

@@ -416,8 +416,12 @@ namespace BlockLimiter.Settings
                         ? baseMass > FilterValue
                         : baseMass < FilterValue;
                 /*
-                case FilterType.GridScore:
-                    if (!PointCheckApi.IsInstalled()) return false;
+                case FilterType.GridPoints:
+                    if (!PointCheckApi.IsInstalled())
+                    {
+                        BlockLimiter.Instance.Log.Warn("GridPoint check not active");
+                        return false;
+                    }
                     var gridScore = PointCheckApi.GetGridBP(grid);
                     if (gridScore == 0) return false;
                     return LimitFilterOperator == FilterOperator.GreaterThan
@@ -568,7 +572,8 @@ namespace BlockLimiter.Settings
             PlayerPlayTime,
             GridBlockCount,
             FactionMemberCount,
-            GridMass
+            GridMass,
+            //GridPoints
         }
 
         public enum FilterOperator

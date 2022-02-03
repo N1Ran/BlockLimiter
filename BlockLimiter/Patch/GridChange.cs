@@ -23,7 +23,6 @@ namespace BlockLimiter.Patch
     public static class GridChange
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private static Logger _blockLimitLogger;
 
 
         private static  readonly MethodInfo ConvertToStationRequest = typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.OnConvertedToStationRequest), BindingFlags.Public | BindingFlags.Instance);
@@ -190,8 +189,7 @@ namespace BlockLimiter.Patch
             if (MySession.Static.Players.IsPlayerOnline(playerId))
                 BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-            if (_blockLimitLogger == null) _blockLimitLogger = BlockLimiter.Instance.Log;
-            _blockLimitLogger.Info(
+            BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();
@@ -227,11 +225,12 @@ namespace BlockLimiter.Patch
                 return true;
             }
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
-            if (_blockLimitLogger == null) _blockLimitLogger = BlockLimiter.Instance.Log;
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
+            
+            if (MySession.Static.Players.IsPlayerOnline(playerId))
                 BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-            _blockLimitLogger.Info(
+            
+            BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
             Utilities.SendFailSound(remoteUserId);
             Utilities.ValidationFailed();

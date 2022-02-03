@@ -24,7 +24,6 @@ namespace BlockLimiter.Patch
     public static class GridSpawnPatch
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         private static readonly MethodInfo ShowPasteFailed =
             typeof(MyCubeGrid).GetMethod("SendHudNotificationAfterPaste", BindingFlags.Static | BindingFlags.Public);
@@ -67,7 +66,7 @@ namespace BlockLimiter.Patch
             
             if (grids.Count == 0  && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)
             {
-                _blockLimitLogger.Info($"Blocked {playerName} from spawning a grid");
+                BlockLimiter.Instance.Log.Info($"Blocked {playerName} from spawning a grid");
 
                 if (remoteUserId > 0)
                 {
@@ -119,12 +118,12 @@ namespace BlockLimiter.Patch
 
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,removedList,limitName,removalCount);
 
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
+            if (MySession.Static.Players.IsPlayerOnline(playerId))
                 BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                     .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
 
 
-            _blockLimitLogger.Info($"Removed {removalCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
+            BlockLimiter.Instance.Log.Info($"Removed {removalCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
             return true;
         }
 
@@ -157,7 +156,7 @@ namespace BlockLimiter.Patch
 
             var p = player.DisplayName;
 
-            _blockLimitLogger.Info($"Blocked {p} from placing {block}");
+            BlockLimiter.Instance.Log.Info($"Blocked {p} from placing {block}");
 
             //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
             var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{block.ToString().Substring(16)},limitName);

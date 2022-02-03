@@ -48,7 +48,7 @@ namespace BlockLimiter.Settings
         private bool _loading;
         private bool _vanillaLimits;
         private bool _annoy;
-        private int _annoyInterval = 300;
+        private int _annoyInterval = 800;
         private int _annoyDuration = 15000;
         private string _serverName = BlockLimiter.ChatName;
         private string _annoyMsg = "You're in violation of set limits.  Use [!blocklimit mylimit] to view which limits you've exceeded";
@@ -64,13 +64,14 @@ namespace BlockLimiter.Settings
         private string _denyMessage = "Limit reached \n{BC} blocks denied \nBlockNames: \n{BL}";
         private string _projectionDenyMessage = "{BC} blocks removed from Projection. \nBlockNames = \n{BL}";
         private bool _mergerBlocking;
-        private List<string> _generalException;
+        private List<string> _generalException = new List<string>();
         private bool _killNoOwnerBlocks;
         private string _logFileName = "BlockLimiter-${shortdate}.log";
-        private int _maxBlockSizeProjections;
-        private int _maxSmallGrids;
-        private int _maxLargeGrids;
+        private int _maxBlockSizeProjections = 0;
+        private int _maxSmallGrids = 0;
+        private int _maxLargeGrids = 0;
         private BlockingType _blockingType = BlockingType.None;
+        private int _maxGridPoint = 0;
 
 
         #region General BlockCount Limit
@@ -129,6 +130,18 @@ namespace BlockLimiter.Settings
                 Changed();
             }
         }
+        /*
+        [Display(Order = 5, Name = "Projection", GroupName = "General Count Limit", Description = "Max size for projections")]
+        public int MaxGridPoint
+        {
+            get => _maxGridPoint;
+            set
+            {
+                _maxGridPoint = value; 
+                Changed();
+            }
+        }
+        */
 
         [Display(Order = 1, Name = "SmallGrids Allowed", GroupName = "General Grid Limit",
             Description = "Max allowed small grid per player")]
@@ -331,13 +344,13 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 5,Name = "Punishment Interval (s)", GroupName = "Punishment", Description = "How often the punishment is triggered.")]
+        [Display(Order = 5,Name = "Punishment Interval (s)", GroupName = "Punishment", Description = "How often the punishment is triggered in seconds.")]
         public int PunishInterval
         {
             get => _punishInterval;
             set
             {
-                _punishInterval = value; 
+                _punishInterval = Math.Max(30,value); 
                 Changed();
             }
         }
@@ -359,7 +372,7 @@ namespace BlockLimiter.Settings
             get => _annoyInterval;
             set
             {
-                _annoyInterval = value; 
+                _annoyInterval = Math.Max(10,value); 
                 Changed();
             }
         }

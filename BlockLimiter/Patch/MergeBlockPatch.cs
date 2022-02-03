@@ -19,7 +19,6 @@ namespace BlockLimiter.Patch
     public static class MergeBlockPatch
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         public static readonly HashSet<long> MergeBlockCache = new HashSet<long>();
 
@@ -73,7 +72,7 @@ namespace BlockLimiter.Patch
                 .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             Utilities.SendFailSound(remoteUserId);
 
-            _blockLimitLogger.Info($"Blocked merger between {mergeBlock.CubeGrid?.DisplayName} and {mergeBlock.Other?.CubeGrid?.DisplayName}");
+            BlockLimiter.Instance.Log.Info($"Blocked merger between {mergeBlock.CubeGrid?.DisplayName} and {mergeBlock.Other?.CubeGrid?.DisplayName}");
             return false;
 
         }

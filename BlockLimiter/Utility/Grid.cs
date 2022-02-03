@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BlockLimiter.PluginApi;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
@@ -55,6 +56,7 @@ namespace BlockLimiter.Utility
             {
                 return  true;
             }
+            
 
             return false;
         }
@@ -88,10 +90,29 @@ namespace BlockLimiter.Utility
                 count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksLargeGrid);
                 return  true;
             }
-
+            /*
+            if (BlockLimiterConfig.Instance.MaxGridPoint > 0)
+            {
+                if (!PointCheckApi.IsInstalled())
+                {
+                    BlockLimiter.Instance.Log.Error("Grid Point API not found");
+                }
+                else
+                {
+                    var gridPoint = PointCheckApi.GetGridBP(grid);
+                    if (gridPoint > BlockLimiterConfig.Instance.MaxGridPoint)
+                    {
+                        count = gridPoint;
+                        return true;
+                    }
+                }
+            }
+            */
             if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid <= 0 || gridType != MyCubeSize.Small ||
                 gridSize < BlockLimiterConfig.Instance.MaxBlocksSmallGrid) return false;
             count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksSmallGrid);
+
+
 
             return  true;
 
@@ -253,7 +274,19 @@ namespace BlockLimiter.Utility
 
                 return  false;
             }
-
+            /*
+            if (BlockLimiterConfig.Instance.MaxGridPoint > 0)
+            {
+                if (!PointCheckApi.IsInstalled())
+                {
+                    BlockLimiter.Instance.Log.Error("Point Check API not functioning");
+                }
+                else if (PointCheckApi.GetGridBP(grid1) + PointCheckApi.GetGridBP(grid2) > BlockLimiterConfig.Instance.MaxGridPoint )
+                {
+                    return false;
+                }
+            }
+            */
             blocks.Clear();
             count = 0;
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)

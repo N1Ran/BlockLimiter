@@ -11,7 +11,6 @@ namespace BlockLimiter.Settings
     public class PlayerTimeModule
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
         public static List<PlayerTimeData> PlayerTimes = new List<PlayerTimeData>();
 

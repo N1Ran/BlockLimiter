@@ -2,10 +2,10 @@
 using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
-/*ABANDONED!!!!
 namespace BlockLimiter.PluginApi
 {
     //TODO Implement this function and allow limits to use points as filter.
+    /*
     public static class PointCheckApi
     {
         private static Func<MyCubeGrid, int> _GetGridBP;
@@ -63,5 +63,5 @@ namespace BlockLimiter.PluginApi
         }
 
     }
+    */
 }
-*/

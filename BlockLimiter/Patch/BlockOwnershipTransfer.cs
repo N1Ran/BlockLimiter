@@ -15,7 +15,6 @@ namespace BlockLimiter.Patch
     public static class BlockOwnershipTransfer
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
 
 
         private static void Patch(PatchContext ctx)
@@ -73,7 +72,7 @@ namespace BlockLimiter.Patch
 
                 if (!Block.CanAdd(blocks, newOwner, out _))
                 {
-                        _blockLimitLogger.Info($"Ownership blocked {blocks.Count} blocks from {MySession.Static.Players.TryGetIdentity(requestingPlayer).DisplayName} to {MySession.Static.Players.TryGetIdentity(newOwner).DisplayName}");
+                        BlockLimiter.Instance.Log.Info($"Ownership blocked {blocks.Count} blocks from {MySession.Static.Players.TryGetIdentity(requestingPlayer).DisplayName} to {MySession.Static.Players.TryGetIdentity(newOwner).DisplayName}");
 
                     Utilities.ValidationFailed();
                     Utilities.SendFailSound(Utilities.GetSteamIdFromPlayerId(requestingPlayer));
@@ -116,8 +115,11 @@ namespace BlockLimiter.Patch
             {
                 if (!Block.IsWithinLimits(block.BlockDefinition, newOwner, 0,1, out _))
                 {
+                    
                     Utilities.ValidationFailed();
-                        _blockLimitLogger.Info($"Authorship transfer blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(newOwner)?.DisplayName}");
+
+                    BlockLimiter.Instance.Log.Info($"Authorship transfer blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(newOwner)?.DisplayName}");
+                    
                     return false;
                 }
             }
@@ -154,7 +156,8 @@ namespace BlockLimiter.Patch
             if (!Block.IsWithinLimits(block.BlockDefinition, playerId, 0,1,out _))
             {
                 Utilities.ValidationFailed();
-                _blockLimitLogger.Info($"Ownership blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
+                
+                BlockLimiter.Instance.Log.Info($"Ownership blocked for {block.BlockDefinition.ToString().Substring(16)} to {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
 
                 return false;
             }

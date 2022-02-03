@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using BlockLimiter.Patch;
+using BlockLimiter.PluginApi;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
@@ -333,6 +334,17 @@ namespace BlockLimiter
                     {
                         Activate(); 
                     }
+                    /*
+
+                    try
+                    {
+                        PointCheckApi.Init();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e,"Failed to load PointCheckAPI");
+                    }
+                    */
                     break;
                 case TorchSessionState.Unloading:
                     break;
@@ -393,7 +405,7 @@ namespace BlockLimiter
         public override void Dispose()
         {
             base.Dispose();
-            //PluginApi.PointCheckApi.Close();
+            //PointCheckApi.Close();
             try
             {
                 foreach (var thread in _processThreads)

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using BlockLimiter.PluginApi;
 using BlockLimiter.Settings;
 using Sandbox.Definitions;
 using Sandbox.Engine.Multiplayer;
@@ -392,6 +393,29 @@ namespace BlockLimiter.Utility
                                 $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlocksSmallGrid}");
                         }
                     }
+                    
+                    /*
+                    
+                    if (BlockLimiterConfig.Instance.MaxGridPoint > 0)
+                    {
+                        if (!PointCheckApi.IsInstalled())
+                        {
+                            sb.Append("Point Check API not functioning");
+                        }
+                        else 
+                        {
+                            sb.AppendLine($"Grid Point Limits");
+
+                            foreach (var grid in grids.Where(x=> PointCheckApi.GetGridBP(x)>BlockLimiterConfig.Instance.MaxGridPoint))
+                            {
+                                sb.AppendLine(
+                                    $"{grid.DisplayName}: {PointCheckApi.GetGridBP(grid)}/{BlockLimiterConfig.Instance.MaxGridPoint}");
+                            }
+                    
+                        }
+                    }
+                    */
+
                     
                     if (BlockLimiterConfig.Instance.MaxSmallGrids > 0)
                     {

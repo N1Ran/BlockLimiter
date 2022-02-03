@@ -15,17 +15,16 @@ namespace BlockLimiter.Punishment
     public class Annoy : ProcessHandlerBase
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private static readonly Logger _blockLimitLogger = BlockLimiter.Instance.Log;
         public static readonly Dictionary<ulong, DateTime> AnnoyQueue = new Dictionary<ulong, DateTime>();
         public override int GetUpdateResolution()
         {
-            return 800;
-            //return Math.Max(BlockLimiterConfig.Instance.AnnoyInterval,1) * 1000;
+            //return 800;
+            return Math.Max(BlockLimiterConfig.Instance.AnnoyInterval,1) * 1000;
         }
 
         public override void Handle()
         {
-            if (BlockLimiterConfig.Instance.AnnoyInterval < 1) return;
+            //if (BlockLimiterConfig.Instance.AnnoyInterval < 1) return;
             if (!BlockLimiterConfig.Instance.Annoy || !BlockLimiterConfig.Instance.EnableLimits)return;
 
             RunAnnoyance();
@@ -121,7 +120,7 @@ namespace BlockLimiter.Punishment
                     {
                         Log.Error(exception);
                     }
-                    _blockLimitLogger.Info($"Annoy message sent to {Utilities.GetPlayerNameFromSteamId(id)}");
+                    BlockLimiter.Instance.Log.Info($"Annoy message sent to {Utilities.GetPlayerNameFromSteamId(id)}");
 
                 }
             }
