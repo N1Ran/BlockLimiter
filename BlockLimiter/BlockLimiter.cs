@@ -366,7 +366,7 @@ namespace BlockLimiter
                if (BlockLimiterConfig.Instance.BlockOwnershipTransfer) Block.FixIds();
                 ResetLimits();
             });
-
+            
         }
         private static void Load()
         {
