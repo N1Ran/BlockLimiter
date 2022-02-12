@@ -14,6 +14,7 @@ using Torch.API.Managers;
 using Torch.Managers;
 using Torch.Managers.ChatManager;
 using Torch.Managers.PatchManager;
+using Torch.Utils;
 using VRage.Game;
 using VRage.Network;
 using VRageMath;
@@ -31,11 +32,14 @@ namespace BlockLimiter.Patch
         private static readonly MethodInfo SpawnGrid =
             typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation", BindingFlags.Static | BindingFlags.Public);
 
+        [ReflectedGetter(Name = "Definition",
+            TypeName = "Sandbox.Game.Entities.MyCubeBuilder+GridSpawnRequestData, Sandbox.Game")]
+        private static Func<object, DefinitionIdBlit> _getDefinition;
 
         public static void Patch(PatchContext ctx)
         {
-            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnStaticGrid", BindingFlags.Public | BindingFlags.Static))
-                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
+                ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnStaticGrid", BindingFlags.Public | BindingFlags.Static))
+                    .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
             
             ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnDynamicGrid", BindingFlags.Public | BindingFlags.Static))
                 .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
@@ -71,13 +75,10 @@ namespace BlockLimiter.Patch
             {
                 BlockLimiter.Instance.Log.Info($"Blocked {playerName} from spawning a grid");
 
-                if (remoteUserId > 0)
-                {
-                    Thread.Sleep(100);
-                    Utilities.ValidationFailed();
-                    Utilities.SendFailSound(remoteUserId);
-                    NetworkManager.RaiseStaticEvent(ShowPasteFailed, new EndpointId(remoteUserId), null);
-                }
+                Thread.Sleep(100);
+                Utilities.ValidationFailed();
+                Utilities.SendFailSound(remoteUserId);
+                NetworkManager.RaiseStaticEvent(ShowPasteFailed, new EndpointId(remoteUserId), null);
 
                 return false;
             }
@@ -135,7 +136,7 @@ namespace BlockLimiter.Patch
         /// </summary>
         /// <param name="definition"></param>
         /// <returns></returns>
-        private static bool OnSpawn( MyCubeBlockDefinition blockDefinition)
+        private static bool OnSpawn(MyCubeBlockDefinition blockDefinition)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
             
