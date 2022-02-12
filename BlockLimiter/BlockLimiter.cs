@@ -221,6 +221,11 @@ namespace BlockLimiter
 
 
 
+        /// <summary>
+        /// Hey Ryo,
+        /// This makes new sleeping threads for punishment and annoy.  This will show up in DotTrace since it's a process that
+        /// never ends, but it's not always running a method.  Think of it as a cheap timer.  
+        /// </summary>
         private void PluginProcessing()
         {
             try
@@ -334,17 +339,6 @@ namespace BlockLimiter
                     {
                         Activate(); 
                     }
-                    /*
-
-                    try
-                    {
-                        PointCheckApi.Init();
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Error(e,"Failed to load PointCheckAPI");
-                    }
-                    */
                     break;
                 case TorchSessionState.Unloading:
                     break;
