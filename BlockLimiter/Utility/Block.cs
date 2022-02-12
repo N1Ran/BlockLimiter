@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BlockLimiter.Patch;
+using BlockLimiter.PluginApi;
 using BlockLimiter.Settings;
 using NLog;
 using Sandbox.Definitions;
@@ -114,8 +115,26 @@ namespace BlockLimiter.Utility
 
             if (Grid.IsSizeViolation(gridId)) return false;
 
-            if (BlockLimiterConfig.Instance.AllLimits.Count == 0) return true;
             var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
+
+            if (BlockLimiterConfig.Instance.MaxGridPoint > 0 && foundGrid)
+            {
+                if (!PointCheckApi.IsInstalled())
+                {
+                    BlockLimiter.Instance.Log.Error("Grid Point API not found");
+                }
+                else
+                {
+                    var blockPoint = PointCheckApi.GetBlockBPById(def.Id.SubtypeId.ToString());
+                    var gridPoint = PointCheckApi.GetGridBP(grid);
+                    if (gridPoint + blockPoint > BlockLimiterConfig.Instance.MaxGridPoint)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if (BlockLimiterConfig.Instance.AllLimits.Count == 0) return true;
             var subGrids = Grid.GetSubGrids(grid);
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {

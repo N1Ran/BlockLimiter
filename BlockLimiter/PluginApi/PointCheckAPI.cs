@@ -8,6 +8,7 @@ namespace BlockLimiter.PluginApi
     {
         private static Func<MyCubeGrid, int> _GetGridBP;
         private static Func<MyCubeBlock, int> _GetBlockBP;
+        private static Func<string, int> _GetGridBPId;
 
         /// <summary>
         /// Call on init or when you want to use the API
@@ -28,6 +29,8 @@ namespace BlockLimiter.PluginApi
 
         public static int GetGridBP(MyCubeGrid grid) => _GetGridBP.Invoke(grid);
         public static int GetBlockBP(MyCubeBlock block) => _GetBlockBP.Invoke(block);
+        public static int GetBlockBPById(string id) => _GetGridBPId.Invoke(id);
+
         public static bool IsInstalled() => _GetGridBP != null;
 
 
@@ -40,6 +43,7 @@ namespace BlockLimiter.PluginApi
 
             AssignDelegate(dict, "GetGridBP", ref _GetGridBP);
             AssignDelegate(dict, "GetBlockBP", ref _GetBlockBP);
+            AssignDelegate(dict, "GetGridBPId", ref _GetGridBPId);
         }
 
         private static void AssignDelegate<T>(IReadOnlyDictionary<string, Delegate> delegates, string name, ref T field) where T : class
