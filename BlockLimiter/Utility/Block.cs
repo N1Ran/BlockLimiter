@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BlockLimiter.Patch;
 using BlockLimiter.Settings;
 using NLog;
+using Sandbox;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
@@ -24,7 +26,14 @@ namespace BlockLimiter.Utility
 
         private static void KillBlock(MyFunctionalBlock block)
         {
-            block.Enabled = false;
+            if (Thread.CurrentThread != MySandboxGame.Static.UpdateThread)
+            {
+                BlockLimiter.Instance.Torch.Invoke(() => block.Enabled = false);
+            }
+            else
+            {
+                block.Enabled = false;
+            }
                
             BlockLimiter.Instance.Log.Info($"Turned off {block.BlockDefinition?.Id.ToString().Substring(16)} from {block.CubeGrid?.DisplayName}");
         }
