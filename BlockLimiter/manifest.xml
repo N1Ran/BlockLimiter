@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<PluginManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Name>BlockLimiter</Name>
+  <Guid>11fca5c4-01b6-4fc3-a215-602e2325be2b</Guid>
+  <Repository>BlockLimiter</Repository>
+  <Version>v1.7.512-ecaee4f9</Version>
+</PluginManifest>

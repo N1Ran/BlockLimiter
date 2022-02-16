@@ -361,27 +361,13 @@ namespace BlockLimiter.Settings
                 if (definition.CubeSize == MyCubeSize.Large && GridTypeBlock == GridType.SmallGridsOnly) return false;
             }
 
-            var found = false;
             var defString = new HashSet<string>
             {
                 definition.Id.ToString().Substring(16), definition.Id.TypeId.ToString().Substring(16),
                 definition.Id.SubtypeId.ToString(), definition.BlockPairName
             };
-            
-            foreach (var block in blockList)
-            {
-                if (!defString.Contains(block,StringComparer.OrdinalIgnoreCase)) continue;
-                /*
-                if (!block.Equals(definition.Id.ToString().Substring(16), StringComparison.OrdinalIgnoreCase)
-                    && !block.Equals(definition.Id.TypeId.ToString().Substring(16), StringComparison.OrdinalIgnoreCase)
-                    && !block.Equals(definition.Id.SubtypeId.ToString(), StringComparison.OrdinalIgnoreCase)
-                    && !block.Equals(definition.BlockPairName, StringComparison.OrdinalIgnoreCase)) continue;
-                */
-                found = true;
-                break;
-            }
 
-            return found;
+            return blockList.Any(block => !string.IsNullOrEmpty(block) && defString.Contains(block, StringComparer.OrdinalIgnoreCase));
         }
 
         internal bool IsFilterType(MyCubeGrid grid)
