@@ -106,10 +106,6 @@
       <HintPath>..\..\GameBinaries\VRage.Audio.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="VRage.Dedicated">
-      <HintPath>..\..\GameBinaries\VRage.Dedicated.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="VRage.Game">
       <HintPath>..\..\GameBinaries\VRage.Game.dll</HintPath>
       <Private>False</Private>
