@@ -126,21 +126,28 @@ namespace BlockLimiter.Utility
 
             var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
 
-            if (BlockLimiterConfig.Instance.MaxGridPoint > 0 && foundGrid)
+            if (foundGrid && PointCheckApi.IsInstalled())
             {
-                if (!PointCheckApi.IsInstalled())
-                {
-                    BlockLimiter.Instance.Log.Error("Grid Point API not found");
-                }
-                else
-                {
                     var blockPoint = PointCheckApi.GetBlockBPById(def.Id.SubtypeId.ToString());
                     var gridPoint = PointCheckApi.GetGridBP(grid);
-                    if (gridPoint + blockPoint > BlockLimiterConfig.Instance.MaxGridPoint)
+                    if (grid.GridSizeEnum == MyCubeSize.Large)
                     {
-                        return false;
+                        if (grid.IsStatic)
+                        {
+                            if (BlockLimiterConfig.Instance.MaxStaticGridPoint > 0 && gridPoint + blockPoint > 
+                                BlockLimiterConfig.Instance.MaxStaticGridPoint) return false;
+                        }
+                        else
+                        {
+                            if (BlockLimiterConfig.Instance.MaxLargeGridPoint > 0 && gridPoint + blockPoint >
+                                BlockLimiterConfig.Instance.MaxLargeGridPoint) return false;
+                        }
                     }
-                }
+                    else
+                    {
+                        if (BlockLimiterConfig.Instance.MaxSmallGridPoint > 0 && gridPoint + blockPoint >
+                            BlockLimiterConfig.Instance.MaxSmallGridPoint) return false;
+                    }
             }
 
             if (BlockLimiterConfig.Instance.AllLimits.Count == 0) return true;

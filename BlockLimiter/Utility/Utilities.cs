@@ -354,15 +354,6 @@ namespace BlockLimiter.Utility
 
                 if (grids.Count > 0)
                 {
-                    if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0)
-                    {
-                        sb.AppendLine($"Ship Limits");
-                        foreach (var grid in grids.Where(x=> x.BlocksCount > 0 && !x.IsStatic))
-                        {
-                            sb.AppendLine(
-                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlockSizeShips}");
-                        }
-                    }
                     
                     if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0)
                     {
@@ -393,27 +384,7 @@ namespace BlockLimiter.Utility
                                 $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlocksSmallGrid}");
                         }
                     }
-                    
-                    if (BlockLimiterConfig.Instance.MaxGridPoint > 0)
-                    {
-                        if (!PointCheckApi.IsInstalled())
-                        {
-                            sb.Append("Point Check API not functioning");
-                        }
-                        else 
-                        {
-                            sb.AppendLine($"Grid Point Limits");
 
-                            foreach (var grid in grids.Where(x=> PointCheckApi.GetGridBP(x)>BlockLimiterConfig.Instance.MaxGridPoint))
-                            {
-                                sb.AppendLine(
-                                    $"{grid.DisplayName}: {PointCheckApi.GetGridBP(grid)}/{BlockLimiterConfig.Instance.MaxGridPoint}");
-                            }
-                    
-                        }
-                    }
-
-                    
                     if (BlockLimiterConfig.Instance.MaxSmallGrids > 0)
                     {
                         sb.AppendLine($"Small Grids Limits: {grids.Count(x=>x.GridSizeEnum == MyCubeSize.Small)}/{BlockLimiterConfig.Instance.MaxSmallGrids}");
@@ -422,6 +393,43 @@ namespace BlockLimiter.Utility
                     if (BlockLimiterConfig.Instance.MaxLargeGrids > 0)
                     {
                         sb.AppendLine($"Large Grid Limits: {grids.Count(x=>x.GridSizeEnum == MyCubeSize.Large)}/{BlockLimiterConfig.Instance.MaxLargeGrids}");
+                    }
+
+                    if (PointCheckApi.IsInstalled())
+                    {
+                        if (BlockLimiterConfig.Instance.MaxStaticGridPoint > 0)
+                        {
+                            sb.AppendLine($"Static Grid Point Limits");
+
+                            foreach (var grid in grids.Where(x=> x.IsStatic && PointCheckApi.GetGridBP(x)>BlockLimiterConfig.Instance.MaxStaticGridPoint))
+                            {
+                                sb.AppendLine(
+                                    $"{grid.DisplayName}: {PointCheckApi.GetGridBP(grid)}/{BlockLimiterConfig.Instance.MaxStaticGridPoint}");
+                            }
+
+                        }
+                        if (BlockLimiterConfig.Instance.MaxLargeGridPoint > 0)
+                        {
+                            sb.AppendLine($"Large Grid Point Limits");
+
+                            foreach (var grid in grids.Where(x=> !x.IsStatic && x.GridSizeEnum ==MyCubeSize.Large && PointCheckApi.GetGridBP(x)>BlockLimiterConfig.Instance.MaxLargeGridPoint))
+                            {
+                                sb.AppendLine(
+                                    $"{grid.DisplayName}: {PointCheckApi.GetGridBP(grid)}/{BlockLimiterConfig.Instance.MaxLargeGridPoint}");
+                            }
+
+                        }
+                        if (BlockLimiterConfig.Instance.MaxStaticGridPoint > 0)
+                        {
+                            sb.AppendLine($"Small Grid Point Limits");
+
+                            foreach (var grid in grids.Where(x=> x.GridSizeEnum == MyCubeSize.Small && PointCheckApi.GetGridBP(x)>BlockLimiterConfig.Instance.MaxSmallGridPoint))
+                            {
+                                sb.AppendLine(
+                                    $"{grid.DisplayName}: {PointCheckApi.GetGridBP(grid)}/{BlockLimiterConfig.Instance.MaxSmallGridPoint}");
+                            }
+
+                        }
                     }
                 }
             }

@@ -134,10 +134,6 @@ namespace BlockLimiter.Commands
 
             var sb = new StringBuilder();
             var limiterLimits = BlockLimiterConfig.Instance.AllLimits.ToList();
-            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0)
-            {
-                sb.AppendLine($"Ship Size Limit = {BlockLimiterConfig.Instance.MaxBlockSizeShips} Blocks");
-            }
             
             if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0)
             {

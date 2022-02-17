@@ -37,11 +37,6 @@ namespace BlockLimiter.Utility
             var gridType = grid.GridSizeEnum;
             var isStatic = grid.IsStatic;
 
-            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
-            {
-                return  true;
-            }
-
             if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
             {
                 return  true;
@@ -69,52 +64,58 @@ namespace BlockLimiter.Utility
             if (Utilities.IsExcepted(grid))
                 return false;
 
+            var pointCCheckInstalled = PointCheckApi.IsInstalled();
+            var gridPoint = 0;
+            if (pointCCheckInstalled) gridPoint = PointCheckApi.GetGridBP(grid);
             var gridSize = grid.CubeBlocks.Count;
             var gridType = grid.GridSizeEnum;
             var isStatic = converting? !grid.IsStatic:grid.IsStatic;
 
-            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
+            if (!isStatic)
             {
-                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeShips);
-                return  true;
+
+                if (gridType == MyCubeSize.Large && pointCCheckInstalled &&
+                    BlockLimiterConfig.Instance.MaxLargeGridPoint > 0 && gridPoint >= BlockLimiterConfig.Instance.MaxLargeGridPoint)
+                {
+                    count = Math.Abs(gridPoint - BlockLimiterConfig.Instance.MaxLargeGridPoint);
+                }
             }
 
             if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
             {
-                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeStations);
-                return  true;
-            }
+                if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 &&
+                    gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
+                {
+                    count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeStations);
+                    return  true;
+                }
 
+                if (BlockLimiterConfig.Instance.MaxStaticGridPoint > 0 &&
+                    gridPoint >= BlockLimiterConfig.Instance.MaxStaticGridPoint)
+                {
+                    count = Math.Abs(gridPoint - BlockLimiterConfig.Instance.MaxStaticGridPoint);
+                    return true;
+                }
+            }
+            
             if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridType == MyCubeSize.Large && gridSize >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
             {
                 count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksLargeGrid);
                 return  true;
             }
 
-            if (BlockLimiterConfig.Instance.MaxGridPoint > 0)
+            if (gridType != MyCubeSize.Small) return false;
+            if (BlockLimiterConfig.Instance.MaxSmallGrids > 0 && gridSize >= BlockLimiterConfig.Instance.MaxSmallGrids)
             {
-                if (!PointCheckApi.IsInstalled())
-                {
-                    BlockLimiter.Instance.Log.Error("Grid Point API not found");
-                }
-                else
-                {
-                    var gridPoint = PointCheckApi.GetGridBP(grid);
-                    if (gridPoint > BlockLimiterConfig.Instance.MaxGridPoint)
-                    {
-                        count = gridPoint;
-                        return true;
-                    }
-                }
+                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxSmallGrids);
+                return true;
             }
 
-            if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid <= 0 || gridType != MyCubeSize.Small ||
-                gridSize < BlockLimiterConfig.Instance.MaxBlocksSmallGrid) return false;
-            count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksSmallGrid);
-
-
-
-            return  true;
+            if (BlockLimiterConfig.Instance.MaxSmallGridPoint <= 0 ||
+                gridPoint < BlockLimiterConfig.Instance.MaxSmallGridPoint)
+                return false;
+            count = Math.Abs(gridPoint - BlockLimiterConfig.Instance.MaxSmallGridPoint);
+            return true;
 
         }
 
@@ -244,48 +245,70 @@ namespace BlockLimiter.Utility
             var gridSize = grid1.CubeBlocks.Count + grid2.CubeBlocks.Count;
             var gridType = grid1.GridSizeEnum;
             var isStatic = grid1.IsStatic || grid2.IsStatic;
-
-            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
+            var pointCheckInstalled = PointCheckApi.IsInstalled();
+            var gridPoint = 0;
+            if (pointCheckInstalled)
             {
-                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeShips);
-                limitName = "MaxBlockSizeShips";
-                return  false;
+                gridPoint = PointCheckApi.GetGridBP(grid1) + PointCheckApi.GetGridBP(grid2);
             }
 
-            if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
+            if (!isStatic)
             {
-                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeStations);
-                limitName = "MaxBlockSizeStations";
 
-                return  false;
-            }
-
-            if (BlockLimiterConfig.Instance.MaxBlocksLargeGrid > 0 && gridType == MyCubeSize.Large && gridSize >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
-            {
-                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksLargeGrid);
-                limitName = "MaxBlocksLargeGrid";
-                return  false;
-            }
-
-            if (BlockLimiterConfig.Instance.MaxBlocksSmallGrid > 0 && gridType == MyCubeSize.Small && gridSize >= BlockLimiterConfig.Instance.MaxBlocksSmallGrid)
-            {
-                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksSmallGrid);
-                limitName = "MaxBlocksSmallGrid";
-
-                return  false;
-            }
-
-            if (BlockLimiterConfig.Instance.MaxGridPoint > 0)
-            {
-                if (!PointCheckApi.IsInstalled())
+                if (gridType == MyCubeSize.Large)
                 {
-                    BlockLimiter.Instance.Log.Error("Point Check API not functioning");
+                    if (BlockLimiterConfig.Instance.MaxLargeGrids > 0 &&
+                        gridSize >= BlockLimiterConfig.Instance.MaxBlocksLargeGrid)
+                    {
+                        count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksLargeGrid);
+                        limitName = "MaxBlocksLargeGrid";
+                    }
+                    if (BlockLimiterConfig.Instance.MaxLargeGridPoint > 0 && gridPoint >= BlockLimiterConfig.Instance.MaxLargeGridPoint)
+                    {
+                        count = Math.Abs(gridPoint - BlockLimiterConfig.Instance.MaxLargeGridPoint);
+                        limitName = "MaxLargeGridPoint";
+                        return  false;
+                    }
+
                 }
-                else if (PointCheckApi.GetGridBP(grid1) + PointCheckApi.GetGridBP(grid2) > BlockLimiterConfig.Instance.MaxGridPoint )
+
+                if (gridType == MyCubeSize.Small)
                 {
+                    if (BlockLimiterConfig.Instance.MaxSmallGrids > 0 && gridSize >= BlockLimiterConfig.Instance.MaxBlocksSmallGrid)
+                    {
+                        count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlocksSmallGrid);
+                        limitName = "MaxBlocksSmallGrid";
+                        return  false;
+                    }
+                    if (BlockLimiterConfig.Instance.MaxSmallGridPoint > 0 && gridPoint >= BlockLimiterConfig.Instance.MaxSmallGridPoint)
+                    {
+                        count = Math.Abs(gridPoint - BlockLimiterConfig.Instance.MaxSmallGridPoint);
+                        limitName = "MaxSmallGridPoint";
+                        return  false;
+                    }
+
+                    
+                }
+            }
+
+            else
+            {
+                if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 &&
+                    gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
+                {
+                    count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeStations);
+                    limitName = "MaxBlockSizeStations";
+
+                    return false;
+                }
+                if (BlockLimiterConfig.Instance.MaxStaticGridPoint > 0 && gridPoint >= BlockLimiterConfig.Instance.MaxStaticGridPoint)
+                {
+                    count = Math.Abs(gridPoint - BlockLimiterConfig.Instance.MaxStaticGridPoint);
+                    limitName = "MaxStaticGridPoint";
                     return false;
                 }
             }
+
 
             blocks.Clear();
             count = 0;

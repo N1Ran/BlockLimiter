@@ -53,7 +53,6 @@ namespace BlockLimiter.Settings
         private string _serverName = BlockLimiter.ChatName;
         private string _annoyMsg = "You're in violation of set limits.  Use [!blocklimit mylimit] to view which limits you've exceeded";
         private int _punishInterval = 900;
-        private int _maxBlockSizeShips = 0;
         private int _maxBlockSizeStations = 0;
         private int _maxBlocksSmallGrid = 0;
         private int _maxBlocksLargeGrid = 0;
@@ -71,7 +70,9 @@ namespace BlockLimiter.Settings
         private int _maxSmallGrids = 0;
         private int _maxLargeGrids = 0;
         private BlockingType _blockingType = BlockingType.None;
-        private int _maxGridPoint = 0;
+        private int _maxStaticGridPoint = 0;
+        private int _maxSmallGridPoint = 0;
+        private int _maxLargeGridPoint = 0;
 
 
         #region General BlockCount Limit
@@ -98,18 +99,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 3, Name = "Ships", GroupName = "General Count Limit", Description = "Max size for moving grids")]
-        public int MaxBlockSizeShips
-        {
-            get => _maxBlockSizeShips;
-            set
-            {
-                _maxBlockSizeShips = value; 
-                Changed();
-            }
-        }
-
-        [Display(Order = 4, Name = "Stations", GroupName = "General Count Limit", Description = "Max size for static grids")]
+        [Display(Order = 3, Name = "Stations", GroupName = "General Count Limit", Description = "Max size for static grids")]
         public int MaxBlockSizeStations
         {
             get => _maxBlockSizeStations;
@@ -120,7 +110,7 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 5, Name = "Projection", GroupName = "General Count Limit", Description = "Max size for projections")]
+        [Display(Order = 4, Name = "Projection", GroupName = "General Count Limit", Description = "Max size for projections")]
         public int MaxBlockSizeProjections
         {
             get => _maxBlockSizeProjections;
@@ -131,13 +121,33 @@ namespace BlockLimiter.Settings
             }
         }
 
-        [Display(Order = 5, Name = "Projection", GroupName = "General Count Limit", Description = "Max size for projections")]
-        public int MaxGridPoint
+        [Display(Order = 1, Name = "Max Static Grid Point", GroupName = "Grid Point Limit", Description = "Max Grid Point for Static Grids")]
+        public int MaxStaticGridPoint
         {
-            get => _maxGridPoint;
+            get => _maxStaticGridPoint;
             set
             {
-                _maxGridPoint = value; 
+                _maxStaticGridPoint = value; 
+                Changed();
+            }
+        }
+        [Display(Order = 2, Name = "Max Large Grid Point", GroupName = "Grid Point Limit", Description = "Max Grid Point for Large Grids")]
+        public int MaxLargeGridPoint
+        {
+            get => _maxLargeGridPoint;
+            set
+            {
+                _maxLargeGridPoint = value; 
+                Changed();
+            }
+        }
+        [Display(Order = 2, Name = "Max Small Grid Point", GroupName = "Grid Point Limit", Description = "Max Grid Point for Small Grids")]
+        public int MaxSmallGridPoint
+        {
+            get => _maxSmallGridPoint;
+            set
+            {
+                _maxSmallGridPoint = value; 
                 Changed();
             }
         }

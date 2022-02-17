@@ -287,15 +287,6 @@ namespace BlockLimiter.Commands
 
                 if (grids.Count > 0)
                 {
-                    if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0)
-                    {
-                        sb.AppendLine($"Ship Limits");
-                        foreach (var grid in grids.Where(x=> x.BlocksCount > BlockLimiterConfig.Instance.MaxBlockSizeShips && !x.IsStatic))
-                        {
-                            sb.AppendLine(
-                                $"{grid.DisplayName}: {grid.BlocksCount}/{BlockLimiterConfig.Instance.MaxBlockSizeShips}");
-                        }
-                    }
                     
                     if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0)
                     {
