@@ -114,8 +114,7 @@ namespace BlockLimiter.Utility
         {
             limit = string.Empty;
             if (def == null || Math.Abs(ownerId + gridId) < 1) return true;
-
-
+            
             var ownerFaction = MySession.Static.Factions.GetPlayerFaction(ownerId);
 
 
@@ -125,6 +124,10 @@ namespace BlockLimiter.Utility
 
             if (BlockLimiterConfig.Instance.AllLimits.Count == 0) return true;
             var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
+            if (!foundGrid)
+            {
+                GridCache.AddGrid(grid);
+            }
             var subGrids = Grid.GetSubGrids(grid);
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
@@ -144,8 +147,10 @@ namespace BlockLimiter.Utility
                 }
 
 
-                if (item.LimitGrids && gridId > 0 && item.FoundEntities.TryGetValue(gridId, out var gCount))
+                if (item.LimitGrids && gridId > 0)
                 {
+                    item.FoundEntities.TryGetValue(gridId, out var gCount);
+                    
                     if (foundGrid && item.IsGridType(grid))
                     {
                         if (gCount + count > item.Limit)
@@ -157,9 +162,13 @@ namespace BlockLimiter.Utility
                         var subGBlockCount = 0;
                         foreach (var subGrid in subGrids)
                         {
-                            if (!item.FoundEntities.TryGetValue(subGrid.EntityId, out var subGCount)) continue;
+                            if (!item.FoundEntities.TryGetValue(subGrid.EntityId, out var subGCount))
+                            {
+                                continue;
+                            }
                             subGBlockCount += subGCount;
                         }
+                        
 
                         if (subGBlockCount + count + gCount > item.Limit)
                         {
