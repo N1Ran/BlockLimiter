@@ -401,7 +401,6 @@ namespace BlockLimiter.Settings
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? baseMass > FilterValue
                         : baseMass < FilterValue;
-                /*
                 case FilterType.GridPoints:
                     if (!PointCheckApi.IsInstalled())
                     {
@@ -413,7 +412,6 @@ namespace BlockLimiter.Settings
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? gridScore > FilterValue
                         : gridScore < FilterValue;
-                */
                 default:
                     return false;
             }
@@ -447,6 +445,11 @@ namespace BlockLimiter.Settings
                     {
                         return ownerFaction.Members.Count < FilterValue;
                     }
+                case FilterType.GridPoints:
+                    if(!PointCheckApi.IsInstalled()) break;
+                    var gridPoint = PointCheckApi.GetGridBP(grid);
+                    if (gridPoint == 0) break;
+                    return _limitOperator == FilterOperator.GreaterThan ? gridPoint > _filterValue : gridPoint < _filterValue;
                 default:
                     return false;
             }

@@ -2,6 +2,8 @@
 using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
+using VRage.Game;
+
 namespace BlockLimiter.PluginApi
 {
     public static class PointCheckApi
@@ -30,6 +32,18 @@ namespace BlockLimiter.PluginApi
         public static int GetGridBP(MyCubeGrid grid) => _GetGridBP.Invoke(grid);
         public static int GetBlockBP(MyCubeBlock block) => _GetBlockBP.Invoke(block);
         public static int GetBlockBPById(string id) => _GetGridBPId.Invoke(id);
+        
+        public static int GetGridBP(MyObjectBuilder_CubeGrid grid)
+        {
+            var result = 0;
+            if (!IsInstalled()) return 0;
+            foreach (var block in grid.CubeBlocks)
+            {
+                result += _GetGridBPId.Invoke(block.SubtypeId.ToString());
+            }
+
+            return result;
+        }
 
         public static bool IsInstalled() => _GetGridBP != null;
 
