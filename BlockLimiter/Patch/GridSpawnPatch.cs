@@ -38,9 +38,13 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
-                ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnStaticGrid", BindingFlags.Public | BindingFlags.Static))
-                    .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
-            
+            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnStaticGrid", BindingFlags.Public | BindingFlags.Static))
+                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
+            //ToDo Re-implement RequestGridSpawn as the method to block block placement
+            #if Debug
+            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
+                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnGridSpawnRequest),BindingFlags.NonPublic|BindingFlags.Static));
+            #endif
             ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnDynamicGrid", BindingFlags.Public | BindingFlags.Static))
                 .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
             
@@ -174,6 +178,15 @@ namespace BlockLimiter.Patch
             return false;
         }
 
+
+        #if Debug
+        private static void OnGridSpawnRequest(object data)
+        {
+            Log.Warn("Testing GridSpawnRequest");
+            var def = _getDefinition(data);
+            Log.Warn($"Found definiton for {def}");
+        }
+        #endif
 
     }
 }

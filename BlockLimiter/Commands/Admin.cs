@@ -196,13 +196,6 @@ namespace BlockLimiter.Commands
         [Command("reload", "Reloads current BlockLimiter.cfg and apply any changes to current session")]
         public void Reload()
         {
-            var time = DateTime.Now - _lastRun;
-            if (time.TotalMinutes < 1)
-            {
-                var timeRemaining = TimeSpan.FromMinutes(1) - time;
-                Context.Respond($"Cooldown in effect.  Try again in {timeRemaining.TotalSeconds:N0} seconds");
-                return;
-            }
             
             if (!_doCheck)
             {
@@ -219,7 +212,9 @@ namespace BlockLimiter.Commands
             _doCheck = false;
             
             BlockLimiterConfig.Instance.Load();
-            BlockLimiterConfig.Instance.Save();
+            BlockLimiterConfig.Instance.AllLimits =
+                new HashSet<LimitItem>(
+                    Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
             BlockLimiter.ResetLimits();
             
             _lastRun = DateTime.Now;
