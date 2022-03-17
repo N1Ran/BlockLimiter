@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Data;
 using BlockLimiter.Settings;
 using NLog;
 using Sandbox.Game.Entities;
@@ -13,6 +17,47 @@ namespace BlockLimiter.Utility
     {
 
         private static readonly Logger Log = BlockLimiter.Instance.Log;
+        private static Queue<long> _Queue = new Queue<long>();
+
+
+        public static int Enqueue(long id)
+        {
+            var result = 1;
+            lock (_Queue)
+            {
+                _Queue.Enqueue(id);
+                result = _Queue.Count;
+            }
+
+            return result;
+
+        }
+
+        public static void Dequeue()
+        {
+            if (GridCache.GetBlockCount() == 0) return;
+            lock (_Queue)
+            {
+                if (_Queue.Count == 0) return;
+                var id = _Queue.Dequeue();
+                if (GridCache.TryGetGridById(id, out var grid))
+                {
+                    GridLimit(grid);
+                    return;
+                }
+
+                var faction = MySession.Static.Factions.TryGetFactionById(id);
+                if (faction != null)
+                {
+                    FactionLimit(id);
+                    return;
+                }
+            
+                if (!Utilities.TryGetPlayerByNameOrId(id.ToString(), out _)) return;
+                PlayerLimit(id);
+            }
+
+        }
 
         public static bool PlayerLimit(long id)
         {
@@ -32,8 +77,9 @@ namespace BlockLimiter.Utility
                 return false;
             }
 
-            Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, limit =>
+            Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, new ParallelOptions {MaxDegreeOfParallelism = 5},limit =>
             {
+                Log.Warn($"Updating {limit.Name} Player Limit for {id}");
                 if (!limit.LimitPlayers)
                 {
                     limit.FoundEntities.Remove(id);
@@ -51,10 +97,9 @@ namespace BlockLimiter.Utility
 
 
             });
-
             return true;
         }
-
+        
         
         public static void GridLimit(MyCubeGrid grid)
         {
@@ -62,17 +107,17 @@ namespace BlockLimiter.Utility
             
             var blocks = new HashSet<MySlimBlock>();
             blocks.UnionWith(grid.CubeBlocks);
-            //adding all blocks from subGrids to count
-            //blocks.UnionWith(Grid.GetGridsInGroup(grid).SelectMany(x=>x.CubeBlocks));
 
             if (blocks.Count == 0)
             {
                 return;
             }
 
-            Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, limit =>
+            var limits = new List<LimitItem>(BlockLimiterConfig.Instance.AllLimits.Where(x=>x.LimitGrids));
+            if (limits.Count == 0) return;
+            Parallel.ForEach(limits,new ParallelOptions{MaxDegreeOfParallelism = 5}, limit =>
             {
-                if (!limit.LimitGrids || !limit.IsGridType(grid))
+                if (!limit.IsGridType(grid))
                 {
                     limit.FoundEntities.Remove(grid.EntityId);
                     return;
@@ -89,9 +134,12 @@ namespace BlockLimiter.Utility
 
             });
 
+
         }
 
-        
+
+
+
         public static bool FactionLimit(long id)
         {
             if (id == 0) return false;
@@ -113,7 +161,7 @@ namespace BlockLimiter.Utility
             var faction = MySession.Static.Factions.TryGetFactionById(id);
             if (faction == null) return false;
 
-            Parallel.ForEach(limits, limit =>
+            Parallel.ForEach(limits, new ParallelOptions{MaxDegreeOfParallelism = 5},limit =>
             {
                 if (!limit.LimitFaction)
                 {

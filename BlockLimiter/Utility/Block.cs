@@ -6,11 +6,13 @@ using System.Threading.Tasks;
 using BlockLimiter.Patch;
 using BlockLimiter.Settings;
 using NLog;
+using NLog.Fluent;
 using Sandbox;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
+using Sandbox.ModAPI;
 using Torch.API.Managers;
 using Torch.Managers.ChatManager;
 using VRage.Collections;
@@ -441,33 +443,38 @@ namespace BlockLimiter.Utility
 
         }
 
-        public static void FixIds()
+        public static int FixIds()
         {
+            var result = 0;
             if (!BlockLimiterConfig.Instance.EnableLimits)
-                return;
+                return result;
             var blockCache = new HashSet<MySlimBlock>();
 
             GridCache.GetBlocks(blockCache);
 
-            Task.Run(() =>
-            {
-                Parallel.ForEach(blockCache, block =>
-                {
-                    if (block == null) return;
+            var test = Task.WhenAll(blockCache.Select(FixBlockOwnership).ToArray());
+            result = test.Result.Sum();
 
-                    if (block.OwnerId == block.BuiltBy) return;
-                    
-                    if (block.OwnerId == 0 && block.BuiltBy > 0)
-                    {
-                        block.FatBlock.ChangeBlockOwnerRequest(block.BuiltBy,MyOwnershipShareModeEnum.Faction);
-
-                        return;
-                    }
-
-                    block.TransferAuthorship(block.OwnerId);
-                });
-            });
+            test.Dispose();
+            return result;
         }
+        
+        private static Task<int> FixBlockOwnership(MySlimBlock block)
+        {
+
+            if (block == null || block.OwnerId == block.BuiltBy || block.FatBlock?.MarkedForClose == true || !block.BlockDefinition.ContainsComputer()) return Task.FromResult(0);
+            if (block.OwnerId == 0 && block.BuiltBy > 0 )
+            {
+                block.FatBlock?.CubeGrid?.ChangeOwner(block.FatBlock,block.OwnerId,block.BuiltBy);
+            }
+            else
+            {
+                block.TransferAuthorship(block.OwnerId);
+            }
+
+            return Task.FromResult(1);
+        }
+
 
 
     }

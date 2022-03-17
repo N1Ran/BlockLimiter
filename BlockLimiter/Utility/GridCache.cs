@@ -154,6 +154,14 @@ namespace BlockLimiter.Utility
             }
         }
 
+        public static int GetBlockCount()
+        {
+            using(_blockLock.AcquireSharedUsing())
+            {
+                return _blockCache.Count;
+            }
+        }
+
         public static void GetPlayerBlocks(HashSet<MySlimBlock> entities, long id)
         {
             using(_blockLock.AcquireSharedUsing())

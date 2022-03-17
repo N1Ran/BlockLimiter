@@ -135,11 +135,8 @@ namespace BlockLimiter.Patch
             
             ((IMyProjector) __instance).SetProjectedGrid(copiedGrid);
 
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.ProjectionDenyMessage,removedList, limitName,count);
+            Utilities.TrySendDenyMessage(removedList, limitName, remoteUserId, count);
 
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(player.Identity.IdentityId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
 
             return false;
         }

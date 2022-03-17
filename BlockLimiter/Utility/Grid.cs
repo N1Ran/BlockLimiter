@@ -6,6 +6,7 @@ using BlockLimiter.Settings;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
+using Sandbox.Game.World;
 using VRage.Game;
 using VRage.Groups;
 
@@ -325,6 +326,47 @@ namespace BlockLimiter.Utility
             
             return playerId == 0 || Block.CanAdd(grid.CubeBlocks, playerId, out _);
         }
+
+        public static bool TryCleanGridOfViolation(List<MyObjectBuilder_CubeGrid> grids, long playerId)
+        {
+            var playerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
+            string limitName = null;
+            var removalCount = 0;
+            var removedList = new List<string>();
+            foreach (var grid in grids)
+            {
+                foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+                {
+                    var fCount = 0;
+
+                    if (limit.IsExcepted(playerId)) continue;
+                    var matchBlocks = new HashSet<MyObjectBuilder_CubeBlock>(grid.CubeBlocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))));
+                    limit.FoundEntities.TryGetValue(playerId, out var pCount);
+                    if (playerFaction != null)
+                        limit.FoundEntities.TryGetValue(playerFaction.FactionId, out fCount);
+
+                    foreach (var block in matchBlocks)
+                    {
+                        if (Math.Abs(matchBlocks.Count + pCount - removalCount) <= limit.Limit && Math.Abs(fCount + matchBlocks.Count - removalCount) <= limit.Limit) break;
+                        removalCount++;
+                        var blockDef = Utilities.GetDefinition(block).ToString().Substring(16);
+                        grid.CubeBlocks.Remove(block);
+                        if (removedList.Contains(blockDef))
+                            continue;
+                        removedList.Add(blockDef);
+                        limitName = limit.Name;
+                    }
+
+                }
+                
+            }
+
+
+            return removedList.Count > 0;
+
+
+        }
+        
 
     }
 }

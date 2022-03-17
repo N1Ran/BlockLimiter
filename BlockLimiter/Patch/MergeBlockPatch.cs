@@ -65,18 +65,15 @@ namespace BlockLimiter.Patch
 
             if (DateTime.Now - _lastLogTime < TimeSpan.FromSeconds(1)) return false;
             _lastLogTime = DateTime.Now;
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
             var remoteUserId = MySession.Static.Players.TryGetSteamId(mergeBlock.OwnerId);
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(mergeBlock.OwnerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-            Utilities.SendFailSound(remoteUserId);
+            Utilities.TrySendDenyMessage(blocks,limitName,remoteUserId,count);
 
             BlockLimiter.Instance.Log.Info($"Blocked merger between {mergeBlock.CubeGrid?.DisplayName} and {mergeBlock.Other?.CubeGrid?.DisplayName}");
             return false;
 
         }
 
+       //Todo Fix this mess
         private static void AddBlocks(MyShipMergeBlock __instance)
         {
             var id = __instance.CubeGrid.EntityId;
@@ -89,7 +86,7 @@ namespace BlockLimiter.Patch
                     return;
                 }
 
-                UpdateLimits.GridLimit(grid);
+                UpdateLimits.Enqueue(grid.EntityId);
 
             }));
         }

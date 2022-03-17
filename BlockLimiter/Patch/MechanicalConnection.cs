@@ -80,15 +80,10 @@ namespace BlockLimiter.Patch
             _lastChecked[top.EntityId] = DateTime.Now;
 
             BlockLimiter.Instance.Log.Info($"Blocked attachement between {baseGrid.DisplayName} and {topGrid.DisplayName}");
-
-            if (remoteUserId <= 0) return false;
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed(remoteUserId);
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
-            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             topGrid.RemoveBlock(top.SlimBlock);
             baseGrid.RemoveBlock(__instance.SlimBlock);
+
+            Utilities.TrySendDenyMessage(blocks,limitName,remoteUserId,count);
             return false;
         }
 

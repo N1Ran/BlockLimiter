@@ -71,12 +71,7 @@ namespace BlockLimiter.Patch
             
             BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
 
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>(){def.ToString().Substring(16)},limitName);
-
-            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed();
+            Utilities.TrySendDenyMessage(new List<string>{def.ToString().Substring(16)}, limitName, remoteUserId);
 
             return false;
 
@@ -115,14 +110,7 @@ namespace BlockLimiter.Patch
             if (remoteUserId == 0 || !MySession.Static.Players.IsPlayerOnline(playerId)) return false;
 
             BlockLimiter.Instance.Log.Info($"Blocked {Utilities.GetPlayerNameFromSteamId(remoteUserId)} from placing {def.ToString().Substring(16)} due to limits");
-            
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {def.ToString().Substring(16)},limitName);
-            
-            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed();
+            Utilities.TrySendDenyMessage(new List<string>{def.ToString().Substring(16)}, limitName, remoteUserId);
             return false;
 
         }
@@ -174,11 +162,7 @@ namespace BlockLimiter.Patch
 
             if (!MySession.Static.Players.IsPlayerOnline(playerId)) return false;
 
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string> {blockDefinition.ToString().Substring(16)},limitName);
-            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed(remoteUserId);
+            Utilities.TrySendDenyMessage(new List<string>{blockDefinition.ToString().Substring(16)},limitName,remoteUserId);
             return false;
 
 

@@ -138,12 +138,12 @@ namespace BlockLimiter.Patch
                 {
 
                     grid2.SendGridCloseRequest();
-                    UpdateLimits.GridLimit(grid1);
+                    UpdateLimits.Enqueue(grid1.EntityId);
                 }
                 else
                 {
                     grid1.SendGridCloseRequest();
-                    UpdateLimits.GridLimit(grid2);
+                    UpdateLimits.Enqueue(grid2.EntityId);
                 }
             });
         }
@@ -180,19 +180,13 @@ namespace BlockLimiter.Patch
                     Thread.Sleep(100);
                     GridCache.TryGetGridById(gridId, out var newStateGrid);
                     if (newStateGrid == null) return;
-                    UpdateLimits.GridLimit(newStateGrid);
+                    UpdateLimits.Enqueue(newStateGrid.EntityId);
                 });
                 return true;
             }
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
-
-            if (MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
+            Utilities.TrySendDenyMessage(blocks,limitName,remoteUserId,count);
             BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed();
             return false;
 
         }
@@ -220,20 +214,13 @@ namespace BlockLimiter.Patch
                     Thread.Sleep(100);
                     GridCache.TryGetGridById(gridId, out var newStateGrid);
                     if (newStateGrid == null) return;
-                    UpdateLimits.GridLimit(newStateGrid);
+                    UpdateLimits.Enqueue(newStateGrid.EntityId);
                 });
                 return true;
             }
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
-            
-            if (MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-            
+            Utilities.TrySendDenyMessage(blocks, limitName, remoteUserId, count);
             BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed();
             return false;
         }
 

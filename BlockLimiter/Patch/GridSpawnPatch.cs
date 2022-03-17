@@ -72,18 +72,16 @@ namespace BlockLimiter.Patch
 
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             var playerName = MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName;
+            var gridName = grids.FirstOrDefault()?.DisplayName;
+            var initialBlockCount = grids.Sum(x => x.CubeBlocks.Count);
 
             grids.RemoveAll(g=> Grid.IsSizeViolation(g) || Grid.CountViolation(g,playerId));
             
             if (grids.Count == 0  && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)
             {
                 BlockLimiter.Instance.Log.Info($"Blocked {playerName} from spawning a grid");
-
-                Thread.Sleep(100);
-                Utilities.ValidationFailed();
-                Utilities.SendFailSound(remoteUserId);
+                Utilities.TrySendDenyMessage(new List<string>{gridName}, "Size Violation", remoteUserId, initialBlockCount);
                 NetworkManager.RaiseStaticEvent(ShowPasteFailed, new EndpointId(remoteUserId), null);
-
                 return false;
             }
 
@@ -122,15 +120,7 @@ namespace BlockLimiter.Patch
             
             
             parameters.Entities = grids;
-
-
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,removedList,limitName,removalCount);
-
-            if (MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-
-
+            Utilities.TrySendDenyMessage(removedList,limitName,remoteUserId,removalCount);
             BlockLimiter.Instance.Log.Info($"Removed {removalCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
             return true;
         }
@@ -166,14 +156,7 @@ namespace BlockLimiter.Patch
 
             BlockLimiter.Instance.Log.Info($"Blocked {p} from placing {block}");
 
-            //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{block.ToString().Substring(16)},limitName);
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed();
+            Utilities.TrySendDenyMessage(new List<string>{block.ToString().Substring(16)}, limitName, remoteUserId);
 
             return false;
         }
