@@ -299,6 +299,7 @@ namespace BlockLimiter
             if (++_updateCounter10 % 10 == 0)
             {
                 UpdateLimits.Dequeue();
+                Punish.Update();
             }
             if (++_updateCounter100 % 100 != 0) return;
             MergeBlockPatch.MergeBlockCache?.Clear();

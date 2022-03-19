@@ -51,7 +51,41 @@ namespace BlockLimiter.Patch
             ctx.GetPattern(typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation",  BindingFlags.Public  |  BindingFlags.Static)).
                 Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(AttemptSpawn), BindingFlags.Static |  BindingFlags.NonPublic));
             
+            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("PasteBlocksToGridServer_Implementation",  BindingFlags.NonPublic  |  BindingFlags.Instance)).
+                Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(PasteToGrid), BindingFlags.Static |  BindingFlags.NonPublic | BindingFlags.Instance));
 
+        }
+
+
+        /// <summary>
+        /// Decides if pasting a clipboard is allowed and updates the count
+        /// </summary>
+        /// <param name="__instance"></param>
+        /// <param name="gridsToMerge"></param>
+        /// <returns></returns>
+        private static bool PasteToGrid(MyCubeGrid __instance, List<MyObjectBuilder_CubeGrid> gridsToMerge)
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+            var grid = __instance;
+            var remoteUserId = MyEventContext.Current.Sender.Value;
+
+            if (remoteUserId == 0) return true;
+
+            UpdateLimits.Enqueue(grid.EntityId);
+            if (!BlockLimiterConfig.Instance.MergerBlocking)
+            {
+                return true;
+            }
+
+            if (Grid.CanMerge(grid, gridsToMerge, out var rejectedBlocks, out var rejectedCount, out var limitName))
+            {
+                return true;
+            }
+            var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
+
+            Utilities.TrySendDenyMessage(rejectedBlocks,limitName,remoteUserId,rejectedCount);
+            BlockLimiter.Instance.Log.Info($"Removed {rejectedCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
+            return false;
         }
 
         /// <summary>

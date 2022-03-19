@@ -105,7 +105,7 @@ namespace BlockLimiter.Patch
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
 
-            if (Block.IsWithinLimits(def, playerId, grid.EntityId,1, out var limitName)) return true;
+            if (Block.IsWithinLimits(def, playerId, grid.EntityId,locations.Count, out var limitName)) return true;
 
             if (remoteUserId == 0 || !MySession.Static.Players.IsPlayerOnline(playerId)) return false;
 

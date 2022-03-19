@@ -64,11 +64,15 @@ namespace BlockLimiter.Commands
                 }
                 _doCheck = false;
                 BlockLimiterConfig.Instance.Save();
-                GridCache.Update();
-                BlockLimiter.ResetLimits();
-                _lastRun = DateTime.Now;
-            
-                Context.Respond("Limits updated");
+                Task.Run(() =>
+                {
+                    var task = BlockLimiter.Instance.Torch.InvokeAsync(GridCache.Update);
+                    Task.WaitAll(task);
+                    BlockLimiter.ResetLimits();
+                    _lastRun = DateTime.Now;
+                    Context.Respond("Limits updated");
+                });
+
                 return;
             }
 
@@ -192,6 +196,7 @@ namespace BlockLimiter.Commands
             Context.Respond($"{faction.Tag} limits updated");
             Utility.UpdateLimits.Enqueue(faction.FactionId);
         }
+        
 
         [Command("reload", "Reloads current BlockLimiter.cfg and apply any changes to current session")]
         public void Reload()
@@ -215,11 +220,15 @@ namespace BlockLimiter.Commands
             BlockLimiterConfig.Instance.AllLimits =
                 new HashSet<LimitItem>(
                     Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
-            BlockLimiter.ResetLimits();
+            Task.Run(() =>
+            {
+                var task = BlockLimiter.Instance.Torch.InvokeAsync(GridCache.Update);
+                Task.WaitAll(task);
+                BlockLimiter.ResetLimits();
+                _lastRun = DateTime.Now;
+                Context.Respond("Limits reloaded from config file");
+            });
             
-            _lastRun = DateTime.Now;
-            
-            Context.Respond("Limits reloaded from config file");
         }
 
         [Command("rematch ids", "Attempts to rematch owner/builtby Ids")]

@@ -48,7 +48,7 @@ namespace BlockLimiter.Utility
         {
             if (remoteUserId == 0 || !MySession.Static.Players.IsPlayerOnline(GetPlayerIdFromSteamId(remoteUserId))) return;
             
-            var msg = GetMessage(BlockLimiterConfig.Instance.DenyMessage,blockList,limitName);
+            var msg = GetMessage(BlockLimiterConfig.Instance.DenyMessage,blockList,limitName, count);
 
             BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
                 .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
