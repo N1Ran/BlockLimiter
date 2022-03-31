@@ -9,6 +9,7 @@ using NLog;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
+using Sandbox.Game;
 using Torch;
 using Torch.API.Managers;
 using Torch.Managers;
@@ -41,7 +42,7 @@ namespace BlockLimiter.Patch
             ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnStaticGrid", BindingFlags.Public | BindingFlags.Static))
                 .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
             //ToDo Re-implement RequestGridSpawn as the method to block block placement
-            #if Debug
+            #if DEBUG
             ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
                 .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnGridSpawnRequest),BindingFlags.NonPublic|BindingFlags.Static));
             #endif
@@ -196,12 +197,11 @@ namespace BlockLimiter.Patch
         }
 
 
-        #if Debug
+        #if DEBUG
+        //Todo Find solution to getting a private struct.  Getting the "data" does not work.
         private static void OnGridSpawnRequest(object data)
         {
             Log.Warn("Testing GridSpawnRequest");
-            var def = _getDefinition(data);
-            Log.Warn($"Found definiton for {def}");
         }
         #endif
 

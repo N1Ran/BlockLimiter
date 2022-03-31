@@ -298,6 +298,7 @@ namespace BlockLimiter
                 return;
             if (++_updateCounter10 % 10 == 0)
             {
+                GridChange.ClearRemoved();
                 UpdateLimits.Dequeue();
                 Punish.Update();
             }

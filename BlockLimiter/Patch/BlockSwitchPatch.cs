@@ -6,6 +6,7 @@ using NLog;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.Entities.Blocks;
+using SpaceEngineers.Game.ModAPI;
 using Torch.Managers.PatchManager;
 using VRage.Collections;
 
@@ -32,7 +33,7 @@ namespace BlockLimiter.Patch
             var block = __instance;
             
             if (block.Enabled == false || block is MyParachute || block is MyButtonPanel ||
-                block is IMyPowerProducer || block.BlockDefinition?.ContainsComputer() == false)
+                block is IMyPowerProducer || block.BlockDefinition?.ContainsComputer() == false || block is IMyThrust || block is IMyGyro || block is IMyMedicalRoom)
             {
                 return;
             }

@@ -114,7 +114,7 @@ namespace BlockLimiter.Utility
                 }
             }
 
-            if (++_updateCounter % 100 != 0) return _gridCache.Count;
+            if (_gridCache.Count == 0) return _gridCache.Count;
             UpdateOwners();
             UpdateBuilders();
             return _gridCache.Count;
