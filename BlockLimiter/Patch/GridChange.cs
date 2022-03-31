@@ -91,10 +91,14 @@ namespace BlockLimiter.Patch
             else if ((__instance is MyCubeGrid grid))
             {
                 var gridBlocks = new List<MySlimBlock>(grid.CubeBlocks);
+                if (grid.Projector == null) 
+                    GridCache.RemoveGrid(grid);
+                if (gridBlocks.Count == 0) return;
                 lock (_justRemoved)
                 {
                     foreach (var block in gridBlocks)
                     {
+                        if (block.FatBlock == null) continue;
                         var id = block.FatBlock.EntityId;
                         if (_justRemoved.TryGetValue(id, out var _))
                         {
@@ -108,8 +112,6 @@ namespace BlockLimiter.Patch
                                 : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
                     }
                 }
-                if (grid.Projector == null) 
-                    GridCache.RemoveGrid(grid);
                     
             }
 
