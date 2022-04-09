@@ -30,8 +30,16 @@ namespace BlockLimiter.Patch
         public static void Patch(PatchContext ctx)
         {
 
-            ctx.GetPattern(typeof(MyProjectorBase).GetMethod("InitializeClipboard", BindingFlags.Instance | BindingFlags.NonPublic)).
-                Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixInitializeClipboard), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
+            try
+            {
+                ctx.GetPattern(typeof(MyProjectorBase).GetMethod("InitializeClipboard", BindingFlags.Instance | BindingFlags.NonPublic)).
+                    Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixInitializeClipboard), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace, "Patching Failed");
+            }
+
 
         }
 

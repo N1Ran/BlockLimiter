@@ -39,21 +39,30 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
-            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnStaticGrid", BindingFlags.Public | BindingFlags.Static))
-                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
-            //ToDo Re-implement RequestGridSpawn as the method to block block placement
-            #if DEBUG
+            
+            try
+            {
+                ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnStaticGrid", BindingFlags.Public | BindingFlags.Static))
+                    .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
+                //ToDo Re-implement RequestGridSpawn as the method to block block placement
+#if DEBUG
             ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
                 .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnGridSpawnRequest),BindingFlags.NonPublic|BindingFlags.Static));
-            #endif
-            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnDynamicGrid", BindingFlags.Public | BindingFlags.Static))
-                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
+#endif
+                ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnDynamicGrid", BindingFlags.Public | BindingFlags.Static))
+                    .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
             
-            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation",  BindingFlags.Public  |  BindingFlags.Static)).
-                Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(AttemptSpawn), BindingFlags.Static |  BindingFlags.NonPublic));
+                ctx.GetPattern(typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation",  BindingFlags.Public  |  BindingFlags.Static)).
+                    Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(AttemptSpawn), BindingFlags.Static |  BindingFlags.NonPublic));
             
-            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("PasteBlocksToGridServer_Implementation",  BindingFlags.NonPublic  |  BindingFlags.Instance)).
-                Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(PasteToGrid), BindingFlags.Static |  BindingFlags.NonPublic | BindingFlags.Instance));
+                ctx.GetPattern(typeof(MyCubeGrid).GetMethod("PasteBlocksToGridServer_Implementation",  BindingFlags.NonPublic  |  BindingFlags.Instance)).
+                    Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(PasteToGrid), BindingFlags.Static |  BindingFlags.NonPublic | BindingFlags.Instance));
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace, "Patching Failed");
+            }
+
 
         }
 

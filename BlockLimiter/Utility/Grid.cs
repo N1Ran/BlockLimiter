@@ -259,17 +259,42 @@ namespace BlockLimiter.Utility
             }
             blocks.Clear();
             count = 0;
+            var id1 = grid1.EntityId;
+            var id2 = grid2.EntityId;
+            var sugGridIds = new List<long>(GetSubGrids(grid1).Select(x=>x.EntityId));
+            sugGridIds.AddRange(GetSubGrids(grid2).Select(x=>x.EntityId));
             foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
                 limitName = limit.Name;
                 if (!limit.LimitGrids) continue;
 
                 if (limit.IsExcepted(grid1) || limit.IsExcepted(grid2)) continue;
+                var subGridCount = 0;
 
+                if (sugGridIds.Count > 0)
+                {
+                    foreach (var id in sugGridIds)
+                    {
+                        if (!limit.FoundEntities.TryGetValue(id, out var sCount))continue;
+                        subGridCount += sCount;
+
+                    }
+                }
+                
+
+                limit.FoundEntities.TryGetValue(id1, out var id1Count);
+                limit.FoundEntities.TryGetValue(id2, out var id2Count);
+                var foundCount = id1Count + id2Count + subGridCount;
+                if (foundCount < limit.Limit) continue;
+
+                count = foundCount;
+                
+                
+                //ToDo Optimize this. Change the FoundEntities a bit to add matching blocks from each grid.
                 var matchingBlocks = new List<MySlimBlock>(blocksHash.Where(x=> limit.IsMatch(x.BlockDefinition)));
                 
-                if (matchingBlocks.Count <= limit.Limit) continue;
-                count = Math.Abs(matchingBlocks.Count - limit.Limit);
+                //if (matchingBlocks.Count <= limit.Limit) continue;
+                //count = Math.Abs(matchingBlocks.Count - limit.Limit);
                 blocks.Add(matchingBlocks[0].BlockDefinition.ToString().Substring(16));
 
                 return false;

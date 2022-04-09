@@ -28,17 +28,25 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
-          
-            var t = typeof(MyMechanicalConnectionBlockBase);
-            var a = typeof(MechanicalConnection).GetMethod(nameof(OnAttach), BindingFlags.NonPublic | BindingFlags.Static);
-            foreach (var met in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            try
             {
-
-                if (met.Name == "TryAttach")
+                var t = typeof(MyMechanicalConnectionBlockBase);
+                var a = typeof(MechanicalConnection).GetMethod(nameof(OnAttach), BindingFlags.NonPublic | BindingFlags.Static);
+                foreach (var met in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
                 {
-                    ctx.GetPattern(met).Prefixes.Add(a);
+
+                    if (met.Name == "TryAttach")
+                    {
+                        ctx.GetPattern(met).Prefixes.Add(a);
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace, "Patching Failed");
+            }
+
+          
 
         }
 

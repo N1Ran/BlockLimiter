@@ -177,7 +177,9 @@
   <Import Project="..\..\filter.targets" />
     <ItemGroup>
         <Content Include="$(ProjectDir)\manifest.xml" CopyToOutputDirectory="PreserveNewest" />
-        <Content Include=".gitignore" />
+        <Content Include="..\.idea\.idea.BlockLimiter\.idea\.gitignore">
+          <Link>.gitignore</Link>
+        </Content>
     </ItemGroup>
     <Target Name="Zip" BeforeTargets="AfterBuild">
         <MakeDir Directories="$(SolutionDir)\Build\" />

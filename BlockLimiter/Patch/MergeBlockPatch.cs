@@ -28,11 +28,18 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
-            ctx.GetPattern(typeof(MyShipMergeBlock).GetMethod("CheckUnobstructed", BindingFlags.NonPublic | BindingFlags.Instance )).
-                Prefixes.Add(typeof(MergeBlockPatch).GetMethod(nameof(MergeCheck), BindingFlags.NonPublic | BindingFlags.Static));
+            try
+            {
+                ctx.GetPattern(typeof(MyShipMergeBlock).GetMethod("CheckUnobstructed", BindingFlags.NonPublic | BindingFlags.Instance )).
+                    Prefixes.Add(typeof(MergeBlockPatch).GetMethod(nameof(MergeCheck), BindingFlags.NonPublic | BindingFlags.Static));
 
-            ctx.GetPattern(typeof(MyShipMergeBlock).GetMethod("AddConstraint",  BindingFlags.NonPublic|BindingFlags.Instance )).
-                Suffixes.Add(typeof(MergeBlockPatch).GetMethod(nameof(AddBlocks), BindingFlags.NonPublic | BindingFlags.Static));
+                ctx.GetPattern(typeof(MyShipMergeBlock).GetMethod("AddConstraint",  BindingFlags.NonPublic|BindingFlags.Instance )).
+                    Suffixes.Add(typeof(MergeBlockPatch).GetMethod(nameof(AddBlocks), BindingFlags.NonPublic | BindingFlags.Static));
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace, "Patching Failed");
+            }
 
         }
 
@@ -78,17 +85,12 @@ namespace BlockLimiter.Patch
         {
             var id = __instance.CubeGrid.EntityId;
 
-            Task.Run((() =>
+            if (!GridCache.TryGetGridById(id, out var grid))
             {
-                Thread.Sleep(10000);
-                if (!GridCache.TryGetGridById(id, out var grid))
-                {
-                    return;
-                }
+                return;
+            }
 
-                UpdateLimits.Enqueue(grid.EntityId);
-
-            }));
+            UpdateLimits.Enqueue(grid.EntityId);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Sandbox.Game.Entities;
@@ -11,6 +12,7 @@ using VRage.Network;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Cube;
+using SpaceEngineers.Game.Entities.Blocks;
 using Torch.API.Managers;
 using Torch.Managers.ChatManager;
 using VRageMath;
@@ -27,15 +29,24 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
-            var t = typeof(MyCubeGrid);
-            var aMethod = t.GetMethod("BuildBlocksRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            ctx.GetPattern(aMethod).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlocksRequest),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
-            var bMethod = t.GetMethod("BuildBlocksAreaRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            ctx.GetPattern(bMethod).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlocksArea),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             
-            ctx.GetPattern(typeof(MyProjectorBase).GetMethod("BuildInternal", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance))
-                .Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(Build),
-                    BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+            try
+            {
+                var t = typeof(MyCubeGrid);
+                var aMethod = t.GetMethod("BuildBlocksRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                ctx.GetPattern(aMethod).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlocksRequest),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+                var bMethod = t.GetMethod("BuildBlocksAreaRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                ctx.GetPattern(bMethod).Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(BuildBlocksArea),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+            
+                ctx.GetPattern(typeof(MyProjectorBase).GetMethod("BuildInternal", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance))
+                    .Prefixes.Add(typeof(BuildBlockPatch).GetMethod(nameof(Build),
+                        BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace, "Patching Failed");
+            }
+
             
         }
      
