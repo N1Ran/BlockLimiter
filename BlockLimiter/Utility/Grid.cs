@@ -285,7 +285,7 @@ namespace BlockLimiter.Utility
                 limit.FoundEntities.TryGetValue(id1, out var id1Count);
                 limit.FoundEntities.TryGetValue(id2, out var id2Count);
                 var foundCount = id1Count + id2Count + subGridCount;
-                if (foundCount < limit.Limit) continue;
+                if (foundCount <= limit.Limit) continue;
 
                 count = foundCount;
                 
@@ -295,7 +295,7 @@ namespace BlockLimiter.Utility
                 
                 //if (matchingBlocks.Count <= limit.Limit) continue;
                 //count = Math.Abs(matchingBlocks.Count - limit.Limit);
-                blocks.Add(matchingBlocks[0].BlockDefinition.ToString().Substring(16));
+                if (matchingBlocks.Count > 0)blocks.Add(matchingBlocks[0].BlockDefinition.ToString().Substring(16));
 
                 return false;
             }
