@@ -360,6 +360,7 @@ namespace BlockLimiter
             BlockLimiterConfig.Instance.AllLimits =
                 new HashSet<LimitItem>(
                     Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
+            EssentialsPlayerAccount.InitializeCommunication();
             Task.Run(() =>
             {
                 var test = Torch.InvokeAsync(GridCache.Update);
