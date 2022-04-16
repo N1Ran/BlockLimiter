@@ -144,10 +144,6 @@
     <Compile Include="BlockLimiter.cs" />
     <Compile Include="Commands\Admin.cs" />
     <Compile Include="Commands\Player.cs" />
-    <Compile Include="MultigridProjectorApi\BlockLocation.cs" />
-    <Compile Include="MultigridProjectorApi\BlockState.cs" />
-    <Compile Include="MultigridProjectorApi\IMultigridProjectorApi.cs" />
-    <Compile Include="MultigridProjectorApi\MultigridProjectorTorchAgent.cs" />
     <Compile Include="Patch\BlockOwnershipTransfer.cs" />
     <Compile Include="Patch\GridChange.cs" />
     <Compile Include="Patch\MechanicalConnection.cs" />
@@ -155,6 +151,10 @@
     <Compile Include="Patch\ProjectionPatch.cs" />
     <Compile Include="PluginApi\EssentialsPlayerAccount.cs" />
     <Compile Include="PluginApi\Limits.cs" />
+    <Compile Include="PluginApi\MultigridProjectorApi\BlockLocation.cs" />
+    <Compile Include="PluginApi\MultigridProjectorApi\BlockState.cs" />
+    <Compile Include="PluginApi\MultigridProjectorApi\IMultigridProjectorApi.cs" />
+    <Compile Include="PluginApi\MultigridProjectorApi\MultigridProjectorTorchAgent.cs" />
     <Compile Include="ProcessHandlers\ProcessHandlerBase.cs" />
     <Compile Include="Punishment\Annoy.cs" />
     <Compile Include="Patch\BlockSwitchPatch.cs" />
@@ -173,7 +173,9 @@
     <Compile Include="Settings\BlockLimiterConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="MultigridProjectorApi" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\filter.targets" />
     <ItemGroup>

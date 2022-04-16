@@ -77,7 +77,10 @@ namespace BlockLimiter.Patch
             }
 
             var playerId = player.Identity.IdentityId;
-            if ((Grid.IsSizeViolation(copiedGrid) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)|| BlockLimiterConfig.Instance.MaxBlockSizeProjections < 0 || (projectedBlocks.Count > BlockLimiterConfig.Instance.MaxBlockSizeProjections && BlockLimiterConfig.Instance.MaxBlockSizeProjections > 0) || (Grid.CountViolation(copiedGrid,playerId) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn))
+            if ((Grid.IsSizeViolation(copiedGrid) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)
+                || BlockLimiterConfig.Instance.MaxBlockSizeProjections < 0 || (projectedBlocks.Count > BlockLimiterConfig.Instance.MaxBlockSizeProjections 
+                                                                               && BlockLimiterConfig.Instance.MaxBlockSizeProjections > 0) 
+                || (Grid.CountViolation(copiedGrid,playerId) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn))
             {
                 NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod, MyEventContext.Current.Sender);
                 Utilities.ValidationFailed();

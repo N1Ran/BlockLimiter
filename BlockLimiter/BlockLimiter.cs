@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using BlockLimiter.Patch;
 using BlockLimiter.PluginApi;
+using BlockLimiter.PluginApi.MultigridProjectorApi;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
-using MultigridProjector.Api;
 using Newtonsoft.Json;
 using NLog;
 using NLog.Fluent;
@@ -372,7 +372,6 @@ namespace BlockLimiter
                     if (num > 0) Log.Warn($"Reviewed {num} block ownership");
 
                 }
-
                 ResetLimits();
             });
         }

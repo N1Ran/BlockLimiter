@@ -43,10 +43,6 @@ namespace BlockLimiter.PluginApi
             {
                 Log.Error(e.StackTrace, "Communication with essentials failed");
             }
-            finally
-            {
-                if (!GetRankListMethod()) Log.Warn("Can't get Methods");
-            }
 
 
             return result;
@@ -69,7 +65,6 @@ namespace BlockLimiter.PluginApi
             catch (Exception e)
             {
                 Log.Error(e.StackTrace, "Failed to get rank method");
-                return false;
             }
             return false;
 
@@ -88,6 +83,7 @@ namespace BlockLimiter.PluginApi
                 if (!GetRankListMethod())
                 {
                     Log.Warn("Failed to get Rank List Method From Essentials");
+                    return permList;
                 }
                 GetRankList.Invoke(null,new object[]{steamId,permList});
 

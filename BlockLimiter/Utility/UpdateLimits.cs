@@ -17,16 +17,16 @@ namespace BlockLimiter.Utility
     {
 
         private static readonly Logger Log = BlockLimiter.Instance.Log;
-        private static Queue<long> _Queue = new Queue<long>();
+        private static readonly Queue<long> _queue = new Queue<long>();
 
 
         public static int Enqueue(long id)
         {
             var result = 1;
-            lock (_Queue)
+            lock (_queue)
             {
-                _Queue.Enqueue(id);
-                result = _Queue.Count;
+                _queue.Enqueue(id);
+                result = _queue.Count;
             }
 
             return result;
@@ -35,11 +35,12 @@ namespace BlockLimiter.Utility
 
         public static void Dequeue()
         {
-            if (GridCache.GetBlockCount() == 0) return;
-            lock (_Queue)
+            lock (_queue)
             {
-                if (_Queue.Count == 0) return;
-                var id = _Queue.Dequeue();
+                if (_queue.Count == 0) return;
+                if (GridCache.GetBlockCount() == 0) return;
+                var id = _queue.Dequeue();
+                Log.Warn(id);
                 if (GridCache.TryGetGridById(id, out var grid))
                 {
                     GridLimit(grid);
@@ -52,8 +53,8 @@ namespace BlockLimiter.Utility
                     FactionLimit(id);
                     return;
                 }
-            
-                if (!Utilities.TryGetPlayerByNameOrId(id.ToString(), out _)) return;
+
+                if (!MySession.Static.Players.HasIdentity(id)) return;
                 PlayerLimit(id);
             }
 
@@ -79,7 +80,6 @@ namespace BlockLimiter.Utility
 
             Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, new ParallelOptions {MaxDegreeOfParallelism = 5},limit =>
             {
-                Log.Warn($"Updating {limit.Name} Player Limit for {id}");
                 if (!limit.LimitPlayers)
                 {
                     limit.FoundEntities.Remove(id);

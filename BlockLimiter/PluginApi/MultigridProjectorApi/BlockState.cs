@@ -1,4 +1,4 @@
-namespace MultigridProjector.Api
+namespace BlockLimiter.PluginApi.MultigridProjectorApi
 {
     public enum BlockState
     {
