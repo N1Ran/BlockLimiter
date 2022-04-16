@@ -40,7 +40,6 @@ namespace BlockLimiter.Utility
                 if (_queue.Count == 0) return;
                 if (GridCache.GetBlockCount() == 0) return;
                 var id = _queue.Dequeue();
-                Log.Warn(id);
                 if (GridCache.TryGetGridById(id, out var grid))
                 {
                     GridLimit(grid);
