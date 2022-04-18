@@ -43,7 +43,8 @@ namespace BlockLimiter.Patch
             var block = __instance;
             
             if (block.Enabled == false || block is MyParachute || block is MyButtonPanel ||
-                block is IMyPowerProducer || block.BlockDefinition?.ContainsComputer() == false || block is IMyThrust || block is IMyGyro || block is IMyMedicalRoom)
+                block is IMyPowerProducer || block.BlockDefinition?.ContainsComputer() == false || block is IMyThrust || block is IMyGyro || block is IMyMedicalRoom 
+                || block.IsPreview)
             {
                 return;
             }
