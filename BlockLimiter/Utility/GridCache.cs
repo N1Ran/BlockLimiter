@@ -36,7 +36,7 @@ namespace BlockLimiter.Utility
 
         public static void AddGrid(MyCubeGrid grid)
         {
-            if (grid == null || _gridCache.Contains(grid)) return;
+            if (grid == null || _gridCache.Contains(grid) || grid.Projector != null || grid.IsPreview) return;
             using (_gridLock.AcquireExclusiveUsing())
             {
                 _gridCache.Add(grid);
@@ -55,7 +55,7 @@ namespace BlockLimiter.Utility
 
         public static void AddBlock(MySlimBlock block)
         {
-            if (block == null || _blockCache.Contains(block)) return;
+            if (block == null || _blockCache.Contains(block) || block.CubeGrid.IsPreview || block.CubeGrid.Projector != null) return;
             using (_blockLock.AcquireExclusiveUsing())
             {
                 _blockCache.Add(block);
@@ -90,6 +90,16 @@ namespace BlockLimiter.Utility
                 }
             }
         }
+        
+        public static bool TryGetBlockById(long entityId, out MySlimBlock entity)
+        {
+            using(_gridLock.AcquireSharedUsing())
+            {
+                entity = _blockCache.FirstOrDefault(e => e.FatBlock.EntityId == entityId);
+                return entity != null;
+            }
+        }
+
 
         public static int Update()
         {

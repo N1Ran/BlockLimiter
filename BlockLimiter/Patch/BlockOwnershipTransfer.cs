@@ -9,6 +9,7 @@ using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Torch.Managers.PatchManager;
 using VRage.Game;
+using VRage.Network;
 
 namespace BlockLimiter.Patch
 {
@@ -29,7 +30,7 @@ namespace BlockLimiter.Patch
                 ctx.GetPattern(typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.ChangeOwnerRequest), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)).
                     Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(ChangeOwner), BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             
-                ctx.GetPattern(typeof(MyCubeGrid).GetMethod("OnChangeOwnersRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)).
+                ctx.GetPattern(typeof(MyCubeGrid).GetMethod("OnChangeOwnersRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)).
                     Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(ChangeOwnersRequest), BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             }
             catch (Exception e)
@@ -46,12 +47,17 @@ namespace BlockLimiter.Patch
         /// <param name="requests"></param>
         /// <param name="requestingPlayer"></param>
         /// <returns></returns>
-        private static bool ChangeOwnersRequest(List<MyCubeGrid.MySingleOwnershipRequest> requests, long requestingPlayer)
+        private static bool ChangeOwnersRequest(List<MyCubeGrid.MySingleOwnershipRequest> requests)
         {
 
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;
             var blocks = new List<MySlimBlock>();
 
+            var playerSteamId = MyEventContext.Current.Sender.Value;
+
+            var playerIdentityId = Utilities.GetPlayerIdFromSteamId(playerSteamId);
+
+            if (playerSteamId == 0) return true;
 
             foreach (var request in requests)
             {
@@ -70,7 +76,7 @@ namespace BlockLimiter.Patch
 
             if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
             {
-                if (newOwner == requestingPlayer)
+                if (newOwner == playerIdentityId)
                 {
                     foreach (var block in blocks)
                     {
@@ -82,10 +88,11 @@ namespace BlockLimiter.Patch
 
                 if (!Block.CanAdd(blocks, newOwner, out _))
                 {
-                        BlockLimiter.Instance.Log.Info($"Ownership blocked {blocks.Count} blocks from {MySession.Static.Players.TryGetIdentity(requestingPlayer).DisplayName} to {MySession.Static.Players.TryGetIdentity(newOwner).DisplayName}");
+                        BlockLimiter.Instance.Log.Info($"Ownership blocked {blocks.Count} blocks from " +
+                                                       $"{MySession.Static.Players.TryGetIdentity(playerIdentityId)?.DisplayName} to {MySession.Static.Players.TryGetIdentity(newOwner).DisplayName}");
 
                     Utilities.ValidationFailed();
-                    Utilities.SendFailSound(Utilities.GetSteamIdFromPlayerId(requestingPlayer));
+                    Utilities.SendFailSound(playerSteamId);
                     return false;
                 }
 
