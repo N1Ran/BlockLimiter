@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using BlockLimiter.Patch;
+using BlockLimiter.PluginApi;
 using BlockLimiter.Settings;
 using NLog;
 using Sandbox;
@@ -24,7 +26,7 @@ namespace BlockLimiter.Utility
         private static readonly HashSet<LimitItem> Limits = BlockLimiterConfig.Instance.AllLimits;
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-        private static void KillBlock(MyFunctionalBlock block)
+        public static void KillBlock(MyFunctionalBlock block)
         {
             if (Thread.CurrentThread != MySandboxGame.Static.UpdateThread)
             {

@@ -155,6 +155,7 @@
     <Compile Include="PluginApi\MultigridProjectorApi\BlockState.cs" />
     <Compile Include="PluginApi\MultigridProjectorApi\IMultigridProjectorApi.cs" />
     <Compile Include="PluginApi\MultigridProjectorApi\MultigridProjectorTorchAgent.cs" />
+    <Compile Include="PluginApi\PointCheckAPI.cs" />
     <Compile Include="ProcessHandlers\ProcessHandlerBase.cs" />
     <Compile Include="Punishment\Annoy.cs" />
     <Compile Include="Patch\BlockSwitchPatch.cs" />

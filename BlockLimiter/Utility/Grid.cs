@@ -377,12 +377,6 @@ namespace BlockLimiter.Utility
             var gridType = grid1.GridSizeEnum;
             var isStatic = grid1.IsStatic;
 
-            if (BlockLimiterConfig.Instance.MaxBlockSizeShips > 0 && !isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeShips)
-            {
-                count = Math.Abs(gridSize - BlockLimiterConfig.Instance.MaxBlockSizeShips);
-                limitName = "MaxBlockSizeShips";
-                return  false;
-            }
 
             if (BlockLimiterConfig.Instance.MaxBlockSizeStations > 0 && isStatic && gridSize >= BlockLimiterConfig.Instance.MaxBlockSizeStations)
             {
