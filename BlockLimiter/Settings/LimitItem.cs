@@ -390,8 +390,6 @@ namespace BlockLimiter.Settings
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? (DateTime.Now - playerTime).TotalDays > pTime
                         : (DateTime.Now - playerTime).TotalDays < pTime;
-
-                    break;
                 case FilterType.GridBlockCount:
                     if (!int.TryParse(_filterValue, out var gValue)) return false;
                     return LimitFilterOperator == FilterOperator.GreaterThan
@@ -404,11 +402,9 @@ namespace BlockLimiter.Settings
                     if (owners1.Count == 0) break;
                     var ownerFaction = MySession.Static.Factions.GetPlayerFaction(owners1.FirstOrDefault());
                     if (ownerFaction == null) break;
-                    if (LimitFilterOperator == FilterOperator.GreaterThan) return ownerFaction.Members.Count > fValue;
-                    else
-                    {
-                        return ownerFaction.Members.Count < fValue;
-                    }
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? ownerFaction.Members.Count > fValue
+                        : ownerFaction.Members.Count < fValue;
                 case FilterType.GridMass:
                     if (!int.TryParse(_filterValue, out var gMass)) return false;
                     grid.GetCurrentMass(out var baseMass, out var _);
@@ -467,11 +463,9 @@ namespace BlockLimiter.Settings
                     if (playerId == 0)break;
                     var ownerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
                     if (ownerFaction == null) break;
-                    if (LimitFilterOperator == FilterOperator.GreaterThan) return ownerFaction.Members.Count > fmCount;
-                    else
-                    {
-                        return ownerFaction.Members.Count < fmCount;
-                    }
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? ownerFaction.Members.Count > fmCount
+                        : ownerFaction.Members.Count < fmCount;
                 case FilterType.EssentialRank:
                     if (!EssentialsPlayerAccount.EssentialsInstalled) return false;
                     if ( playerId == 0) break;
