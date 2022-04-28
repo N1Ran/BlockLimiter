@@ -386,19 +386,19 @@ namespace BlockLimiter.Settings
                     playerSteamId = Utilities.GetSteamIdFromPlayerId(identity.IdentityId);
                     if (playerSteamId <= 0) break;
                     var playerTime = PlayerTimeModule.GetTime(playerSteamId);
-                    if (int.TryParse(_filterValue, out var pTime)) return false;
+                    if (!int.TryParse(_filterValue, out var pTime)) return false;
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? (DateTime.Now - playerTime).TotalDays > pTime
                         : (DateTime.Now - playerTime).TotalDays < pTime;
 
                     break;
                 case FilterType.GridBlockCount:
-                    if (int.TryParse(_filterValue, out var gValue)) return false;
+                    if (!int.TryParse(_filterValue, out var gValue)) return false;
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? grid.CubeBlocks.Count > gValue
                         : grid.CubeBlocks.Count < gValue;
                 case FilterType.FactionMemberCount:
-                    if (int.TryParse(_filterValue, out var fValue)) return false;
+                    if (!int.TryParse(_filterValue, out var fValue)) return false;
                     var owners1 = new HashSet<long>(GridCache.GetOwners(grid));
                     owners1.UnionWith(GridCache.GetBuilders(grid));
                     if (owners1.Count == 0) break;
@@ -410,7 +410,7 @@ namespace BlockLimiter.Settings
                         return ownerFaction.Members.Count < fValue;
                     }
                 case FilterType.GridMass:
-                    if (int.TryParse(_filterValue, out var gMass)) return false;
+                    if (!int.TryParse(_filterValue, out var gMass)) return false;
                     grid.GetCurrentMass(out var baseMass, out var _);
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? baseMass > gMass
@@ -449,7 +449,7 @@ namespace BlockLimiter.Settings
             switch (LimitFilterType)
             {
                 case FilterType.PlayerPlayTime:
-                    if (int.TryParse(_filterValue, out var pTime)) return false;
+                    if (!int.TryParse(_filterValue, out var pTime)) break;
                     if (playerId == 0) break;
                     var player = MySession.Static.Players.TryGetSteamId(playerId);
                     if (player == 0) break;
@@ -458,12 +458,12 @@ namespace BlockLimiter.Settings
                         ? (DateTime.Now - playerTime).TotalDays > pTime
                         : (DateTime.Now - playerTime).TotalDays < pTime;
                 case FilterType.GridBlockCount:
-                    if (int.TryParse(_filterValue, out var gbCount)) return false;
+                    if (!int.TryParse(_filterValue, out var gbCount)) break;
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? grid.CubeBlocks.Count > gbCount
                         : grid.CubeBlocks.Count < gbCount;
                 case FilterType.FactionMemberCount:
-                    if (int.TryParse(_filterValue, out var fmCount)) return false;
+                    if (!int.TryParse(_filterValue, out var fmCount)) return false;
                     if (playerId == 0)break;
                     var ownerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
                     if (ownerFaction == null) break;
