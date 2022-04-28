@@ -213,7 +213,7 @@ namespace BlockLimiter.Settings
         }
 
         [Display(Name = "Filter Value", GroupName = "Filter", Description = "Filters limit base on what is set")]
-        public int FilterValue
+        public string FilterValue
         {
             get => _filterValue;
             set
@@ -373,45 +373,78 @@ namespace BlockLimiter.Settings
         internal bool IsFilterType(MyCubeGrid grid)
         {
             if (LimitFilterType == FilterType.None) return true;
+            HashSet<long> owners;
+            MyIdentity identity;
+            ulong playerSteamId;
             switch (LimitFilterType)
             {
                 case FilterType.PlayerPlayTime:
-                    var owners = new HashSet<long>(GridCache.GetOwners(grid));
+                    owners = new HashSet<long>(GridCache.GetOwners(grid));
                     owners.UnionWith(GridCache.GetBuilders(grid));
                     if (owners.Count == 0) break;
-                    var player = MySession.Static.Players.TryGetIdentity(owners.FirstOrDefault());
+                    identity = MySession.Static.Players.TryGetIdentity(owners.FirstOrDefault());
+                    playerSteamId = Utilities.GetSteamIdFromPlayerId(identity.IdentityId);
+                    if (playerSteamId <= 0) break;
+                    var playerTime = PlayerTimeModule.GetTime(playerSteamId);
+                    if (int.TryParse(_filterValue, out var pTime)) return false;
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? (DateTime.Now - playerTime).TotalDays > pTime
+                        : (DateTime.Now - playerTime).TotalDays < pTime;
+
                     break;
                 case FilterType.GridBlockCount:
+                    if (int.TryParse(_filterValue, out var gValue)) return false;
                     return LimitFilterOperator == FilterOperator.GreaterThan
-                        ? grid.CubeBlocks.Count > FilterValue
-                        : grid.CubeBlocks.Count < FilterValue;
+                        ? grid.CubeBlocks.Count > gValue
+                        : grid.CubeBlocks.Count < gValue;
                 case FilterType.FactionMemberCount:
+                    if (int.TryParse(_filterValue, out var fValue)) return false;
                     var owners1 = new HashSet<long>(GridCache.GetOwners(grid));
                     owners1.UnionWith(GridCache.GetBuilders(grid));
                     if (owners1.Count == 0) break;
                     var ownerFaction = MySession.Static.Factions.GetPlayerFaction(owners1.FirstOrDefault());
                     if (ownerFaction == null) break;
-                    if (LimitFilterOperator == FilterOperator.GreaterThan) return ownerFaction.Members.Count > FilterValue;
+                    if (LimitFilterOperator == FilterOperator.GreaterThan) return ownerFaction.Members.Count > fValue;
                     else
                     {
-                        return ownerFaction.Members.Count < FilterValue;
+                        return ownerFaction.Members.Count < fValue;
                     }
                 case FilterType.GridMass:
+                    if (int.TryParse(_filterValue, out var gMass)) return false;
                     grid.GetCurrentMass(out var baseMass, out var _);
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? baseMass > FilterValue
                         : baseMass < FilterValue;
                 case FilterType.GridPoints:
                     if (!PointCheckApi.IsInstalled())
+                        ? baseMass > gMass
+                        : baseMass < gMass;
+                case FilterType.EssentialRank:
+                    if (!EssentialsPlayerAccount.EssentialsInstalled) return false;
+                    owners = new HashSet<long>(GridCache.GetOwners(grid));
+                    owners.UnionWith(GridCache.GetBuilders(grid));
+                    if (owners.Count == 0) break;
+                    identity = MySession.Static.Players.TryGetIdentity(owners.FirstOrDefault());
+                    playerSteamId = Utilities.GetSteamIdFromPlayerId(identity.IdentityId);
+                    if (playerSteamId <= 0) break;
+                    var permList = new List<string>(EssentialsPlayerAccount.GetInheritPermList(playerSteamId));
+                    if (permList.Count == 0) break;
+                    var result = false;
+                    if (_limitOperator == FilterOperator.Equal)
                     {
-                        BlockLimiter.Instance.Log.Warn("GridPoint check not active");
-                        return false;
+                        result = permList.Contains(_filterValue);
+                    }
+                    else if (_limitOperator == FilterOperator.NotEqual)
+                    {
+                        result = !permList.Contains(_filterValue);
                     }
                     var gridScore = PointCheckApi.GetGridBP(grid);
                     if (gridScore == 0) return false;
                     return LimitFilterOperator == FilterOperator.GreaterThan
                         ? gridScore > FilterValue
                         : gridScore < FilterValue;
+
+                    return result;
                 default:
                     return false;
             }
@@ -430,21 +463,41 @@ namespace BlockLimiter.Settings
                     if (player == 0) break;
                     var playerTime = PlayerTimeModule.GetTime(player);
                     return LimitFilterOperator == FilterOperator.GreaterThan
-                        ? (DateTime.Now - playerTime).TotalDays > FilterValue
-                        : (DateTime.Now - playerTime).TotalDays < FilterValue;
+                        ? (DateTime.Now - playerTime).TotalDays > pTime
+                        : (DateTime.Now - playerTime).TotalDays < pTime;
                 case FilterType.GridBlockCount:
+                    if (int.TryParse(_filterValue, out var gbCount)) return false;
                     return LimitFilterOperator == FilterOperator.GreaterThan
-                        ? grid.CubeBlocks.Count > FilterValue
-                        : grid.CubeBlocks.Count < FilterValue;
+                        ? grid.CubeBlocks.Count > gbCount
+                        : grid.CubeBlocks.Count < gbCount;
                 case FilterType.FactionMemberCount:
+                    if (int.TryParse(_filterValue, out var fmCount)) return false;
                     if (playerId == 0)break;
                     var ownerFaction = MySession.Static.Factions.GetPlayerFaction(playerId);
                     if (ownerFaction == null) break;
-                    if (LimitFilterOperator == FilterOperator.GreaterThan) return ownerFaction.Members.Count > FilterValue;
+                    if (LimitFilterOperator == FilterOperator.GreaterThan) return ownerFaction.Members.Count > fmCount;
                     else
                     {
-                        return ownerFaction.Members.Count < FilterValue;
+                        return ownerFaction.Members.Count < fmCount;
                     }
+                case FilterType.EssentialRank:
+                    if (!EssentialsPlayerAccount.EssentialsInstalled) return false;
+                    if ( playerId == 0) break;
+                    var pSteamId = Utilities.GetSteamIdFromPlayerId(playerId);
+                    var permList = new List<string>(EssentialsPlayerAccount.GetInheritPermList(pSteamId));
+                    if (permList.Count == 0) break;
+                    var result = false;
+                    if (_limitOperator == FilterOperator.Equal)
+                    {
+                        result = permList.Contains(_filterValue);
+                    }
+                    else if (_limitOperator == FilterOperator.NotEqual)
+                    {
+                        result = !permList.Contains(_filterValue);
+                    }
+
+                    return result;
+                    
                 case FilterType.GridPoints:
                     if(!PointCheckApi.IsInstalled()) break;
                     var gridPoint = PointCheckApi.GetGridBP(grid);
@@ -563,12 +616,15 @@ namespace BlockLimiter.Settings
             FactionMemberCount,
             GridMass,
             GridPoints
+            EssentialRank
         }
 
         public enum FilterOperator
         {
             LessThan,
-            GreaterThan
+            GreaterThan,
+            Equal,
+            NotEqual
         }
 
         public enum GridType

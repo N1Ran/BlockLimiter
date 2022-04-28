@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,13 +11,10 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Torch;
-using Torch.API.Managers;
-using Torch.Managers.ChatManager;
 using Torch.Managers.PatchManager;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Network;
-using VRageMath;
 
 namespace BlockLimiter.Patch
 {
@@ -30,18 +29,44 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
-            ctx.GetPattern(typeof(MyEntity).GetMethod("Close", BindingFlags.Public | BindingFlags.Instance)).
-                Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnClose),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+            try
+            {
+                ctx.GetPattern(typeof(MyEntity).GetMethod("Close", BindingFlags.Public | BindingFlags.Instance)).
+                    Prefixes.Add(typeof(GridChange).GetMethod(nameof(OnClose),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
 
-            ctx.GetPattern(ConvertToStationRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToStatic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
-            ctx.GetPattern(ConvertToShipRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToDynamic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+                ctx.GetPattern(ConvertToStationRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToStatic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+                ctx.GetPattern(ConvertToShipRequest).Prefixes.Add(typeof(GridChange).GetMethod(nameof(ToDynamic),BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             
-            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("MoveBlocks",  BindingFlags.Static|BindingFlags.NonPublic)).Suffixes
-                .Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.NonPublic));
+                ctx.GetPattern(typeof(MyCubeGrid).GetMethod("MoveBlocks",  BindingFlags.Static|BindingFlags.NonPublic)).Suffixes
+                    .Add(typeof(GridChange).GetMethod(nameof(OnCreateSplit), BindingFlags.Static| BindingFlags.NonPublic));
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace, "Patching Failed");
+            }
+
+            
         }
 
 
-        private static readonly HashSet<MySlimBlock> _justRemoved = new HashSet<MySlimBlock>();
+        private static readonly Dictionary<long, DateTime> _justRemoved = new Dictionary<long,DateTime>();
+
+        public static void ClearRemoved()
+        {
+            lock (_justRemoved)
+            {
+                if (_justRemoved.Count == 0) return;
+
+                for (var i = 0; i < Math.Min(10,_justRemoved.Count); i++)
+                {
+                    var (id, time) = _justRemoved.ElementAt(i);
+                    if ((DateTime.Now - time).Ticks < 100) continue;
+                    _justRemoved.Remove(id);
+                }
+            }
+            
+        }
+        
         /// <summary>
         /// Removes blocks on closure
         /// </summary>
@@ -53,35 +78,51 @@ namespace BlockLimiter.Patch
             if (__instance.MarkedForClose ) return;
             if (__instance is MyCubeBlock cubeBlock)
             {
-                if (_justRemoved.Contains(cubeBlock.SlimBlock))
+                var id = cubeBlock.EntityId;
+                lock (_justRemoved)
                 {
-                    _justRemoved.Remove(cubeBlock.SlimBlock);
-                    return;
+                    if (_justRemoved.TryGetValue(id, out var time))
+                    {
+                        if ((DateTime.Now - time).Ticks > 100)
+                            _justRemoved.Remove(cubeBlock.EntityId);
+                        return;
+                    }
+                    _justRemoved[id] = DateTime.Now; 
                 }
-                _justRemoved.Add(cubeBlock.SlimBlock);
                 //added filter for projector
-                if (cubeBlock.CubeGrid.Projector == null)GridCache.RemoveBlock(cubeBlock.SlimBlock);
+                if (cubeBlock.CubeGrid.Projector == null)
+                    GridCache.RemoveBlock(cubeBlock.SlimBlock);
                 Block.DecreaseCount(cubeBlock.BlockDefinition,
                     cubeBlock.BuiltBy == cubeBlock.OwnerId
                         ? new List<long> {cubeBlock.BuiltBy}
                         : new List<long> {cubeBlock.BuiltBy, cubeBlock.OwnerId}, 1, cubeBlock.CubeGrid.EntityId);
-
             }
-            if (!(__instance is MyCubeGrid grid)) return;
-            foreach (var block in grid.CubeBlocks)
+            else if ((__instance is MyCubeGrid grid))
             {
-                if (_justRemoved.Contains(block))
+                var gridBlocks = new List<MySlimBlock>(grid.CubeBlocks);
+                if (grid.Projector == null) 
+                    GridCache.RemoveGrid(grid);
+                if (gridBlocks?.Count == 0) return;
+                lock (_justRemoved)
                 {
-                    _justRemoved.Remove(block);
-                    continue;
+                    foreach (var block in gridBlocks)
+                    {
+                        if (block.FatBlock == null) continue;
+                        var id = block.FatBlock.EntityId;
+                        if (_justRemoved.TryGetValue(id, out var _))
+                        {
+                            _justRemoved.Remove(block.FatBlock.EntityId);
+                            continue;
+                        }
+                        _justRemoved[id] = DateTime.Now;
+                        Block.DecreaseCount(block.BlockDefinition,
+                            block.BuiltBy == block.OwnerId
+                                ? new List<long> {block.BuiltBy}
+                                : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
+                    }
                 }
-                _justRemoved.Add(block);
-                Block.DecreaseCount(block.BlockDefinition,
-                    block.BuiltBy == block.OwnerId
-                        ? new List<long> {block.BuiltBy}
-                        : new List<long> {block.BuiltBy, block.OwnerId}, 1, grid.EntityId);
+                    
             }
-            if (grid.Projector == null) GridCache.RemoveGrid(grid);
 
         }
 
@@ -138,12 +179,12 @@ namespace BlockLimiter.Patch
                 {
 
                     grid2.SendGridCloseRequest();
-                    UpdateLimits.GridLimit(grid1);
+                    UpdateLimits.Enqueue(grid1.EntityId);
                 }
                 else
                 {
                     grid1.SendGridCloseRequest();
-                    UpdateLimits.GridLimit(grid2);
+                    UpdateLimits.Enqueue(grid2.EntityId);
                 }
             });
         }
@@ -180,19 +221,13 @@ namespace BlockLimiter.Patch
                     Thread.Sleep(100);
                     GridCache.TryGetGridById(gridId, out var newStateGrid);
                     if (newStateGrid == null) return;
-                    UpdateLimits.GridLimit(newStateGrid);
+                    UpdateLimits.Enqueue(newStateGrid.EntityId);
                 });
                 return true;
             }
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
-
-            if (MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
+            Utilities.TrySendDenyMessage(blocks,limitName,remoteUserId,count);
             BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed();
             return false;
 
         }
@@ -220,20 +255,13 @@ namespace BlockLimiter.Patch
                     Thread.Sleep(100);
                     GridCache.TryGetGridById(gridId, out var newStateGrid);
                     if (newStateGrid == null) return;
-                    UpdateLimits.GridLimit(newStateGrid);
+                    UpdateLimits.Enqueue(newStateGrid.EntityId);
                 });
                 return true;
             }
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
-            
-            if (MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-            
+            Utilities.TrySendDenyMessage(blocks, limitName, remoteUserId, count);
             BlockLimiter.Instance.Log.Info(
                 $"Grid conversion blocked from {MySession.Static.Players.TryGetPlayerBySteamId(remoteUserId).DisplayName} due to possible violation");
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed();
             return false;
         }
 

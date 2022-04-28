@@ -64,11 +64,15 @@ namespace BlockLimiter.Commands
                 }
                 _doCheck = false;
                 BlockLimiterConfig.Instance.Save();
-                GridCache.Update();
-                BlockLimiter.ResetLimits();
-                _lastRun = DateTime.Now;
-            
-                Context.Respond("Limits updated");
+                Task.Run(() =>
+                {
+                    var task = BlockLimiter.Instance.Torch.InvokeAsync(GridCache.Update);
+                    Task.WaitAll(task);
+                    BlockLimiter.ResetLimits();
+                    _lastRun = DateTime.Now;
+                    Context.Respond("Limits updated");
+                });
+
                 return;
             }
 
@@ -84,7 +88,7 @@ namespace BlockLimiter.Commands
                     }
 
                     Context.Respond($"Updated {identity.DisplayName} limits");
-                    Utility.UpdateLimits.PlayerLimit(identity.IdentityId);
+                    Utility.UpdateLimits.Enqueue(identity.IdentityId);
                     continue;
                 }
                 
@@ -106,7 +110,7 @@ namespace BlockLimiter.Commands
                     }
             
                     Context.Respond($"{grid.DisplayName} limits updated");
-                    Utility.UpdateLimits.GridLimit(grid);
+                    Utility.UpdateLimits.Enqueue(grid.EntityId);
                     continue;
 
                 }
@@ -121,7 +125,7 @@ namespace BlockLimiter.Commands
                         continue;
                     }
                     Context.Respond($"{faction.Tag} limits updated");
-                    Utility.UpdateLimits.FactionLimit(faction.FactionId);
+                    Utility.UpdateLimits.Enqueue(faction.FactionId);
                 }
             }
 
@@ -150,7 +154,7 @@ namespace BlockLimiter.Commands
             }
 
             Context.Respond($"{grid.DisplayName} limits updated");
-            Utility.UpdateLimits.GridLimit(grid);
+            Utility.UpdateLimits.Enqueue(grid.EntityId);
         }
 
         [Command("update player", "updates limits")]
@@ -170,7 +174,7 @@ namespace BlockLimiter.Commands
             }
 
             Context.Respond($"Updated {identity.DisplayName} limits");
-            Utility.UpdateLimits.PlayerLimit(identity.IdentityId);
+            Utility.UpdateLimits.Enqueue(identity.IdentityId);
 
         }
 
@@ -190,19 +194,13 @@ namespace BlockLimiter.Commands
                 return;
             }
             Context.Respond($"{faction.Tag} limits updated");
-            Utility.UpdateLimits.FactionLimit(faction.FactionId);
+            Utility.UpdateLimits.Enqueue(faction.FactionId);
         }
+        
 
         [Command("reload", "Reloads current BlockLimiter.cfg and apply any changes to current session")]
         public void Reload()
         {
-            var time = DateTime.Now - _lastRun;
-            if (time.TotalMinutes < 1)
-            {
-                var timeRemaining = TimeSpan.FromMinutes(1) - time;
-                Context.Respond($"Cooldown in effect.  Try again in {timeRemaining.TotalSeconds:N0} seconds");
-                return;
-            }
             
             if (!_doCheck)
             {
@@ -219,20 +217,26 @@ namespace BlockLimiter.Commands
             _doCheck = false;
             
             BlockLimiterConfig.Instance.Load();
-            BlockLimiterConfig.Instance.Save();
-            BlockLimiter.ResetLimits();
+            BlockLimiterConfig.Instance.AllLimits =
+                new HashSet<LimitItem>(
+                    Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
+            Task.Run(() =>
+            {
+                var task = BlockLimiter.Instance.Torch.InvokeAsync(GridCache.Update);
+                Task.WaitAll(task);
+                BlockLimiter.ResetLimits();
+                _lastRun = DateTime.Now;
+                Context.Respond("Limits reloaded from config file");
+            });
             
-            _lastRun = DateTime.Now;
-            
-            Context.Respond("Limits reloaded from config file");
         }
 
         [Command("rematch ids", "Attempts to rematch owner/builtby Ids")]
         [Permission(MyPromoteLevel.Moderator)]
         public void FixIds()
         {
-            Block.FixIds();
-            Context.Respond("Ids re-matched");
+            var num = Block.FixIds();
+            Context.Respond($"Reviewed {num} block ownership");
         }
 
         

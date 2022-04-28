@@ -3,7 +3,7 @@ using VRage.Game;
 using VRage.Game.ModAPI;
 using VRageMath;
 
-namespace MultigridProjector.Api
+namespace BlockLimiter.PluginApi.MultigridProjectorApi
 {
     public interface IMultigridProjectorApi
     {

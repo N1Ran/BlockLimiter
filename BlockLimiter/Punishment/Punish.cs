@@ -9,7 +9,11 @@ using NLog;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
+using Torch.API.Managers;
+using Torch.Managers.ChatManager;
 using VRage.Collections;
+using VRage.Game;
+using VRageMath;
 
 namespace BlockLimiter.Punishment
 {
@@ -17,6 +21,9 @@ namespace BlockLimiter.Punishment
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private readonly HashSet<MySlimBlock> _blockCache = new HashSet<MySlimBlock>();
+
+        private static Dictionary<MySlimBlock, LimitItem.PunishmentType> _blockPunish =
+            new Dictionary<MySlimBlock, LimitItem.PunishmentType>();
         private static bool _firstCheckCompleted;
 
         public override int GetUpdateResolution()
@@ -33,6 +40,64 @@ namespace BlockLimiter.Punishment
             _blockCache.Clear();
         }
 
+        public static void Update()
+        {
+            var updateDictionary = new Dictionary<MySlimBlock, LimitItem.PunishmentType>();
+            lock (_blockPunish)
+            {
+                for (int i = 0; i < Math.Min(5,_blockPunish.Count); i++)
+                {
+                    var (k, v) = _blockPunish.ElementAt(i);
+                    updateDictionary[k] = v;
+
+                }
+            }
+            var chatManager = BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>();
+            foreach (var (block, punishment) in updateDictionary)
+            {
+                var ownerSteamId = MySession.Static.Players.TryGetSteamId(block.OwnerId);
+                if (block.IsDestroyed || block.FatBlock.Closed || block.FatBlock.MarkedForClose) return ;
+                Color color = Color.Yellow;
+
+                switch (punishment)
+                {
+                    case LimitItem.PunishmentType.None:
+                        return ;
+                    case LimitItem.PunishmentType.DeleteBlock:
+                        BlockLimiter.Instance.Torch.InvokeAsync(() => { block.CubeGrid?.RemoveBlock(block); });
+
+                        BlockLimiter.Instance.Log.Info(
+                            $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
+                        break;
+                    case LimitItem.PunishmentType.ShutOffBlock:
+                        if (!(block.FatBlock is MyFunctionalBlock fBlock)) return ;
+                        Block.KillBlock(fBlock);
+                        break;
+                    case LimitItem.PunishmentType.Explode:
+
+                        BlockLimiter.Instance.Log.Info(
+                            $"Destroyed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
+                        BlockLimiter.Instance.Torch.InvokeAsync(() =>
+                        {
+                            block.DoDamage(block.BlockDefinition.MaxIntegrity, MyDamageType.Fire);
+                        });
+                        break;
+                    default:
+                        return;
+                }
+
+                lock (_blockPunish)
+                {
+                    _blockPunish.Remove(block);
+                }
+
+                if (ownerSteamId == 0 || !MySession.Static.Players.IsPlayerOnline(block.OwnerId)) return ;
+
+                chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, 
+                    $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid.DisplayName} with {punishment}",color,ownerSteamId);                    }           
+
+        }
+
         public static int RunPunishment(HashSet<MySlimBlock> blocks,List<LimitItem.PunishmentType>punishmentTypes = null)
         {
             
@@ -47,7 +112,7 @@ namespace BlockLimiter.Punishment
 
             if (limitItems.Count == 0) return 0;
 
-            var punishBlocks = new MyConcurrentDictionary<MySlimBlock,LimitItem.PunishmentType>();
+            var punishBlocks = new Dictionary<MySlimBlock,LimitItem.PunishmentType>();
 
             for (var i = limitItems.Count - 1; i >= 0; i--)
             {
@@ -154,7 +219,12 @@ namespace BlockLimiter.Punishment
                 return totalBlocksPunished;
             }
             Log.Debug($"Punishing {punishBlocks.Count} blocks");
-            Block.Punish(punishBlocks);
+            lock (_blockPunish)
+            {
+                _blockPunish.Clear();
+                _blockPunish = punishBlocks;
+            }
+            //Block.Punish(punishBlocks);
 
             /*
             List<MySlimBlock> GetDisabledBlocks(long id, LimitItem limit)

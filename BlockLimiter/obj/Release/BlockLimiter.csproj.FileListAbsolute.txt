@@ -23,3 +23,10 @@ C:\Users\tide1\Nextcloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimite
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.AssemblyReference.cache
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\manifest.xml
 C:\Users\tide1\Nextcloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\manifest.xml
+C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\manifest.xml
+C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\BlockLimiter.dll
+C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Release\BlockLimiter.pdb
+C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.AssemblyReference.cache
+C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.CoreCompileInputs.cache
+C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.dll
+C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.pdb

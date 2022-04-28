@@ -30,8 +30,16 @@ namespace BlockLimiter.Patch
         public static void Patch(PatchContext ctx)
         {
 
-            ctx.GetPattern(typeof(MyProjectorBase).GetMethod("InitializeClipboard", BindingFlags.Instance | BindingFlags.NonPublic)).
-                Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixInitializeClipboard), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
+            try
+            {
+                ctx.GetPattern(typeof(MyProjectorBase).GetMethod("InitializeClipboard", BindingFlags.Instance | BindingFlags.NonPublic)).
+                    Prefixes.Add(typeof(ProjectionPatch).GetMethod(nameof(PrefixInitializeClipboard), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace, "Patching Failed");
+            }
+
 
         }
 
@@ -69,7 +77,10 @@ namespace BlockLimiter.Patch
             }
 
             var playerId = player.Identity.IdentityId;
-            if ((Grid.IsSizeViolation(copiedGrid) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)|| BlockLimiterConfig.Instance.MaxBlockSizeProjections < 0 || (projectedBlocks.Count > BlockLimiterConfig.Instance.MaxBlockSizeProjections && BlockLimiterConfig.Instance.MaxBlockSizeProjections > 0) || (Grid.CountViolation(copiedGrid,playerId) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn))
+            if ((Grid.IsSizeViolation(copiedGrid) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)
+                || BlockLimiterConfig.Instance.MaxBlockSizeProjections < 0 || (projectedBlocks.Count > BlockLimiterConfig.Instance.MaxBlockSizeProjections 
+                                                                               && BlockLimiterConfig.Instance.MaxBlockSizeProjections > 0) 
+                || (Grid.CountViolation(copiedGrid,playerId) && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn))
             {
                 NetworkManager.RaiseEvent(__instance,RemoveBlueprintMethod, MyEventContext.Current.Sender);
                 Utilities.ValidationFailed();
@@ -135,11 +146,8 @@ namespace BlockLimiter.Patch
             
             ((IMyProjector) __instance).SetProjectedGrid(copiedGrid);
 
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.ProjectionDenyMessage,removedList, limitName,count);
+            Utilities.TrySendDenyMessage(removedList, limitName, remoteUserId, count);
 
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(player.Identity.IdentityId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
 
             return false;
         }

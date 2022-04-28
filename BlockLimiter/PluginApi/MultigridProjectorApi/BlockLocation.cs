@@ -1,6 +1,6 @@
 using VRageMath;
 
-namespace MultigridProjector.Api
+namespace BlockLimiter.PluginApi.MultigridProjectorApi
 {
     public struct BlockLocation
     {

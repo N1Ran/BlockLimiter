@@ -9,6 +9,7 @@ using NLog;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
+using Sandbox.Game;
 using Torch;
 using Torch.API.Managers;
 using Torch.Managers;
@@ -38,16 +39,63 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
+            
+            try
+            {
                 ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnStaticGrid", BindingFlags.Public | BindingFlags.Static))
                     .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
+                //ToDo Re-implement RequestGridSpawn as the method to block block placement
+#if DEBUG
+            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("RequestGridSpawn", BindingFlags.NonPublic | BindingFlags.Static))
+                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnGridSpawnRequest),BindingFlags.NonPublic|BindingFlags.Static));
+#endif
+                ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnDynamicGrid", BindingFlags.Public | BindingFlags.Static))
+                    .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
             
-            ctx.GetPattern(typeof(MyCubeBuilder).GetMethod("SpawnDynamicGrid", BindingFlags.Public | BindingFlags.Static))
-                .Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(OnSpawn),BindingFlags.NonPublic|BindingFlags.Static));
+                ctx.GetPattern(typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation",  BindingFlags.Public  |  BindingFlags.Static)).
+                    Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(AttemptSpawn), BindingFlags.Static |  BindingFlags.NonPublic));
             
-            ctx.GetPattern(typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation",  BindingFlags.Public  |  BindingFlags.Static)).
-                Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(AttemptSpawn), BindingFlags.Static |  BindingFlags.NonPublic));
-            
+                ctx.GetPattern(typeof(MyCubeGrid).GetMethod("PasteBlocksToGridServer_Implementation",  BindingFlags.NonPublic  |  BindingFlags.Instance)).
+                    Prefixes.Add(typeof(GridSpawnPatch).GetMethod(nameof(PasteToGrid), BindingFlags.Static |  BindingFlags.NonPublic | BindingFlags.Instance));
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace, "Patching Failed");
+            }
 
+
+        }
+
+
+        /// <summary>
+        /// Decides if pasting a clipboard is allowed and updates the count
+        /// </summary>
+        /// <param name="__instance"></param>
+        /// <param name="gridsToMerge"></param>
+        /// <returns></returns>
+        private static bool PasteToGrid(MyCubeGrid __instance, List<MyObjectBuilder_CubeGrid> gridsToMerge)
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+            var grid = __instance;
+            var remoteUserId = MyEventContext.Current.Sender.Value;
+
+            if (remoteUserId == 0) return true;
+
+            UpdateLimits.Enqueue(grid.EntityId);
+            if (!BlockLimiterConfig.Instance.MergerBlocking)
+            {
+                return true;
+            }
+
+            if (Grid.CanMerge(grid, gridsToMerge, out var rejectedBlocks, out var rejectedCount, out var limitName))
+            {
+                return true;
+            }
+            var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
+
+            Utilities.TrySendDenyMessage(rejectedBlocks,limitName,remoteUserId,rejectedCount);
+            BlockLimiter.Instance.Log.Info($"Removed {rejectedCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
+            return false;
         }
 
         /// <summary>
@@ -68,18 +116,16 @@ namespace BlockLimiter.Patch
 
             var playerId = Utilities.GetPlayerIdFromSteamId(remoteUserId);
             var playerName = MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName;
+            var gridName = grids.FirstOrDefault()?.DisplayName;
+            var initialBlockCount = grids.Sum(x => x.CubeBlocks.Count);
 
             grids.RemoveAll(g=> Grid.IsSizeViolation(g) || Grid.CountViolation(g,playerId));
             
             if (grids.Count == 0  && BlockLimiterConfig.Instance.BlockType > BlockLimiterConfig.BlockingType.Warn)
             {
                 BlockLimiter.Instance.Log.Info($"Blocked {playerName} from spawning a grid");
-
-                Thread.Sleep(100);
-                Utilities.ValidationFailed();
-                Utilities.SendFailSound(remoteUserId);
+                Utilities.TrySendDenyMessage(new List<string>{gridName}, "Size Violation", remoteUserId, initialBlockCount);
                 NetworkManager.RaiseStaticEvent(ShowPasteFailed, new EndpointId(remoteUserId), null);
-
                 return false;
             }
 
@@ -118,15 +164,7 @@ namespace BlockLimiter.Patch
             
             
             parameters.Entities = grids;
-
-
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,removedList,limitName,removalCount);
-
-            if (MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-
-
+            Utilities.TrySendDenyMessage(removedList,limitName,remoteUserId,removalCount);
             BlockLimiter.Instance.Log.Info($"Removed {removalCount} blocks from grid spawned by {MySession.Static.Players.TryGetIdentity(playerId)?.DisplayName}");
             return true;
         }
@@ -162,18 +200,19 @@ namespace BlockLimiter.Patch
 
             BlockLimiter.Instance.Log.Info($"Blocked {p} from placing {block}");
 
-            //ModCommunication.SendMessageTo(new NotificationMessage($"You've reach your limit for {b}",5000,MyFontEnum.Red),remoteUserId );
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,new List<string>{block.ToString().Substring(16)},limitName);
-            if (remoteUserId != 0 && MySession.Static.Players.IsPlayerOnline(playerId))
-                BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                    .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
-
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed();
+            Utilities.TrySendDenyMessage(new List<string>{block.ToString().Substring(16)}, limitName, remoteUserId);
 
             return false;
         }
 
+
+        #if DEBUG
+        //Todo Find solution to getting a private struct.  Getting the "data" does not work.
+        private static void OnGridSpawnRequest(object data)
+        {
+            Log.Warn("Testing GridSpawnRequest");
+        }
+        #endif
 
     }
 }

@@ -13,6 +13,8 @@ using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using Torch.API.Managers;
+using Torch.Managers.ChatManager;
 using Torch.Utils;
 using VRage.Collections;
 using VRage.Game;
@@ -20,6 +22,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Network;
 using VRage.Utils;
+using VRageMath;
 
 namespace BlockLimiter.Utility
 {
@@ -40,13 +43,25 @@ namespace BlockLimiter.Utility
             return returnMsg;
         }
 
+        public static void TrySendDenyMessage(List<string> blockList, string limitName, 
+            ulong remoteUserId = 0, int count = 1)
+        {
+            if (remoteUserId == 0 || !MySession.Static.Players.IsPlayerOnline(GetPlayerIdFromSteamId(remoteUserId))) return;
+            
+            var msg = GetMessage(BlockLimiterConfig.Instance.DenyMessage,blockList,limitName, count);
+
+            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
+            SendFailSound(remoteUserId);
+            ValidationFailed(remoteUserId);
+        }
         public static string GetPlayerNameFromId(long id)
         {
-            var playername = "";
-            if (id == 0) return playername;
+            var playerName = "";
+            if (id == 0) return playerName;
             var identity = MySession.Static.Players.TryGetIdentity(id);
-            playername = identity?.DisplayName;
-            return playername;
+            playerName = identity?.DisplayName;
+            return playerName;
         }
         public static string GetPlayerNameFromSteamId(ulong steamId)
         {

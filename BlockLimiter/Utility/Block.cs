@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BlockLimiter.Patch;
-using BlockLimiter.PluginApi;
 using BlockLimiter.Settings;
 using NLog;
 using Sandbox;
@@ -268,6 +267,7 @@ namespace BlockLimiter.Utility
                         {
                             if (MySession.Static.Players.IdentityIsNpc(playerId)) continue;
                             if (foundGrid && MySession.Static.Players.IdentityIsNpc(GridCache.GetBuilders(grid).FirstOrDefault())) continue;
+                    
                         }
 
                         limit.FoundEntities.AddOrUpdate(playerId, amount, (l, i) => i+amount);
@@ -401,89 +401,117 @@ namespace BlockLimiter.Utility
             return nonAllowedBlocks.Count == 0;
         }
 
+        /*
         public static void Punish(MyConcurrentDictionary<MySlimBlock, LimitItem.PunishmentType> removalCollection)
         {
 
             if (removalCollection.Count == 0 || !BlockLimiterConfig.Instance.EnableLimits) return;
             var chatManager = BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>();
+            Log.Warn($"Starting punishment for {removalCollection.Count}");
             lock (removalCollection)
             {
+                //Task.WaitAll(removalCollection.Select(d => PunishBlock(d.Key, d.Value)).ToArray());
+                var tasks = new List<Task>();
+                foreach (var (block,punishmentType) in removalCollection)
+                {
+                    tasks.Add(Task.Run(()=>PunishBlock(block,punishmentType)));
+                }
+
+                var finishedTask = Task.WhenAny(tasks);
+                tasks.Remove(finishedTask);
+                /*
+
                 Task.Run(() =>
                 {
-                    Parallel.ForEach(removalCollection, collective =>
+                    Parallel.ForEach(removalCollection, new ParallelOptions{MaxDegreeOfParallelism = 5},collective =>
                     {
-
-                        var (block, punishment) = collective;
-                        var ownerSteamId = MySession.Static.Players.TryGetSteamId(block.OwnerId);
-                        if (block.IsDestroyed || block.FatBlock.Closed || block.FatBlock.MarkedForClose) return;
-                        Color color = Color.Yellow;
-
-                        switch (punishment)
-                        {
-                            case LimitItem.PunishmentType.None:
-                                return;
-                            case LimitItem.PunishmentType.DeleteBlock:
-                                BlockLimiter.Instance.Torch.InvokeAsync(() =>
-                                {
-                                    block.CubeGrid?.RemoveBlock(block);
-                                });
-                                
-                                BlockLimiter.Instance.Log.Info(
-                                    $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
-                                break;
-                            case LimitItem.PunishmentType.ShutOffBlock:
-                                if (!(block.FatBlock is MyFunctionalBlock fBlock)) return;
-                                KillBlock(fBlock);
-                                break;
-                            case LimitItem.PunishmentType.Explode:
-                                
-                                BlockLimiter.Instance.Log.Info(
-                                    $"Destroyed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
-                                BlockLimiter.Instance.Torch.InvokeAsync(() =>
-                                {
-                                    block.DoDamage(block.BlockDefinition.MaxIntegrity, MyDamageType.Fire);
-                                });
-                                break;
-                            default:
-                                return;
-                        }
-
-                       if (ownerSteamId == 0 || !MySession.Static.Players.IsPlayerOnline(block.OwnerId)) return;
-
-                       chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid.DisplayName} with {punishment}",color,ownerSteamId);
-
+                        var (k, v) = collective;
+                        PunishBlock(k, v);
                     });
                 });
+                Log.Warn("Punishment Complete");
+
             }
 
         }
 
-        public static void FixIds()
+
+
+        private static Task<int>  PunishBlock(MySlimBlock block, LimitItem.PunishmentType punishment)
         {
+            var chatManager = BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>();
+            var ownerSteamId = MySession.Static.Players.TryGetSteamId(block.OwnerId);
+            if (block.IsDestroyed || block.FatBlock.Closed || block.FatBlock.MarkedForClose) return Task.FromResult(0);
+            Color color = Color.Yellow;
+
+            switch (punishment)
+            {
+                case LimitItem.PunishmentType.None:
+                    return Task.FromResult(0);
+                case LimitItem.PunishmentType.DeleteBlock:
+                    BlockLimiter.Instance.Torch.InvokeAsync(() => { block.CubeGrid?.RemoveBlock(block); });
+
+                    BlockLimiter.Instance.Log.Info(
+                        $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
+                    break;
+                case LimitItem.PunishmentType.ShutOffBlock:
+                    if (!(block.FatBlock is MyFunctionalBlock fBlock)) return Task.FromResult(0);
+                    KillBlock(fBlock);
+                    break;
+                case LimitItem.PunishmentType.Explode:
+
+                    BlockLimiter.Instance.Log.Info(
+                        $"Destroyed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
+                    BlockLimiter.Instance.Torch.InvokeAsync(() =>
+                    {
+                        block.DoDamage(block.BlockDefinition.MaxIntegrity, MyDamageType.Fire);
+                    });
+                    break;
+                default:
+                    return Task.FromResult(0);
+            }
+
+            if (ownerSteamId == 0 || !MySession.Static.Players.IsPlayerOnline(block.OwnerId)) return Task.FromResult(1);
+
+            chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, 
+                           $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid.DisplayName} with {punishment}",color,ownerSteamId);        
+                    return Task.FromResult(1);
+        }
+        
+        */
+
+        public static int FixIds()
+        {
+            var result = 0;
             if (!BlockLimiterConfig.Instance.EnableLimits)
-                return;
+                return result;
             var blockCache = new HashSet<MySlimBlock>();
 
             GridCache.GetBlocks(blockCache);
 
-            Task.Run(() =>
+            var test = Task.WhenAll(blockCache.Select(FixBlockOwnership).ToArray());
+            result = test.Result.Sum();
+
+            test.Dispose();
+            return result;
+        }
+        
+        private static Task<int> FixBlockOwnership(MySlimBlock block)
+        {
+
+            if (block == null || block.OwnerId == block.BuiltBy || 
+                block.FatBlock?.MarkedForClose == true || !block.BlockDefinition.ContainsComputer()) 
+                return Task.FromResult(0);
+            if (block.OwnerId == 0 && block.BuiltBy > 0 )
             {
-                Parallel.ForEach(blockCache, block =>
-                {
-                    if (block == null) return;
+                block.FatBlock?.CubeGrid?.ChangeOwner(block.FatBlock,block.OwnerId,block.BuiltBy);
+            }
+            else
+            {
+                block.TransferAuthorship(block.OwnerId);
+            }
 
-                    if (block.OwnerId == block.BuiltBy) return;
-                    
-                    if (block.OwnerId == 0 && block.BuiltBy > 0)
-                    {
-                        block.FatBlock.ChangeBlockOwnerRequest(block.BuiltBy,MyOwnershipShareModeEnum.Faction);
-
-                        return;
-                    }
-
-                    block.TransferAuthorship(block.OwnerId);
-                });
-            });
+            return Task.FromResult(1);
         }
 
 

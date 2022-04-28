@@ -28,17 +28,25 @@ namespace BlockLimiter.Patch
 
         public static void Patch(PatchContext ctx)
         {
-          
-            var t = typeof(MyMechanicalConnectionBlockBase);
-            var a = typeof(MechanicalConnection).GetMethod(nameof(OnAttach), BindingFlags.NonPublic | BindingFlags.Static);
-            foreach (var met in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            try
             {
-
-                if (met.Name == "TryAttach")
+                var t = typeof(MyMechanicalConnectionBlockBase);
+                var a = typeof(MechanicalConnection).GetMethod(nameof(OnAttach), BindingFlags.NonPublic | BindingFlags.Static);
+                foreach (var met in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
                 {
-                    ctx.GetPattern(met).Prefixes.Add(a);
+
+                    if (met.Name == "TryAttach")
+                    {
+                        ctx.GetPattern(met).Prefixes.Add(a);
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace, "Patching Failed");
+            }
+
+          
 
         }
 
@@ -80,15 +88,10 @@ namespace BlockLimiter.Patch
             _lastChecked[top.EntityId] = DateTime.Now;
 
             BlockLimiter.Instance.Log.Info($"Blocked attachement between {baseGrid.DisplayName} and {topGrid.DisplayName}");
-
-            if (remoteUserId <= 0) return false;
-            Utilities.SendFailSound(remoteUserId);
-            Utilities.ValidationFailed(remoteUserId);
-            var msg = Utilities.GetMessage(BlockLimiterConfig.Instance.DenyMessage,blocks,limitName,count);
-            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
-                .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
             topGrid.RemoveBlock(top.SlimBlock);
             baseGrid.RemoveBlock(__instance.SlimBlock);
+
+            Utilities.TrySendDenyMessage(blocks,limitName,remoteUserId,count);
             return false;
         }
 

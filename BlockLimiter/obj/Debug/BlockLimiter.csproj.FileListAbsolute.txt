@@ -5,7 +5,6 @@ C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.d
 C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.pdb
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Debug\BlockLimiter.dll
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Debug\BlockLimiter.pdb
-D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.csprojAssemblyReference.cache
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.dll
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.pdb
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Debug\BlockLimiter.dll
@@ -14,3 +13,5 @@ C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockL
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.pdb
 C:\Users\Olatide\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.csproj.CoreCompileInputs.cache
 D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.csproj.CoreCompileInputs.cache
+D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\bin\Debug\manifest.xml
+D:\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Debug\BlockLimiter.csproj.AssemblyReference.cache

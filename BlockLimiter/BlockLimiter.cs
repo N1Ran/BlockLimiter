@@ -2,18 +2,20 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using BlockLimiter.Patch;
 using BlockLimiter.PluginApi;
+using BlockLimiter.PluginApi.MultigridProjectorApi;
 using BlockLimiter.ProcessHandlers;
 using BlockLimiter.Punishment;
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
-using MultigridProjector.Api;
 using Newtonsoft.Json;
 using NLog;
+using NLog.Fluent;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
@@ -46,7 +48,8 @@ namespace BlockLimiter
         private TorchSessionManager _sessionManager;
         private List<ProcessHandlerBase> _limitHandlers = new List<ProcessHandlerBase>();
         public readonly HashSet<LimitItem> VanillaLimits = new HashSet<LimitItem>();
-        private int _updateCounter;
+        private int _updateCounter100;
+        private int _updateCounter10;
         public static IPluginManager PluginManager { get; private set; }
         public string timeDataPath = "";
         private MyConcurrentHashSet<MySlimBlock> _justAdded = new MyConcurrentHashSet<MySlimBlock>();
@@ -76,7 +79,7 @@ namespace BlockLimiter
         private void FactionsOnFactionCreated(long id)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
-            UpdateLimits.FactionLimit(id);
+            UpdateLimits.Enqueue(id);
         }
 
         /// <summary>
@@ -133,9 +136,9 @@ namespace BlockLimiter
                 return;
             }
 
-            UpdateLimits.FactionLimit(fromFaction);
-            UpdateLimits.FactionLimit(toFaction);
-            UpdateLimits.PlayerLimit(playerId);
+            UpdateLimits.Enqueue(fromFaction);
+            UpdateLimits.Enqueue(toFaction);
+            UpdateLimits.Enqueue(playerId);
 
         }
 
@@ -176,8 +179,8 @@ namespace BlockLimiter
             var identityId = Utilities.GetPlayerIdFromSteamId(obj);
             if (identityId == 0)return;
             var playerFaction = MySession.Static.Factions.GetPlayerFaction(identityId);
-            UpdateLimits.PlayerLimit(identityId);
-            if (playerFaction != null)UpdateLimits.PlayerLimit(playerFaction.FactionId);
+            UpdateLimits.Enqueue(identityId);
+            if (playerFaction != null)UpdateLimits.Enqueue(playerFaction.FactionId);
         }
 
         private void GetVanillaLimits()
@@ -288,10 +291,14 @@ namespace BlockLimiter
             base.Update();
             if (MyAPIGateway.Session == null|| !BlockLimiterConfig.Instance.EnableLimits)
                 return;
-            if (++_updateCounter % 100 != 0) return;
+            if (++_updateCounter10 % 10 == 0)
+            {
+                GridChange.ClearRemoved();
+                UpdateLimits.Dequeue();
+                Punish.Update();
+            }
+            if (++_updateCounter100 % 100 != 0) return;
             MergeBlockPatch.MergeBlockCache?.Clear();
-
-
         }
 
 
@@ -358,12 +365,18 @@ namespace BlockLimiter
             BlockLimiterConfig.Instance.AllLimits =
                 new HashSet<LimitItem>(
                     Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
+            EssentialsPlayerAccount.InitializeCommunication();
             Task.Run(() =>
             {
                 var test = Torch.InvokeAsync(GridCache.Update);
-                Task.WaitAny(test);
+                Task.WaitAll(test);
                 if (test.Result <= 0) return;
-               if (BlockLimiterConfig.Instance.BlockOwnershipTransfer) Block.FixIds();
+                if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
+                {
+                    var num = Block.FixIds();
+                    if (num > 0) Log.Warn($"Reviewed {num} block ownership");
+
+                }
                 ResetLimits();
             });
             
@@ -425,15 +438,12 @@ namespace BlockLimiter
                 var grids = new HashSet<MyCubeGrid>();
                 GridCache.GetGrids(grids);
                 if (grids.Count > 0)
-                    Task.Run(() =>
+                {
+                    foreach (var grid in grids)
                     {
-                        Parallel.ForEach(grids, grid =>
-                        {
-                        if (grid == null) return;
-
-                        UpdateLimits.GridLimit(grid);
-                        });
-                    });
+                        UpdateLimits.Enqueue(grid.EntityId);
+                    }
+                }
 
 
             }
@@ -453,7 +463,7 @@ namespace BlockLimiter
 
                             if (identity == 0) return;
 
-                            UpdateLimits.PlayerLimit(identity);
+                            UpdateLimits.Enqueue(identity);
                         });
                     });
 
@@ -471,7 +481,7 @@ namespace BlockLimiter
 
                         if (faction.IsEveryoneNpc() || id == 0) return;
 
-                        UpdateLimits.FactionLimit(id);
+                        UpdateLimits.Enqueue(id);
                     });
                 });
             }
