@@ -147,23 +147,21 @@ namespace BlockLimiter.Utility
             return grid == biggestGrid;
         }
 
-        public static MyCubeGrid GetBiggestGridInGroup(MyCubeGrid grid)
+        private static MyCubeGrid GetBiggestGridInGroup(MyCubeGrid grid)
         {
             if (grid == null) return null;
             var biggestGrid = grid;
             double num = 0.0;
             var nodes = MyCubeGridGroups.Static.Mechanical
                 .GetGroup(grid)?.Nodes;
-            if (nodes != null)
-                foreach (MyGroups<MyCubeGrid, MyGridMechanicalGroupData>.Node node in nodes)
-                {
-                    double volume = node.NodeData.PositionComp.WorldAABB.Size.Volume;
-                    if (volume > num)
-                    {
-                        num = volume;
-                        biggestGrid = node.NodeData;
-                    }
-                }
+            if (nodes == null) return biggestGrid;
+            foreach (var node in nodes)
+            {
+                var volume = node.NodeData.PositionComp.WorldAABB.Size.Volume;
+                if (!(volume > num)) continue;
+                num = volume;
+                biggestGrid = node.NodeData;
+            }
 
             return biggestGrid;
         }
@@ -172,32 +170,19 @@ namespace BlockLimiter.Utility
         {
             if (grid == null) return null;
             var result = new List<MyCubeGrid>();
-            double num = 0.0;
-            var nodes = MyCubeGridGroups.Static.Mechanical
+            var nodes = MyCubeGridGroups.Static.NoContactDamage
                 .GetGroup(grid)?.Nodes;
             if (nodes == null) return result;
-            foreach (MyGroups<MyCubeGrid, MyGridMechanicalGroupData>.Node node in nodes)
-            {
-                if (node.NodeData == grid) continue;
-                result.Add(node.NodeData);
-            }
+            result.AddRange(from MyGroups<MyCubeGrid, MyGridNoDamageGroupData>.Node node in nodes where node.NodeData != grid select node.NodeData);
 
             return result;
         }
 
-        public static HashSet<MySlimBlock> GetSubGridBlocks(MyCubeGrid grid)
+        private static IEnumerable<MySlimBlock> GetSubGridBlocks(MyCubeGrid grid)
         {
             if (grid == null) return null;
-            var result = new HashSet<MySlimBlock>();
-            double num = 0.0;
-            var nodes = MyCubeGridGroups.Static.Mechanical
-                .GetGroup(grid)?.Nodes;
-            if (nodes == null) return result;
-            foreach (MyGroups<MyCubeGrid, MyGridMechanicalGroupData>.Node node in nodes)
-            {
-                result.UnionWith(node.NodeData.CubeBlocks);
-            }
-
+            
+            var result = new HashSet<MySlimBlock>(GetSubGrids(grid).SelectMany(x=>x.CubeBlocks));
             return result;
         }
 

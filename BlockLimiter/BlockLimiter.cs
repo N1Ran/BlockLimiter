@@ -178,9 +178,9 @@ namespace BlockLimiter
             if (!BlockLimiterConfig.Instance.EnableLimits) return;
             var identityId = Utilities.GetPlayerIdFromSteamId(obj);
             if (identityId == 0)return;
-            var playerFaction = MySession.Static.Factions.GetPlayerFaction(identityId);
+            //var playerFaction = MySession.Static.Factions.GetPlayerFaction(identityId);
             UpdateLimits.Enqueue(identityId);
-            if (playerFaction != null)UpdateLimits.Enqueue(playerFaction.FactionId);
+            //if (playerFaction != null)UpdateLimits.Enqueue(playerFaction.FactionId);
         }
 
         private void GetVanillaLimits()
@@ -432,10 +432,10 @@ namespace BlockLimiter
                 GridCache.GetGrids(grids);
                 if (grids.Count > 0)
                 {
-                    foreach (var grid in grids)
+                    Parallel.ForEach(grids, grid =>
                     {
                         UpdateLimits.Enqueue(grid.EntityId);
-                    }
+                    });
                 }
 
 
