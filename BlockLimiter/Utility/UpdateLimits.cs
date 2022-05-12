@@ -20,17 +20,13 @@ namespace BlockLimiter.Utility
         private static readonly Queue<long> _queue = new Queue<long>();
 
 
-        public static int Enqueue(long id)
+        public static void Enqueue(long id)
         {
-            var result = 1;
             lock (_queue)
             {
+                if (_queue.Contains(id)) return;
                 _queue.Enqueue(id);
-                result = _queue.Count;
             }
-
-            return result;
-
         }
 
         public static void Dequeue()

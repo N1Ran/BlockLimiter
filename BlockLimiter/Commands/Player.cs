@@ -72,7 +72,7 @@ namespace BlockLimiter.Commands
             {
                 Context.Respond("Unable to update limits");
                 return;
-            };
+            }
             Context.Respond("Limits Updated");
 
 

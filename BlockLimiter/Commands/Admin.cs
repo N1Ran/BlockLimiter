@@ -199,6 +199,7 @@ namespace BlockLimiter.Commands
         
 
         [Command("reload", "Reloads current BlockLimiter.cfg and apply any changes to current session")]
+        [Permission(MyPromoteLevel.Moderator)]
         public void Reload()
         {
             
@@ -217,17 +218,10 @@ namespace BlockLimiter.Commands
             _doCheck = false;
             
             BlockLimiterConfig.Instance.Load();
-            BlockLimiterConfig.Instance.AllLimits =
-                new HashSet<LimitItem>(
-                    Utilities.UpdateLimits(BlockLimiterConfig.Instance.UseVanillaLimits));
-            Task.Run(() =>
-            {
-                var task = BlockLimiter.Instance.Torch.InvokeAsync(GridCache.Update);
-                Task.WaitAll(task);
-                BlockLimiter.ResetLimits();
-                _lastRun = DateTime.Now;
-                Context.Respond("Limits reloaded from config file");
-            });
+            BlockLimiter.Instance.Activate();
+            BlockLimiter.ResetLimits(false);
+            _lastRun = DateTime.Now;
+            Context.Respond("Limits reloaded from config file");
             
         }
 

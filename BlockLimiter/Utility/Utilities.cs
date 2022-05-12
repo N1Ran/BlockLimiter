@@ -71,6 +71,12 @@ namespace BlockLimiter.Utility
             var id = MySession.Static.Players.TryGetIdentity(pid);
             return id?.DisplayName;
         }
+        
+        public static MyIdentity GetPlayerIdentityFromSteamId(ulong steamId)
+        {
+            MyIdentity identity = MySession.Static.Players.TryGetIdentity(MySession.Static.Players.TryGetIdentityId(steamId, 0));
+            return identity;
+        }
 
 
         public static long GetPlayerIdFromSteamId(ulong steamId)

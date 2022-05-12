@@ -71,7 +71,6 @@ namespace BlockLimiter.Settings
         private int _maxSmallGrids = 0;
         private int _maxLargeGrids = 0;
         private BlockingType _blockingType = BlockingType.None;
-        private int _maxGridPoint = 0;
 
 
         #region General BlockCount Limit

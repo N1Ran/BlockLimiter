@@ -22,7 +22,6 @@ namespace BlockLimiter.Utility
         private static readonly Dictionary<long, HashSet<long>> _bigBuilders = new Dictionary<long, HashSet<long>>();
         private static readonly Dictionary<long, HashSet<long>> _bigOwners = new Dictionary<long, HashSet<long>>();
         private static readonly HashSet<MyCubeGrid> _dirtyEntities = new HashSet<MyCubeGrid>();
-        private static int _updateCounter;
         private static readonly FastResourceLock _gridLock = new FastResourceLock();
         private static readonly FastResourceLock _blockLock = new FastResourceLock();
         private static readonly FastResourceLock _builderLock = new FastResourceLock();

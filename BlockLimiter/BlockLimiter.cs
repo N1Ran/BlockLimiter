@@ -372,7 +372,7 @@ namespace BlockLimiter
                     if (num > 0) Log.Warn($"Reviewed {num} block ownership");
 
                 }
-                ResetLimits();
+                ResetLimits(true,false,false);
             });
         }
         private static void Load()
@@ -452,11 +452,14 @@ namespace BlockLimiter
                         {
                             if (player.SteamId == 0) return;
 
-                            var identity = Utilities.GetPlayerIdFromSteamId(player.SteamId);
+                            var identity = Utilities.GetPlayerIdentityFromSteamId(player.SteamId);
 
-                            if (identity == 0) return;
+                            if (string.IsNullOrEmpty(identity.DisplayName))
+                                return;
 
-                            UpdateLimits.Enqueue(identity);
+                            if (identity.IdentityId == 0) return;
+
+                            UpdateLimits.Enqueue(identity.IdentityId);
                         });
                     });
 

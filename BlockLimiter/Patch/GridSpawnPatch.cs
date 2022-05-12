@@ -33,10 +33,12 @@ namespace BlockLimiter.Patch
         private static readonly MethodInfo SpawnGrid =
             typeof(MyCubeGrid).GetMethod("TryPasteGrid_Implementation", BindingFlags.Static | BindingFlags.Public);
 
+        #if DEBUG
         [ReflectedGetter(Name = "Definition",
             TypeName = "Sandbox.Game.Entities.MyCubeBuilder+GridSpawnRequestData, Sandbox.Game")]
         private static Func<object, DefinitionIdBlit> _getDefinition;
-
+        #endif
+        
         public static void Patch(PatchContext ctx)
         {
             
