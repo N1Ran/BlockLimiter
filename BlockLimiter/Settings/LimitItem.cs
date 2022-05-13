@@ -352,22 +352,29 @@ namespace BlockLimiter.Settings
             
             if (GridTypeBlock != GridType.AllGrids)
             {
-
-                if (definition.CubeSize == MyCubeSize.Small && (GridTypeBlock == GridType.LargeGridsOnly ||
-                                                                GridTypeBlock == GridType.StationsOnly ||
-                                                                GridTypeBlock == GridType.SupportedStationsOnly))
-                    return false;
-
-                if (definition.CubeSize == MyCubeSize.Large && GridTypeBlock == GridType.SmallGridsOnly) return false;
+                switch (definition.CubeSize)
+                {
+                    case MyCubeSize.Small when (GridTypeBlock == GridType.LargeGridsOnly ||
+                                                GridTypeBlock == GridType.StationsOnly ||
+                                                GridTypeBlock == GridType.SupportedStationsOnly):
+                    case MyCubeSize.Large when GridTypeBlock == GridType.SmallGridsOnly:
+                        return false;
+                }
             }
 
-            var defString = new HashSet<string>
+            var defString = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 definition.Id.ToString().Substring(16), definition.Id.TypeId.ToString().Substring(16),
                 definition.Id.SubtypeId.ToString(), definition.BlockPairName
             };
 
-            return blockList.Any(block => !string.IsNullOrEmpty(block) && defString.Contains(block, StringComparer.OrdinalIgnoreCase));
+            foreach (var block in blockList)
+            {
+                if (string.IsNullOrEmpty(block) || !defString.Contains(block)) continue;
+                return true;
+            }
+
+            return false;
         }
 
         internal bool IsFilterType(MyCubeGrid grid)

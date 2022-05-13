@@ -9,6 +9,7 @@ using BlockLimiter.Settings;
 using NLog;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
+using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
 
 namespace BlockLimiter.Utility
@@ -176,6 +177,75 @@ namespace BlockLimiter.Utility
 
             });
             return true;
+        }
+        
+               
+        public static void ResetLimits(bool updateGrids = true, bool updatePlayers = true, bool updateFactions = true)
+        {
+            if (!BlockLimiterConfig.Instance.EnableLimits)
+            {
+                foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+                {
+                    limit.FoundEntities.Clear();
+                }
+                return;
+            }
+
+            if (updateGrids)  Task.WhenAll(UpdateGrids());
+            if (updateFactions) Task.WhenAll(UpdateFactions());
+            if (updatePlayers) Task.WhenAll(UpdatePlayers());
+            
+            Log.Warn("Count Complete");
+
+        }
+
+        public static async Task UpdateGrids()
+        {
+            var grids = new HashSet<MyCubeGrid>();
+            
+            GridCache.GetGrids(grids);
+            
+            var tasks = grids.Select(t => Task.Run(() => Enqueue(t.EntityId))).ToList();
+
+            await Task.WhenAll(tasks);
+
+        }
+        public static async Task UpdateFactions()
+        {
+            var factions = MySession.Static.Factions;
+            
+            var tasks = factions.Select(t => Task.Run(() => FilterFaction(t.Value))).ToList();
+
+            void FilterFaction(MyFaction faction)
+            {
+                if (faction.IsEveryoneNpc()) return;
+                Enqueue(faction.FactionId);
+            }
+
+            await Task.WhenAll(tasks);
+        }
+        public static async Task UpdatePlayers()
+        {
+            var players = MySession.Static.Players.GetAllPlayers();
+
+            var tasks = players.Select(t => Task.Run(() => RunPlayer(t))).ToList();
+
+            void RunPlayer(MyPlayer.PlayerId player)
+            {
+                if (player.SteamId == 0) return;
+
+                var identity = Utilities.GetPlayerIdentityFromSteamId(player.SteamId);
+
+                if (string.IsNullOrEmpty(identity.DisplayName))
+                    return;
+
+                if (identity.IdentityId == 0) return;
+
+                Enqueue(identity.IdentityId);
+            }
+
+            await Task.WhenAll(tasks);
+            
         }
         
     }

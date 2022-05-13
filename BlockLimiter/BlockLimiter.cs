@@ -363,9 +363,9 @@ namespace BlockLimiter
             EssentialsPlayerAccount.InitializeCommunication();
             Task.Run(() =>
             {
-                var test = Torch.InvokeAsync(GridCache.Update);
-                Task.WaitAll(test);
-                if (test.Result <= 0) return;
+                var task = Torch.InvokeAsync(GridCache.Update);
+                Task.WaitAll(task);
+                if (task.Result <= 0) return;
                 if (BlockLimiterConfig.Instance.BlockOwnershipTransfer)
                 {
                     var num = Block.FixIds();
@@ -414,7 +414,11 @@ namespace BlockLimiter
             }
         }
 
-
+        public static void ResetLimits(bool updateGrids = true, bool updatePlayers = true, bool updateFactions = true)
+        {
+            UpdateLimits.ResetLimits(updateGrids,updatePlayers,updateFactions);
+        }
+        /*
         public static void ResetLimits(bool updateGrids = true, bool updatePlayers = true, bool updateFactions = true)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)
@@ -485,6 +489,7 @@ namespace BlockLimiter
         }
 
 
+        */
         //The methods below are method used by other plugins to check limits from Blocklimiter
         #region External Access
         
