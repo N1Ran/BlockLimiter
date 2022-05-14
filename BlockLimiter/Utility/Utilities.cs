@@ -55,6 +55,19 @@ namespace BlockLimiter.Utility
             SendFailSound(remoteUserId);
             ValidationFailed(remoteUserId);
         }
+        
+        public static void TrySendProjectionDenyMessage(List<string> blockList, string limitName, 
+            ulong remoteUserId = 0, int count = 1)
+        {
+            if (remoteUserId == 0 || !MySession.Static.Players.IsPlayerOnline(GetPlayerIdFromSteamId(remoteUserId))) return;
+            
+            var msg = GetMessage(BlockLimiterConfig.Instance.ProjectionDenyMessage,blockList,limitName, count);
+
+            BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>()?
+                .SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, msg, Color.Red, remoteUserId);
+            SendFailSound(remoteUserId);
+            ValidationFailed(remoteUserId);
+        }
         public static string GetPlayerNameFromId(long id)
         {
             var playerName = "";

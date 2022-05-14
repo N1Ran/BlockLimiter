@@ -146,7 +146,7 @@ namespace BlockLimiter.Patch
             
             ((IMyProjector) __instance).SetProjectedGrid(copiedGrid);
 
-            Utilities.TrySendDenyMessage(removedList, limitName, remoteUserId, count);
+            Utilities.TrySendProjectionDenyMessage(removedList, limitName, remoteUserId, count);
 
 
             return false;
