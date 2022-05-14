@@ -24,7 +24,6 @@ namespace BlockLimiter.Utility
 {
     public static class Block
     {
-        private static readonly HashSet<LimitItem> Limits = BlockLimiterConfig.Instance.AllLimits;
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         public static void KillBlock(MyFunctionalBlock block)
@@ -227,7 +226,7 @@ namespace BlockLimiter.Utility
                 factions.Add(faction);
             }
             
-            foreach (var limit in Limits)
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
                 if (!limit.IsMatch(def)) continue;
 
@@ -283,7 +282,7 @@ namespace BlockLimiter.Utility
                 factions.Add(faction);
             }
 
-            foreach (var limit in Limits)
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
             {
                 if (!limit.IsMatch(def))continue;
 

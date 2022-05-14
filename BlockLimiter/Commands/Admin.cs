@@ -537,6 +537,7 @@ namespace BlockLimiter.Commands
         }
 
         [Command("punish", "runs punishment")]
+        [Permission(MyPromoteLevel.Moderator)]
         public void Punish()
         {
             if (!BlockLimiterConfig.Instance.EnableLimits)
