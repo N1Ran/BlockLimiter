@@ -383,6 +383,7 @@ namespace BlockLimiter.Utility
                     case LimitItem.GridType.StationsOnly when grid.IsStatic:
                     case LimitItem.GridType.AllGrids:
                     case LimitItem.GridType.SmallGridsOnly:
+                    case LimitItem.GridType.LargeGridsAndStations:
                     case LimitItem.GridType.LargeGridsOnly:
                         continue;
                 }

@@ -355,6 +355,7 @@ namespace BlockLimiter.Settings
                 switch (definition.CubeSize)
                 {
                     case MyCubeSize.Small when (GridTypeBlock == GridType.LargeGridsOnly ||
+                                                GridTypeBlock == GridType.LargeGridsAndStations ||
                                                 GridTypeBlock == GridType.StationsOnly ||
                                                 GridTypeBlock == GridType.SupportedStationsOnly):
                     case MyCubeSize.Large when GridTypeBlock == GridType.SmallGridsOnly:
@@ -509,7 +510,10 @@ namespace BlockLimiter.Settings
                     isGridType = grid.GridSizeEnum == MyCubeSize.Small;
                     break;
                 case GridType.LargeGridsOnly:
-                    isGridType =  grid.GridSizeEnum == MyCubeSize.Large;
+                    isGridType =  grid.GridSizeEnum == MyCubeSize.Large && !grid.IsStatic;
+                    break;
+                case GridType.LargeGridsAndStations:
+                    isGridType = grid.GridSizeEnum == MyCubeSize.Large;
                     break;
                 case GridType.StationsOnly:
                     isGridType = grid.GridSizeEnum != MyCubeSize.Small && grid.IsStatic && grid.IsUnsupportedStation;
@@ -543,6 +547,9 @@ namespace BlockLimiter.Settings
                     isGridType = grid.GridSizeEnum == MyCubeSize.Small;
                     break;
                 case GridType.LargeGridsOnly:
+                    isGridType = grid.GridSizeEnum == MyCubeSize.Large && !grid.IsStatic;
+                    break;
+                case GridType.LargeGridsAndStations:
                     isGridType = grid.GridSizeEnum == MyCubeSize.Large;
                     break;
                 case GridType.StationsOnly:
@@ -619,6 +626,7 @@ namespace BlockLimiter.Settings
             AllGrids,
             SmallGridsOnly,
             LargeGridsOnly,
+            LargeGridsAndStations,
             StationsOnly,
             ShipsOnly,
             SupportedStationsOnly
