@@ -191,11 +191,11 @@ namespace BlockLimiter.Utility
                 return;
             }
 
-            if (updateGrids)  Task.WhenAll(UpdateGrids());
-            if (updateFactions) Task.WhenAll(UpdateFactions());
-            if (updatePlayers) Task.WhenAll(UpdatePlayers());
+            if (updateGrids)  Task.WaitAll(UpdateGrids());
+            if (updatePlayers) Task.WaitAll(UpdatePlayers());
+            if (updateFactions) Task.WaitAll(UpdateFactions());
             
-            Log.Warn("Count Complete");
+            Log.Info("Limit Count Complete");
 
         }
 

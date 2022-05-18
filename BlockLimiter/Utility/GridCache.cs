@@ -35,7 +35,7 @@ namespace BlockLimiter.Utility
 
         public static void AddGrid(MyCubeGrid grid)
         {
-            if (grid == null || _gridCache.Contains(grid) || grid.Projector != null || grid.IsPreview) return;
+            if (grid == null || _gridCache.Contains(grid) || grid.Projector != null) return;
             using (_gridLock.AcquireExclusiveUsing())
             {
                 _gridCache.Add(grid);
@@ -54,7 +54,7 @@ namespace BlockLimiter.Utility
 
         public static void AddBlock(MySlimBlock block)
         {
-            if (block == null || _blockCache.Contains(block) || block.CubeGrid.IsPreview || block.CubeGrid.Projector != null) return;
+            if (block == null || _blockCache.Contains(block) || block.CubeGrid.Projector != null) return;
             using (_blockLock.AcquireExclusiveUsing())
             {
                 _blockCache.Add(block);
@@ -117,7 +117,7 @@ namespace BlockLimiter.Utility
                 _blockCache.Clear();
                 foreach (var g in e.OfType<MyCubeGrid>())
                 {
-                    if (g.IsPreview || g.Projector != null) continue;
+                    if (g.Projector != null) continue;
                     _gridCache.Add(g);
                     AddBlocks(g.CubeBlocks);
                 }

@@ -346,8 +346,7 @@ namespace BlockLimiter.Settings
 
         internal bool IsMatch(MyCubeBlockDefinition definition)
         {
-            var blockList = new HashSet<string>(_blockList);
-            if (blockList.Count == 0 || definition == null) return false;
+            if (_blockList.Count == 0 || definition == null) return false;
 
             
             if (GridTypeBlock != GridType.AllGrids)
@@ -369,7 +368,7 @@ namespace BlockLimiter.Settings
                 definition.Id.SubtypeId.ToString(), definition.BlockPairName
             };
 
-            foreach (var block in blockList)
+            foreach (var block in _blockList)
             {
                 if (string.IsNullOrEmpty(block) || !defString.Contains(block)) continue;
                 return true;

@@ -92,7 +92,7 @@ namespace BlockLimiter
 
             if (!(entity is MyCubeGrid grid)) return;
 
-            if (grid.Projector != null||grid.IsPreview) return;
+            if (grid.Projector != null) return;
             // Do Not Add to grid cache at this point to allow MyCubeGridsOnBlockBuild to add and prevent double counts
             var blocks = grid.CubeBlocks;
             GridCache.AddGrid(grid);

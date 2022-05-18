@@ -57,13 +57,13 @@ namespace BlockLimiter.Punishment
             foreach (var (block, punishment) in updateDictionary)
             {
                 var ownerSteamId = MySession.Static.Players.TryGetSteamId(block.OwnerId);
-                if (block.IsDestroyed || block.FatBlock.Closed || block.FatBlock.MarkedForClose) return ;
+                if (block.IsDestroyed || block.FatBlock.Closed || block.FatBlock.MarkedForClose) continue ;
                 Color color = Color.Yellow;
 
                 switch (punishment)
                 {
                     case LimitItem.PunishmentType.None:
-                        return ;
+                        continue ;
                     case LimitItem.PunishmentType.DeleteBlock:
                         BlockLimiter.Instance.Torch.InvokeAsync(() => { block.CubeGrid?.RemoveBlock(block); });
 
@@ -71,7 +71,7 @@ namespace BlockLimiter.Punishment
                             $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
                         break;
                     case LimitItem.PunishmentType.ShutOffBlock:
-                        if (!(block.FatBlock is MyFunctionalBlock fBlock)) return ;
+                        if (!(block.FatBlock is MyFunctionalBlock fBlock)) continue ;
                         Block.KillBlock(fBlock);
                         break;
                     case LimitItem.PunishmentType.Explode:
@@ -84,7 +84,7 @@ namespace BlockLimiter.Punishment
                         });
                         break;
                     default:
-                        return;
+                        continue;
                 }
 
                 lock (_blockPunish)
@@ -95,7 +95,9 @@ namespace BlockLimiter.Punishment
                 if (ownerSteamId == 0 || !MySession.Static.Players.IsPlayerOnline(block.OwnerId)) return ;
 
                 chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, 
-                    $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid.DisplayName} with {punishment}",color,ownerSteamId);                    }           
+                    $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid.DisplayName} with {punishment}",color,ownerSteamId);
+                
+            }           
 
         }
 
@@ -117,105 +119,16 @@ namespace BlockLimiter.Punishment
 
             var tasks = new List<Task>();
 
-            for (var i = limitItems.Count - 1; i >= 0; i--)
+            foreach (var item in limitItems)
             {
-                var item = limitItems[i];
                 if (punishmentTypes != null && !punishmentTypes.Contains(item.Punishment)) continue;
 
                 tasks.Add(Task.Run(()=>CheckLimit(item)));
-                
-                /*
-                var idsToRemove = new HashSet<long>();
-                var punishCount = 0;
-                foreach (var (id, count) in item.FoundEntities)
-                {
-                    if (id == 0 || item.IsExcepted(id))
-                    {
-                        idsToRemove.Add(id);
-                        continue;
-                    }
-
-                    if (count <= item.Limit) continue;
-
-
-                    foreach (var block in blocks)
-                    {
-                        if (block.CubeGrid.IsPreview || !item.IsMatch(block.BlockDefinition))
-                        {
-                            continue;
-                        }
-
-
-                        var defBase = MyDefinitionManager.Static.GetDefinition(block.BlockDefinition.Id);
-
-                        if (defBase != null && !_firstCheckCompleted && !defBase.Context.IsBaseGame) continue;
-
-                        if (Math.Abs(punishCount - count) <= item.Limit)
-                        {
-                            break;
-                        }
-
-                        if (item.IgnoreNpcs)
-                        {
-                            if (MySession.Static.Players.IdentityIsNpc(block.FatBlock.BuiltBy) ||
-                                MySession.Static.Players.IdentityIsNpc(block.FatBlock.OwnerId))
-
-                            {
-                                idsToRemove.Add(id);
-                                continue;
-                            }
-                        }
-
-                        //Reverting to old shutoff due to performance issues
-                        if (item.Punishment == LimitItem.PunishmentType.ShutOffBlock &&
-                            block.FatBlock is MyFunctionalBlock fBlock && (!fBlock.Enabled ||
-                                                                           block.FatBlock.MarkedForClose ||
-                                                                           block.FatBlock.Closed))
-                        {
-                            punishCount++;
-                            continue;
-                        }
-
-                        var playerSteamId = MySession.Static.Players.TryGetSteamId(id);
-
-                        if (playerSteamId > 0 && !Annoy.AnnoyQueue.ContainsKey(playerSteamId))
-                        {
-                            Annoy.AnnoyQueue[playerSteamId] = DateTime.Now;
-                            break;
-
-                        }
-
-                        if (item.LimitGrids && block.CubeGrid.EntityId == id)
-                        {
-                            punishCount++;
-                            punishBlocks[block] = item.Punishment;
-                            continue;
-                        }
-
-                        if (item.LimitPlayers)
-                        {
-                            if (Block.IsOwner(block, id))
-                            {
-                                punishCount++;
-                                punishBlocks[block] = item.Punishment;
-                                continue;
-                            }
-                        }
-
-                        if (!item.LimitFaction) continue;
-                        var faction = MySession.Static.Factions.TryGetFactionById(id);
-                        if (faction == null || block.FatBlock.GetOwnerFactionTag()?.Equals(faction.Tag) == false)
-                            continue;
-                        punishCount++;
-                        punishBlocks[block] = item.Punishment;
-                    }
-                }
-                */
             }
+
 
             void CheckLimit(LimitItem limit)
             {
-                if (punishmentTypes != null && !punishmentTypes.Contains(limit.Punishment)) return;
                 var idsToRemove = new HashSet<long>();
                 var punishCount = 0;
                 foreach (var (id, count) in limit.FoundEntities)
@@ -228,14 +141,12 @@ namespace BlockLimiter.Punishment
 
                     if (count <= limit.Limit) continue;
 
-
                     foreach (var block in blocks)
                     {
-                        if (block.CubeGrid.IsPreview || !limit.IsMatch(block.BlockDefinition))
+                        if (!limit.IsMatch(block.BlockDefinition)  || block.CubeGrid.Projector != null)
                         {
                             continue;
                         }
-
 
                         var defBase = MyDefinitionManager.Static.GetDefinition(block.BlockDefinition.Id);
 
@@ -308,9 +219,14 @@ namespace BlockLimiter.Punishment
                         punishBlocks[block] = limit.Punishment;
                     }
                 }
+
+                foreach (var id in idsToRemove)
+                {
+                    limit.FoundEntities.Remove(id);
+                }
             }
 
-            Task.WhenAll(tasks);
+            Task.WaitAll(tasks.ToArray());
             totalBlocksPunished = punishBlocks.Count;
             _firstCheckCompleted = !_firstCheckCompleted;
             if (totalBlocksPunished == 0)
@@ -323,7 +239,6 @@ namespace BlockLimiter.Punishment
                 _blockPunish.Clear();
                 _blockPunish = punishBlocks;
             }
-            //Block.Punish(punishBlocks);
 
             /*
             List<MySlimBlock> GetDisabledBlocks(long id, LimitItem limit)
