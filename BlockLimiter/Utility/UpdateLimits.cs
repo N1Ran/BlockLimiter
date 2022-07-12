@@ -191,15 +191,15 @@ namespace BlockLimiter.Utility
                 return;
             }
 
-            if (updateGrids)  Task.WaitAll(UpdateGrids());
-            if (updatePlayers) Task.WaitAll(UpdatePlayers());
-            if (updateFactions) Task.WaitAll(UpdateFactions());
+            if (updateGrids)  Task.WhenAll(UpdateGrids());
+            if (updateFactions) Task.WhenAll(UpdateFactions());
+            if (updatePlayers) Task.WhenAll(UpdatePlayers());
             
-            Log.Info("Limit Count Complete");
+            Log.Warn("Count Complete");
 
         }
 
-        public static async Task UpdateGrids()
+        private static async Task UpdateGrids()
         {
             var grids = new HashSet<MyCubeGrid>();
             
@@ -210,7 +210,8 @@ namespace BlockLimiter.Utility
             await Task.WhenAll(tasks);
 
         }
-        public static async Task UpdateFactions()
+
+        private static async Task UpdateFactions()
         {
             var factions = MySession.Static.Factions;
             
@@ -224,7 +225,8 @@ namespace BlockLimiter.Utility
 
             await Task.WhenAll(tasks);
         }
-        public static async Task UpdatePlayers()
+
+        private static async Task UpdatePlayers()
         {
             var players = MySession.Static.Players.GetAllPlayers();
 
