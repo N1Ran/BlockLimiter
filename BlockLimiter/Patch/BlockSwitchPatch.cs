@@ -23,9 +23,6 @@ namespace BlockLimiter.Patch
             
             try
             {
-                ctx.GetPattern(typeof(MyFunctionalBlock).GetMethod("UpdateBeforeSimulation10", BindingFlags.Instance | BindingFlags.Public)).
-                    Prefixes.Add(typeof(BlockSwitchPatch).GetMethod(nameof(KeepBlocksOff), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
-
                 ctx.GetPattern(typeof(MyFunctionalBlock).GetMethod("UpdateBeforeSimulation100", BindingFlags.Instance | BindingFlags.Public)).
                     Prefixes.Add(typeof(BlockSwitchPatch).GetMethod(nameof(KeepBlocksOff), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
             }
@@ -40,16 +37,15 @@ namespace BlockLimiter.Patch
         private static void KeepBlocksOff (MyFunctionalBlock __instance)
         {
             if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.KillNoOwnerBlocks || __instance.OwnerId != 0)return;
-            var block = __instance;
-            
-            if (block.Enabled == false || block is MyParachute || block is MyButtonPanel ||
-                block is IMyPowerProducer || block.BlockDefinition?.ContainsComputer() == false || block is IMyThrust || block is IMyGyro || block is IMyMedicalRoom || block.CubeGrid.Projector != null)
+
+            if (__instance.Enabled == false || __instance is MyParachute || __instance is MyButtonPanel ||
+                __instance is IMyPowerProducer || __instance.BlockDefinition?.ContainsComputer() == false || __instance is IMyThrust || __instance is IMyGyro || __instance is IMyMedicalRoom || __instance.CubeGrid.Projector != null)
             {
                 return;
             }
             
-            BlockLimiter.Instance.Log.Info($"Keeping {block.BlockDefinition?.Id.ToString().Substring(16)} from {block.CubeGrid?.DisplayName} off due to no ownership");
-            block.Enabled = false;
+            BlockLimiter.Instance.Log.Info($"Keeping {__instance.BlockDefinition?.Id.ToString().Substring(16)} from {__instance.CubeGrid?.DisplayName} off due to no ownership");
+            __instance.Enabled = false;
         }
     }
 }
