@@ -39,7 +39,7 @@ namespace BlockLimiter.Patch
             if (!BlockLimiterConfig.Instance.EnableLimits || !BlockLimiterConfig.Instance.KillNoOwnerBlocks || __instance.OwnerId != 0)return;
 
             if (__instance.Enabled == false || __instance is MyParachute || __instance is MyButtonPanel ||
-                __instance is IMyPowerProducer || __instance.BlockDefinition?.ContainsComputer() == false || __instance is IMyThrust || __instance is IMyGyro || __instance is IMyMedicalRoom || __instance.CubeGrid.Projector != null)
+                __instance is IMyPowerProducer || __instance.BlockDefinition?.ContainsComputer() == false || __instance is IMyThrust || __instance is IMyGyro || __instance.CubeGrid.Projector != null)
             {
                 return;
             }
