@@ -10,6 +10,7 @@ using Sandbox.Game.World;
 using Torch.Managers.PatchManager;
 using VRage.Game;
 using VRage.Network;
+using static Sandbox.Game.Entities.MyCubeGrid;
 
 namespace BlockLimiter.Patch
 {
@@ -30,7 +31,7 @@ namespace BlockLimiter.Patch
                 ctx.GetPattern(typeof(MyCubeGrid).GetMethod(nameof(MyCubeGrid.ChangeOwnerRequest), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)).
                     Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(ChangeOwner), BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             
-                ctx.GetPattern(typeof(MyCubeGrid).GetMethod("OnChangeOwnersRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)).
+                ctx.GetPattern(typeof(MyCubeGrid).GetMethod("AddChangeOwnersRequestServerside", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)).
                     Prefixes.Add(typeof(BlockOwnershipTransfer).GetMethod(nameof(ChangeOwnersRequest), BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             }
             catch (Exception e)
@@ -40,14 +41,14 @@ namespace BlockLimiter.Patch
 
         }
 
-
+        
         /// <summary>
         /// Checks if ownership can be changed
         /// </summary>
+        /// <param name="shareMode"></param>
         /// <param name="requests"></param>
-        /// <param name="requestingPlayer"></param>
         /// <returns></returns>
-        private static bool ChangeOwnersRequest(List<MyCubeGrid.MySingleOwnershipRequest> requests)
+        private static bool ChangeOwnersRequest(MyOwnershipShareModeEnum shareMode, List<MySingleOwnershipRequest> requests)
         {
 
             if (!BlockLimiterConfig.Instance.EnableLimits) return true;

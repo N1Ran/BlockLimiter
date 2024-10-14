@@ -66,18 +66,13 @@ namespace BlockLimiter.Punishment
                         continue ;
                     case LimitItem.PunishmentType.DeleteBlock:
                         BlockLimiter.Instance.Torch.InvokeAsync(() => { block.CubeGrid?.RemoveBlock(block); });
-
-                        BlockLimiter.Instance.Log.Info(
-                            $"Removed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
-                        break;
+                       break;
                     case LimitItem.PunishmentType.ShutOffBlock:
                         if (!(block.FatBlock is MyFunctionalBlock fBlock)) continue ;
                         Block.KillBlock(fBlock);
                         break;
                     case LimitItem.PunishmentType.Explode:
 
-                        BlockLimiter.Instance.Log.Info(
-                            $"Destroyed {block.BlockDefinition} from {block.CubeGrid.DisplayName}");
                         BlockLimiter.Instance.Torch.InvokeAsync(() =>
                         {
                             block.DoDamage(block.BlockDefinition.MaxIntegrity, MyDamageType.Fire);
@@ -91,11 +86,11 @@ namespace BlockLimiter.Punishment
                 {
                     _blockPunish.Remove(block);
                 }
-
+                BlockLimiter.Instance.Log.Info($"Punishment: {block.BlockDefinition} from {block.CubeGrid?.DisplayName} with {punishment}");
                 if (ownerSteamId == 0 || !MySession.Static.Players.IsPlayerOnline(block.OwnerId)) return ;
 
                 chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, 
-                    $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid.DisplayName} with {punishment}",color,ownerSteamId);
+                    $"Punishing {((MyTerminalBlock)block.FatBlock).CustomName} from {block.CubeGrid?.DisplayName} with {punishment}",color,ownerSteamId);
                 
             }           
 

@@ -30,3 +30,5 @@ C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLim
 C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.CoreCompileInputs.cache
 C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.dll
 C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.pdb
+C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\bin\Release\manifest.xml
+C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.AssemblyReference.cache
