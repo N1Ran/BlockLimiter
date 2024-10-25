@@ -56,7 +56,7 @@ namespace BlockLimiter.Patch
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var grid = __instance.CubeGrid;
 
-            var copiedGrid = __instance.Clipboard.CopiedGrids[0];
+            var copiedGrid = __instance.Clipboard.CopiedGrids?.FirstOrDefault();
             
             if (copiedGrid == null || grid == null) return true;
 
