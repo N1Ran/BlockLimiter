@@ -51,7 +51,7 @@ namespace BlockLimiter.Patch
         /// <returns></returns>
         private static bool PrefixInitializeClipboard(MyProjectorBase __instance)
         {
-            if (!BlockLimiterConfig.Instance.EnableLimits) return true;
+            if (!BlockLimiterConfig.Instance.EnableLimits || (__instance.Clipboard?.CopiedGrids?.Count ?? 0) < 1) return true;
 
             var remoteUserId = MyEventContext.Current.Sender.Value;
             var grid = __instance.CubeGrid;
