@@ -410,8 +410,7 @@ namespace BlockLimiter.Utility
 
             if (grid == null || IsSizeViolation(grid)) return false;
 
-            
-            return playerId == 0 || Block.CanAdd(grid.CubeBlocks, playerId, out _);
+            return playerId == 0 || Block.CanAdd(grid.CubeBlocks, out _);
         }
 
         public static bool TryCleanGridOfViolation(List<MyObjectBuilder_CubeGrid> grids, long playerId)

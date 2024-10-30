@@ -324,37 +324,40 @@ namespace BlockLimiter.Utility
 
         }
 
-        public static bool CanAdd(List<MyObjectBuilder_CubeBlock> blocks, long id, out List<MyObjectBuilder_CubeBlock> nonAllowedBlocks)
+        public static bool CanAdd(List<MyObjectBuilder_CubeBlock> blocks, out List<MyObjectBuilder_CubeBlock> nonAllowedBlocks)
         {
-            var newList = new List<MyObjectBuilder_CubeBlock>();
+            nonAllowedBlocks = new List<MyObjectBuilder_CubeBlock>();
             if (!BlockLimiterConfig.Instance.EnableLimits)
             {
-                nonAllowedBlocks = newList;
                 return true;
             }
-            
-            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            var blockAuthors = new List<long>();
+            foreach (var block in blocks.Where(block => !blockAuthors.Contains(block.BuiltBy)))
             {
-                if (limit.IgnoreNpcs)
-                {
-                    if (MySession.Static.Players.IdentityIsNpc(id)) continue;
-                }
-
-                limit.FoundEntities.TryGetValue(id, out var currentCount);
-                
-                if(limit.IsExcepted(id)) continue;
-                
-                var affectedBlocks = blocks.Where(x => limit.IsMatch(Utilities.GetDefinition(x))).ToList();
-                
-                if (affectedBlocks.Count <= limit.Limit - currentCount ) continue;
-                
-                var take = affectedBlocks.Count - (limit.Limit - currentCount);
-                
-                newList.AddRange(affectedBlocks.Where(x=>!newList.Contains(x)).Take(take));
+                blockAuthors.Add(block.BuiltBy);
             }
 
-            nonAllowedBlocks = newList;
-            return newList.Count == 0;
+            foreach (var id in blockAuthors)
+            {
+                var blocksByAuthor = blocks.Where(x => x.BuiltBy == id).ToList();
+                foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+                {
+                    if (limit.IgnoreNpcs)
+                    {
+                        if (MySession.Static.Players.IdentityIsNpc(id)) continue;
+                    }
+
+                    limit.FoundEntities.TryGetValue(id, out var currentCount);
+                    if (limit.IsExcepted(id)) continue;
+                    var affectedBlocks = blocksByAuthor.Where(x => limit.IsMatch(Utilities.GetDefinition(x))).ToList();
+                    if (affectedBlocks.Count <= limit.Limit - currentCount) continue;
+                    var take = affectedBlocks.Count - (limit.Limit - currentCount);
+                    var newList = nonAllowedBlocks;
+                    nonAllowedBlocks.AddRange(affectedBlocks.Where(x => !newList.Contains(x)).Take(take));
+                }
+            }
+
+            return nonAllowedBlocks.Count == 0;
         }
        
         public static bool CanAdd(List<MySlimBlock> blocks, long id, out List<MySlimBlock> nonAllowedBlocks)
