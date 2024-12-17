@@ -171,19 +171,11 @@ namespace BlockLimiter.Utility
             if (user == 0) return;
             ((MyMultiplayerServerBase)MyMultiplayer.Static).ValidationFailed(user);
         }
-        
-        private static MyConcurrentDictionary<MyStringHash, MyCubeBlockDefinition> _defCache = new MyConcurrentDictionary<MyStringHash, MyCubeBlockDefinition>();
 
         public static MyCubeBlockDefinition GetDefinition(MyObjectBuilder_CubeBlock block)
         {
-            if (_defCache.TryGetValue(block.SubtypeId, out var def))
-                return def;
-
-            var blockDefinition = MyDefinitionManager.Static.GetCubeBlockDefinition(block);
-            _defCache[block.SubtypeId] = blockDefinition;
-            return blockDefinition;
+            return MyDefinitionManager.Static.GetCubeBlockDefinition(block);
         }
-
 
         public static bool IsExcepted(object target)
         {
