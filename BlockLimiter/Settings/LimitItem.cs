@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -258,8 +258,8 @@ namespace BlockLimiter.Settings
         internal bool IsExcepted(object target)
         {
             if (target == null) return false;
-            var allExceptions = new HashSet<string>(Exceptions);
-            allExceptions.UnionWith(BlockLimiterConfig.Instance.GeneralException);
+            var allExceptions = new HashSet<string>(Exceptions ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
+            allExceptions.UnionWith(BlockLimiterConfig.Instance.GeneralException ?? new List<string>());
 
             if (allExceptions.Count == 0) return false;
 
@@ -278,10 +278,12 @@ namespace BlockLimiter.Settings
                 case ulong steamId:
                     if (steamId == 0) return false;
                     playerSteamId = steamId;
+                    if (IsEssentialsRankExcepted(playerSteamId, allExceptions)) return true;
+                    if (allExceptions.Contains(playerSteamId.ToString())) return true;
                     identityId = Utilities.GetPlayerIdFromSteamId(steamId);
                     identity = MySession.Static.Players.TryGetIdentity(identityId);
-                    displayName = identity.DisplayName;
-                    faction = MySession.Static.Factions.GetPlayerFaction(identityId);
+                    displayName = identity?.DisplayName ?? string.Empty;
+                    faction = identityId > 0 ? MySession.Static.Factions.GetPlayerFaction(identityId) : null;
                     break;
                 case string name:
                     if (allExceptions.Contains(name)) return true;
@@ -291,6 +293,7 @@ namespace BlockLimiter.Settings
                         faction = MySession.Static.Factions.GetPlayerFaction(identityId);
                         displayName = identity.DisplayName;
                         playerSteamId = Utilities.GetSteamIdFromPlayerId(identityId);
+                        if (IsEssentialsRankExcepted(playerSteamId, allExceptions)) return true;
                     }
                     break;
                 case long id:
@@ -312,6 +315,7 @@ namespace BlockLimiter.Settings
                         faction = MySession.Static.Factions.GetPlayerFaction(id);
                         displayName = identity.DisplayName;
                         playerSteamId = Utilities.GetSteamIdFromPlayerId(id);
+                        if (IsEssentialsRankExcepted(playerSteamId, allExceptions)) return true;
 
                     }
                     else
@@ -337,6 +341,7 @@ namespace BlockLimiter.Settings
                     }
 
                     playerSteamId = Utilities.GetSteamIdFromPlayerId(playerIdentity.IdentityId);
+                    if (IsEssentialsRankExcepted(playerSteamId, allExceptions)) return true;
                     break;
                 case MyCubeGrid grid:
                 {
@@ -357,6 +362,7 @@ namespace BlockLimiter.Settings
                 identity = MySession.Static.Players.TryGetIdentity(owner);
                 playerSteamId = Utilities.GetSteamIdFromPlayerId(owner);
                 if (playerSteamId > 0 && allExceptions.Contains(playerSteamId.ToString())) return true;
+                if (IsEssentialsRankExcepted(playerSteamId, allExceptions)) return true;
                 if (identity != null)
                 {
                     if (allExceptions.Contains(identity.DisplayName)) return true;
@@ -367,10 +373,21 @@ namespace BlockLimiter.Settings
             }
 
             if (playerSteamId > 0 && allExceptions.Contains(playerSteamId.ToString())) return true;
+            if (IsEssentialsRankExcepted(playerSteamId, allExceptions)) return true;
             if (identityId > 0 && allExceptions.Contains(identityId.ToString())) return true;
             if (identity != null && allExceptions.Contains(identity.DisplayName)) return true;
             if (faction != null && (allExceptions.Contains(faction.Tag)|| allExceptions.Contains(faction.FactionId.ToString()))) return true;
             return !string.IsNullOrEmpty(displayName) && allExceptions.Contains(displayName);
+        }
+
+        private static bool IsEssentialsRankExcepted(ulong steamId, HashSet<string> allExceptions)
+        {
+            if (steamId == 0 || allExceptions == null || allExceptions.Count == 0 || !EssentialsPlayerAccount.EssentialsInstalled)
+                return false;
+
+            return EssentialsPlayerAccount.TryGetPrimaryRank(steamId, out var rank) &&
+                   !string.IsNullOrWhiteSpace(rank) &&
+                   allExceptions.Contains(rank);
         }
 
         /// <summary>
@@ -434,6 +451,30 @@ namespace BlockLimiter.Settings
             return _blockList.Any(block => !string.IsNullOrEmpty(block) && defString.Contains(block));
         }
 
+        internal bool IsAvailableForPlayer(long playerId)
+        {
+            if (LimitFilterType == FilterType.None) return true;
+
+            // For player-facing limit lists, only EssentialRank can be checked reliably
+            // without a specific grid context. Other filters remain visible and are
+            // evaluated where the grid/faction/playtime context exists.
+            if (LimitFilterType != FilterType.EssentialRank) return true;
+
+            if (!EssentialsPlayerAccount.EssentialsInstalled || playerId == 0) return false;
+
+            var steamId = Utilities.GetSteamIdFromPlayerId(playerId);
+            if (steamId == 0) return false;
+
+            if (!EssentialsPlayerAccount.TryGetPrimaryRank(steamId, out var rank)) return false;
+
+            var isMatch = string.Equals(rank, _filterValue, StringComparison.OrdinalIgnoreCase);
+
+            if (_limitOperator == FilterOperator.Equal) return isMatch;
+            if (_limitOperator == FilterOperator.NotEqual) return !isMatch;
+
+            return false;
+        }
+
         internal bool IsFilterType(MyCubeGrid grid)
         {
             if (LimitFilterType == FilterType.None) return true;
@@ -483,19 +524,8 @@ namespace BlockLimiter.Settings
                     identity = MySession.Static.Players.TryGetIdentity(owners.FirstOrDefault());
                     playerSteamId = Utilities.GetSteamIdFromPlayerId(identity.IdentityId);
                     if (playerSteamId <= 0) break;
-                    var permList = new List<string> { EssentialsPlayerAccount.GetPrimaryRank(playerSteamId) };
-                    if (permList.Count == 0) break;
-                    var result = false;
-                    if (_limitOperator == FilterOperator.Equal)
-                    {
-                        result = permList.Contains(_filterValue);
-                    }
-                    else if (_limitOperator == FilterOperator.NotEqual)
-                    {
-                        result = !permList.Contains(_filterValue);
-                    }
-
-                    return result;
+                    if (!EssentialsPlayerAccount.TryGetPrimaryRank(playerSteamId, out var rank)) break;
+                    return IsEssentialRankFilterMatch(rank);
                 default:
                     return false;
             }
@@ -534,23 +564,73 @@ namespace BlockLimiter.Settings
                     if (!EssentialsPlayerAccount.EssentialsInstalled) return false;
                     if ( playerId == 0) break;
                     var pSteamId = Utilities.GetSteamIdFromPlayerId(playerId);
-                    var permList = new List<string> { EssentialsPlayerAccount.GetPrimaryRank(pSteamId) };
-                    if (permList.Count == 0) break;
-                    var result = false;
-                    if (_limitOperator == FilterOperator.Equal)
-                    {
-                        result = permList.Contains(_filterValue);
-                    }
-                    else if (_limitOperator == FilterOperator.NotEqual)
-                    {
-                        result = !permList.Contains(_filterValue);
-                    }
-
-                    return result;
+                    if (!EssentialsPlayerAccount.TryGetPrimaryRank(pSteamId, out var rank)) break;
+                    return IsEssentialRankFilterMatch(rank);
                     
                 default:
                     return false;
             }
+
+            return false;
+        }
+        
+
+        internal bool IsPlayerFilterType(long playerId)
+        {
+            if (LimitFilterType == FilterType.None) return true;
+            if (playerId == 0) return false;
+
+            switch (LimitFilterType)
+            {
+                case FilterType.PlayerPlayTime:
+                    if (!int.TryParse(_filterValue, out var pTime)) return false;
+                    var playerSteamId = Utilities.GetSteamIdFromPlayerId(playerId);
+                    if (playerSteamId <= 0) return false;
+                    var playerTime = PlayerTimeModule.GetTime(playerSteamId);
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? (DateTime.Now - playerTime).TotalDays > pTime
+                        : (DateTime.Now - playerTime).TotalDays < pTime;
+
+                case FilterType.FactionMemberCount:
+                    if (!int.TryParse(_filterValue, out var fValue)) return false;
+                    var faction = MySession.Static.Factions.GetPlayerFaction(playerId);
+                    if (faction == null) return false;
+                    return LimitFilterOperator == FilterOperator.GreaterThan
+                        ? faction.Members.Count > fValue
+                        : faction.Members.Count < fValue;
+
+                case FilterType.EssentialRank:
+                    if (!EssentialsPlayerAccount.EssentialsInstalled) return false;
+                    var steamId = Utilities.GetSteamIdFromPlayerId(playerId);
+                    if (steamId <= 0) return false;
+                    if (!EssentialsPlayerAccount.TryGetPrimaryRank(steamId, out var rank)) return false;
+                    return IsEssentialRankFilterMatch(rank);
+
+                // Grid-only filters cannot be evaluated from a player id.
+                // Keep them permissive here so only grid checks decide them.
+                case FilterType.GridBlockCount:
+                case FilterType.GridMass:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+        private bool IsEssentialRankFilterMatch(string rank)
+        {
+            if (string.IsNullOrWhiteSpace(rank) || string.IsNullOrWhiteSpace(_filterValue))
+                return false;
+
+            var isMatch = string.Equals(rank, _filterValue, StringComparison.OrdinalIgnoreCase);
+
+            if (_limitOperator == FilterOperator.Equal) return isMatch;
+            if (_limitOperator == FilterOperator.NotEqual) return !isMatch;
+
+            if (!EssentialsPlayerAccount.TryCompareRankOrder(rank, _filterValue, out var comparison))
+                return false;
+
+            if (_limitOperator == FilterOperator.GreaterThan) return comparison > 0;
+            if (_limitOperator == FilterOperator.LessThan) return comparison < 0;
 
             return false;
         }

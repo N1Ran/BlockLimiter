@@ -32,3 +32,10 @@ C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLim
 C:\Users\OlatideF\NextCloud\Sync\ProgramFiles\VisualStudio\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.pdb
 C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\bin\Release\manifest.xml
 C:\Users\Olatide\source\repos\BlockLimiter\BlockLimiter\obj\Release\BlockLimiter.csproj.AssemblyReference.cache
+S:\TorchPlugins\BlockLimiter\BlockLimiter-master\BlockLimiter\bin\Release\manifest.xml
+S:\TorchPlugins\BlockLimiter\BlockLimiter-master\BlockLimiter\bin\Release\BlockLimiter.dll
+S:\TorchPlugins\BlockLimiter\BlockLimiter-master\BlockLimiter\bin\Release\BlockLimiter.pdb
+S:\TorchPlugins\BlockLimiter\BlockLimiter-master\BlockLimiter\obj\Release\BlockLimiter.csproj.AssemblyReference.cache
+S:\TorchPlugins\BlockLimiter\BlockLimiter-master\BlockLimiter\obj\Release\BlockLimiter.csproj.CoreCompileInputs.cache
+S:\TorchPlugins\BlockLimiter\BlockLimiter-master\BlockLimiter\obj\Release\BlockLimiter.dll
+S:\TorchPlugins\BlockLimiter\BlockLimiter-master\BlockLimiter\obj\Release\BlockLimiter.pdb

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -129,6 +129,12 @@ namespace BlockLimiter.Punishment
                 foreach (var (id, count) in limit.FoundEntities)
                 {
                     if (id == 0 || limit.IsExcepted(id))
+                    {
+                        idsToRemove.Add(id);
+                        continue;
+                    }
+
+                    if (limit.LimitPlayers && MySession.Static.Players.HasIdentity(id) && !limit.IsPlayerFilterType(id))
                     {
                         idsToRemove.Add(id);
                         continue;

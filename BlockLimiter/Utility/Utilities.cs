@@ -439,6 +439,7 @@ namespace BlockLimiter.Utility
 
             foreach (var item in limitItems)
             {
+                if (!item.IsAvailableForPlayer(playerId)) continue;
                 if (item.BlockList.Count == 0 || item.FoundEntities.Count == 0) continue;
                 
                 var itemName = string.IsNullOrEmpty(item.Name) ? item.BlockList.FirstOrDefault() : item.Name;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -76,7 +76,7 @@ namespace BlockLimiter.Utility
 
             Parallel.ForEach(BlockLimiterConfig.Instance.AllLimits, new ParallelOptions {MaxDegreeOfParallelism = 5},limit =>
             {
-                if (!limit.LimitPlayers)
+                if (!limit.LimitPlayers || !limit.IsPlayerFilterType(id))
                 {
                     limit.FoundEntities.Remove(id);
                     return;

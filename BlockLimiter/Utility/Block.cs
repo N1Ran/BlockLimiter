@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -55,11 +55,11 @@ namespace BlockLimiter.Utility
                 if (item.IsExcepted(playerId) || (grid != null && item.IsExcepted(grid.EntityId)))
                     continue;
 
-
+                if (grid != null && !item.IsGridType(grid, playerId))
+                    continue;
 
                 if (item.Limit == 0 && (item.LimitGrids || item.LimitPlayers || item.LimitFaction))
                 {
-
                     return false;
                 }
 
@@ -124,11 +124,14 @@ namespace BlockLimiter.Utility
 
             if (BlockLimiterConfig.Instance.AllLimits.Count == 0) return true;
             var foundGrid = GridCache.TryGetGridById(gridId, out var grid);
-            if (!foundGrid)
+            if (!foundGrid && gridId > 0 && MyEntities.TryGetEntityById(gridId, out var entity))
             {
-                GridCache.AddGrid(grid);
+                grid = entity as MyCubeGrid;
+                foundGrid = grid != null;
+                if (foundGrid)
+                    GridCache.AddGrid(grid);
             }
-            var subGrids = Grid.GetSubGrids(grid);
+            var subGrids = foundGrid ? Grid.GetSubGrids(grid) : new List<MyCubeGrid>();
             foreach (var item in BlockLimiterConfig.Instance.AllLimits)
             {
                 limit = item.Name;

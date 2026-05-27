@@ -2,7 +2,6 @@
 using BlockLimiter.Settings;
 using BlockLimiter.Utility;
 using NLog;
-using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.World;
 using System;
 using System.Collections.Generic;
@@ -20,36 +19,54 @@ namespace BlockLimiter.Punishment
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         public static readonly Dictionary<ulong, DateTime> AnnoyQueue = new Dictionary<ulong, DateTime>();
+        private static readonly Dictionary<ulong, string> AnnoyMessageQueue = new Dictionary<ulong, string>();
+
         public override int GetUpdateResolution()
         {
             //return 800;
-            return Math.Max(BlockLimiterConfig.Instance.AnnoyInterval,1) * 1000;
+            return Math.Max(BlockLimiterConfig.Instance.AnnoyInterval, 1) * 1000;
         }
 
         public override void Handle()
         {
             //if (BlockLimiterConfig.Instance.AnnoyInterval < 1) return;
-            if (!BlockLimiterConfig.Instance.Annoy || !BlockLimiterConfig.Instance.EnableLimits)return;
+            if (!BlockLimiterConfig.Instance.Annoy || !BlockLimiterConfig.Instance.EnableLimits) return;
 
             RunAnnoyance();
         }
 
+        private static string BuildAnnoyMessage(LimitItem limit, int currentCount)
+        {
+            var message = BlockLimiterConfig.Instance.AnnoyMessage ?? string.Empty;
+            var limitName = limit?.Name ?? string.Empty;
+            var limitValue = limit?.Limit.ToString() ?? string.Empty;
+            var currentValue = currentCount.ToString();
+
+            return message
+                .Replace("{limit.Name}", limitName)
+                .Replace("{limit.name}", limitName)
+                .Replace("{Limit.Name}", limitName)
+                .Replace("{LimitName}", limitName)
+                .Replace("{limitName}", limitName)
+                .Replace("{limit}", limitValue)
+                .Replace("{Limit}", limitValue)
+                .Replace("{current}", currentValue)
+                .Replace("{Current}", currentValue);
+        }
+
         public static void RunAnnoyance()
         {
-            if (!BlockLimiterConfig.Instance.EnableLimits)return;
+            if (!BlockLimiterConfig.Instance.EnableLimits) return;
             var limitItems = BlockLimiterConfig.Instance.AllLimits;
-
 
             if (!limitItems.Any())
             {
                 return;
             }
 
-
             var onlinePlayers = MySession.Static.Players.GetOnlinePlayers();
 
             if (onlinePlayers.Count < 1) return;
-
 
             foreach (var player in onlinePlayers)
             {
@@ -58,52 +75,57 @@ namespace BlockLimiter.Punishment
 
                 var playerFaction = MySession.Static.Factions.GetPlayerFaction(player.Identity.IdentityId);
 
-
-                bool AnnoyPlayer()
+                bool AnnoyPlayer(out string annoyMessage)
                 {
-                    var annoy = false;
+                    annoyMessage = string.Empty;
+
                     foreach (var item in limitItems)
                     {
                         if (item.IsExcepted(player) || !item.Annoy) continue;
 
-                        foreach (var (id,count) in item.FoundEntities)
+                        foreach (var (id, count) in item.FoundEntities)
                         {
-
                             if (count <= item.Limit) continue;
 
                             if (id == player.Identity.IdentityId)
                             {
-                                annoy = true;
-                                break;
+                                annoyMessage = BuildAnnoyMessage(item, count);
+                                return true;
                             }
 
                             if (playerGridIds.Contains(id))
                             {
-                                annoy = true;
-                                break;
+                                annoyMessage = BuildAnnoyMessage(item, count);
+                                return true;
                             }
-                        
+
                             if (playerFaction == null || id != playerFaction.FactionId) continue;
-                            annoy = true;
-                            break;
+                            annoyMessage = BuildAnnoyMessage(item, count);
+                            return true;
                         }
                     }
 
-                    return annoy;
+                    return false;
                 }
 
                 if (!AnnoyQueue.TryGetValue(steamId, out var time))
                 {
-                    if (AnnoyPlayer())
+                    if (AnnoyPlayer(out var message))
                     {
                         AnnoyQueue[steamId] = DateTime.Now.AddSeconds(BlockLimiterConfig.Instance.AnnoyInterval);
+                        AnnoyMessageQueue[steamId] = message;
                     }
                     continue;
                 }
 
-                if (AnnoyPlayer()) continue;
-                AnnoyQueue.Remove(steamId);
+                if (AnnoyPlayer(out var updatedMessage))
+                {
+                    AnnoyMessageQueue[steamId] = updatedMessage;
+                    continue;
+                }
 
+                AnnoyQueue.Remove(steamId);
+                AnnoyMessageQueue.Remove(steamId);
             }
 
             if (AnnoyQueue.Count == 0) return;
@@ -118,22 +140,21 @@ namespace BlockLimiter.Punishment
 
                     try
                     {
-                        ModCommunication.SendMessageTo(new NotificationMessage($"{BlockLimiterConfig.Instance.AnnoyMessage}",BlockLimiterConfig.Instance.AnnoyDuration,MyFontEnum.White),id);
+                        if (!AnnoyMessageQueue.TryGetValue(id, out var message) || string.IsNullOrWhiteSpace(message))
+                            message = BlockLimiterConfig.Instance.AnnoyMessage ?? string.Empty;
+
+                        ModCommunication.SendMessageTo(new NotificationMessage(message, BlockLimiterConfig.Instance.AnnoyDuration, MyFontEnum.White), id);
                         var chatManager = BlockLimiter.Instance.Torch.CurrentSession.Managers.GetManager<ChatManagerServer>();
-                        chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName,
-                            $"{BlockLimiterConfig.Instance.AnnoyMessage}", Color.Red, id);
-                        
+                        chatManager?.SendMessageAsOther(BlockLimiterConfig.Instance.ServerName, message, Color.Red, id);
+
                         if (BlockLimiterConfig.Instance.AnnoySound)
                             Utilities.SendFailSound(id);
-
                     }
                     catch (Exception exception)
                     {
                         Log.Error(exception);
                     }
                     BlockLimiter.Instance.Log.Info($"Annoy message sent to {Utilities.GetPlayerNameFromSteamId(id)}");
-
-
                 }
             }
 
@@ -141,12 +162,6 @@ namespace BlockLimiter.Punishment
             {
                 AnnoyQueue[id] = DateTime.Now.AddSeconds(BlockLimiterConfig.Instance.AnnoyInterval);
             }
-
         }
-
-
-
-
-
     }
 }

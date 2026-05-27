@@ -1,30 +1,34 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\",
+  "WorkspaceRootPath": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\blocklimiter\\punishment\\annoy.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|s:\\torchplugins\\blocklimiter\\blocklimiter-master\\blocklimiter\\punishment\\annoy.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\punishment\\annoy.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|c:\\users\\olatide\\source\\repos\\blocklimiter\\blocklimiter\\punishment\\punish.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\punishment\\punish.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|c:\\users\\olatide\\source\\repos\\blocklimiter\\blocklimiter\\utility\\utilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\utility\\utilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|c:\\users\\olatide\\source\\repos\\blocklimiter\\blocklimiter\\settings\\blocklimiterconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\settings\\blocklimiterconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|c:\\users\\olatide\\source\\repos\\blocklimiter\\blocklimiter\\settings\\limititem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\blocklimiter\\settings\\limititem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\settings\\limititem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\blocklimiter\\pluginapi\\essentialsplayeraccount.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\blocklimiter\\manifest.xml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\manifest.xml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\blocklimiter\\pluginapi\\essentialsplayeraccount.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\pluginapi\\essentialsplayeraccount.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\blocklimiter\\punishment\\punish.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\punishment\\punish.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\blocklimiter\\utility\\utilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\utility\\utilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\blocklimiter\\settings\\blocklimiterconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE2E11C6-7DBD-46F8-A707-81D94C6FACE1}|BlockLimiter\\BlockLimiter.csproj|solutionrelative:blocklimiter\\settings\\blocklimiterconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,46 +38,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 8,
+          "SelectedChildIndex": 3,
           "Children": [
             {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Utilities.cs",
-              "DocumentMoniker": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Utility\\Utilities.cs",
-              "RelativeDocumentMoniker": "BlockLimiter\\Utility\\Utilities.cs",
-              "ToolTip": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Utility\\Utilities.cs",
-              "RelativeToolTip": "BlockLimiter\\Utility\\Utilities.cs",
-              "ViewState": "AgIAAK4AAAAAAAAAAAAAAKgAAAAJAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-10T00:35:10.874Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "BlockLimiterConfig.cs",
-              "DocumentMoniker": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Settings\\BlockLimiterConfig.cs",
-              "RelativeDocumentMoniker": "BlockLimiter\\Settings\\BlockLimiterConfig.cs",
-              "ToolTip": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Settings\\BlockLimiterConfig.cs",
-              "RelativeToolTip": "BlockLimiter\\Settings\\BlockLimiterConfig.cs",
-              "ViewState": "AgIAANQAAAAAAAAAAIAwwPgAAADNAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-09T23:17:25.386Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Punish.cs",
-              "DocumentMoniker": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Punishment\\Punish.cs",
-              "RelativeDocumentMoniker": "BlockLimiter\\Punishment\\Punish.cs",
-              "ToolTip": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Punishment\\Punish.cs",
-              "RelativeToolTip": "BlockLimiter\\Punishment\\Punish.cs",
-              "ViewState": "AgIAADwAAAAAAAAAAAAAAGUAAAAoAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-09T23:08:27.22Z",
-              "EditorCaption": ""
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
             },
             {
               "$type": "Bookmark",
@@ -81,50 +50,104 @@
             },
             {
               "$type": "Bookmark",
-              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
-            },
-            {
-              "$type": "Bookmark",
-              "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "LimitItem.cs",
-              "DocumentMoniker": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Settings\\LimitItem.cs",
-              "RelativeDocumentMoniker": "BlockLimiter\\Settings\\LimitItem.cs",
-              "ToolTip": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Settings\\LimitItem.cs",
-              "RelativeToolTip": "BlockLimiter\\Settings\\LimitItem.cs",
-              "ViewState": "AgIAACoCAAAAAAAAAAAAADkCAAAaAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-09T22:02:57.466Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "EssentialsPlayerAccount.cs",
-              "DocumentMoniker": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\PluginApi\\EssentialsPlayerAccount.cs",
-              "RelativeDocumentMoniker": "BlockLimiter\\PluginApi\\EssentialsPlayerAccount.cs",
-              "ToolTip": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\PluginApi\\EssentialsPlayerAccount.cs",
-              "RelativeToolTip": "BlockLimiter\\PluginApi\\EssentialsPlayerAccount.cs",
-              "ViewState": "AgIAAB4AAAAAAAAAAIAwwDAAAAAZAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-09T22:02:18.457Z",
-              "EditorCaption": ""
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "Annoy.cs",
-              "DocumentMoniker": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Punishment\\Annoy.cs",
+              "DocumentMoniker": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Punishment\\Annoy.cs",
               "RelativeDocumentMoniker": "BlockLimiter\\Punishment\\Annoy.cs",
-              "ToolTip": "C:\\Users\\Olatide\\source\\repos\\BlockLimiter\\BlockLimiter\\Punishment\\Annoy.cs",
+              "ToolTip": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Punishment\\Annoy.cs",
               "RelativeToolTip": "BlockLimiter\\Punishment\\Annoy.cs",
-              "ViewState": "AgIAAIQAAAAAAAAAAAAAAJcAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAABAAAAAAAAAAAAAjwDQAAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-08T21:39:40.9Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "manifest.xml",
+              "DocumentMoniker": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\manifest.xml",
+              "RelativeDocumentMoniker": "BlockLimiter\\manifest.xml",
+              "ToolTip": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\manifest.xml",
+              "RelativeToolTip": "BlockLimiter\\manifest.xml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003576|",
+              "WhenOpened": "2026-05-22T00:14:59.672Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "EssentialsPlayerAccount.cs",
+              "DocumentMoniker": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\PluginApi\\EssentialsPlayerAccount.cs",
+              "RelativeDocumentMoniker": "BlockLimiter\\PluginApi\\EssentialsPlayerAccount.cs",
+              "ToolTip": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\PluginApi\\EssentialsPlayerAccount.cs",
+              "RelativeToolTip": "BlockLimiter\\PluginApi\\EssentialsPlayerAccount.cs",
+              "ViewState": "AgIAAB4AAAAAAAAAAIAwwDAAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-09T22:02:18.457Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Utilities.cs",
+              "DocumentMoniker": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Utility\\Utilities.cs",
+              "RelativeDocumentMoniker": "BlockLimiter\\Utility\\Utilities.cs",
+              "ToolTip": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Utility\\Utilities.cs",
+              "RelativeToolTip": "BlockLimiter\\Utility\\Utilities.cs",
+              "ViewState": "AgIAAGkAAAAAAAAAAAAAAKgAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-10T00:35:10.874Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "BlockLimiterConfig.cs",
+              "DocumentMoniker": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Settings\\BlockLimiterConfig.cs",
+              "RelativeDocumentMoniker": "BlockLimiter\\Settings\\BlockLimiterConfig.cs",
+              "ToolTip": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Settings\\BlockLimiterConfig.cs",
+              "RelativeToolTip": "BlockLimiter\\Settings\\BlockLimiterConfig.cs",
+              "ViewState": "AgIAANQAAAAAAAAAAIAwwPgAAADNAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-09T23:17:25.386Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Punish.cs",
+              "DocumentMoniker": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Punishment\\Punish.cs",
+              "RelativeDocumentMoniker": "BlockLimiter\\Punishment\\Punish.cs",
+              "ToolTip": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Punishment\\Punish.cs",
+              "RelativeToolTip": "BlockLimiter\\Punishment\\Punish.cs",
+              "ViewState": "AgIAADwAAAAAAAAAAAAAAGUAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-09T23:08:27.22Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "LimitItem.cs",
+              "DocumentMoniker": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Settings\\LimitItem.cs",
+              "RelativeDocumentMoniker": "BlockLimiter\\Settings\\LimitItem.cs",
+              "ToolTip": "S:\\TorchPlugins\\BlockLimiter\\BlockLimiter-master\\BlockLimiter\\Settings\\LimitItem.cs",
+              "RelativeToolTip": "BlockLimiter\\Settings\\LimitItem.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACIAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-09T22:02:57.466Z"
             }
           ]
         }
