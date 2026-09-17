@@ -25,6 +25,8 @@ using Torch.API;
 using Torch.API.Managers;
 using Torch.API.Session;
 using Torch.Managers;
+using Torch.Mod;
+using Torch.Mod.Messages;
 using Torch.Session;
 using Torch.Views;
 using VRage.Collections;
@@ -164,9 +166,52 @@ namespace BlockLimiter
 
             _justAdded.Add(block);
             GridCache.AddBlock(block);
-            
+
             Block.IncreaseCount(block.BlockDefinition,new List<long>{block.BuiltBy},1,grid.EntityId);
-            
+
+            NotifyLimitStatus(grid, block);
+
+        }
+
+        /// <summary>
+        /// Sends the builder a HUD notification showing the remaining count for every limit
+        /// the block they just placed falls under (player, grid and faction scopes)
+        /// </summary>
+        private static void NotifyLimitStatus(MyCubeGrid grid, MySlimBlock block)
+        {
+            if (!BlockLimiterConfig.Instance.NotifyRemainingLimit) return;
+
+            var builderId = block.BuiltBy;
+            if (builderId == 0) return;
+
+            var steamId = Utilities.GetSteamIdFromPlayerId(builderId);
+            if (steamId == 0 || !MySession.Static.Players.IsPlayerOnline(builderId)) return;
+
+            var faction = MySession.Static.Factions.GetPlayerFaction(builderId);
+            var lines = new List<string>();
+
+            foreach (var limit in BlockLimiterConfig.Instance.AllLimits)
+            {
+                if (limit.Limit <= 0 || !limit.IsMatch(block.BlockDefinition)) continue;
+                if (limit.IsExcepted(builderId) || limit.IsExcepted(grid.EntityId)) continue;
+
+                var name = string.IsNullOrEmpty(limit.Name) ? limit.BlockList.FirstOrDefault() : limit.Name;
+
+                if (limit.LimitPlayers && limit.FoundEntities.TryGetValue(builderId, out var pCount))
+                    lines.Add($"{name}: {pCount}/{limit.Limit}");
+
+                if (limit.LimitGrids && limit.IsGridType(grid) && limit.FoundEntities.TryGetValue(grid.EntityId, out var gCount))
+                    lines.Add($"{name}: {gCount}/{limit.Limit}");
+
+                if (limit.LimitFaction && faction != null && limit.FoundEntities.TryGetValue(faction.FactionId, out var fCount))
+                    lines.Add($"{name}: {fCount}/{limit.Limit}");
+            }
+
+            if (lines.Count == 0) return;
+
+            ModCommunication.SendMessageTo(
+                new NotificationMessage(string.Join("\n", lines), BlockLimiterConfig.Instance.NotifyRemainingLimitDuration, MyFontEnum.White),
+                steamId);
         }
 
 

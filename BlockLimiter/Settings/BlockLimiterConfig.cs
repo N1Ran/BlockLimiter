@@ -72,6 +72,8 @@ namespace BlockLimiter.Settings
         private int _maxSmallGrids = 0;
         private int _maxLargeGrids = 0;
         private BlockingType _blockingType = BlockingType.None;
+        private bool _notifyRemainingLimit = false;
+        private int _notifyRemainingLimitDuration = 3000;
 
 
         #region General BlockCount Limit
@@ -389,6 +391,34 @@ namespace BlockLimiter.Settings
                 Changed();
             }
         }
+        #endregion
+
+        #region Notifications
+
+        [Display(Order = 1, Name = "Notify Remaining Limit", GroupName = "Notifications",
+            Description = "Shows a HUD notification with the remaining count for any limit a newly placed block falls under")]
+        public bool NotifyRemainingLimit
+        {
+            get => _notifyRemainingLimit;
+            set
+            {
+                _notifyRemainingLimit = value;
+                Changed();
+            }
+        }
+
+        [Display(Order = 2, Name = "Notify Duration (ms)", GroupName = "Notifications",
+            Description = "How long the remaining-limit HUD notification stays on screen in ms")]
+        public int NotifyRemainingLimitDuration
+        {
+            get => _notifyRemainingLimitDuration;
+            set
+            {
+                _notifyRemainingLimitDuration = Math.Max(500, value);
+                Changed();
+            }
+        }
+
         #endregion
 
         #region Loading and Saving
